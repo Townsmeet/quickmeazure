@@ -2,7 +2,7 @@
  * Measurement related types
  */
 
-import type { MeasurementValues, UnknownRecord } from './enhanced'
+import type { MeasurementValues } from './enhanced'
 
 export interface Measurement {
   id: number

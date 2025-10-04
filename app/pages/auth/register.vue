@@ -14,6 +14,7 @@
           size="lg"
           variant="outline"
           class="flex items-center justify-center"
+          :loading="isGoogleLoading"
           @click="handleGoogleRegister"
         >
           <UIcon name="i-simple-icons-google" class="mr-2 text-lg" />
@@ -31,254 +32,142 @@
         </div>
       </div>
 
-      <form class="space-y-6" @submit.prevent="handleRegister">
+      <UForm
+        :schema="registerSchema"
+        :state="state"
+        class="space-y-6"
+        autocomplete="off"
+        @submit="onSubmit"
+      >
         <div class="space-y-6">
           <div class="space-y-2">
-            <label for="fullName" class="block text-sm font-medium text-gray-700">
-              Full Name <span class="text-red-500">*</span>
-            </label>
-            <UInput
-              id="fullName"
-              v-model="name"
-              name="name"
-              placeholder="Your full name"
-              required
-              size="lg"
-              class="w-full"
-              :state="formErrors.name ? 'error' : undefined"
-            >
-              <template #trailing>
-                <UIcon v-if="name" name="i-heroicons-check-circle" class="text-green-500" />
-              </template>
-            </UInput>
-            <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">
-              {{ formErrors.name }}
-            </p>
+            <UFormField label="Full Name" name="name">
+              <UInput
+                id="fullName"
+                v-model="state.name"
+                name="name"
+                placeholder="Your full name"
+                class="w-full"
+                autocomplete="name"
+                required
+              />
+            </UFormField>
           </div>
 
           <div class="space-y-2">
-            <label for="email" class="block text-sm font-medium text-gray-700">
-              Email <span class="text-red-500">*</span>
-            </label>
-            <UInput
-              id="email"
-              v-model="email"
-              name="email"
-              type="email"
-              placeholder="Your email address"
-              required
-              size="lg"
-              class="w-full"
-              :state="formErrors.email ? 'error' : undefined"
-            >
-              <template #trailing>
-                <UIcon
-                  v-if="email && email.includes('@')"
-                  name="i-heroicons-check-circle"
-                  class="text-green-500"
-                />
-              </template>
-            </UInput>
-            <p v-if="formErrors.email" class="mt-1 text-sm text-red-600">
-              {{ formErrors.email }}
-            </p>
+            <UFormField label="Email" name="email">
+              <UInput
+                id="email"
+                v-model="state.email"
+                name="email"
+                type="email"
+                placeholder="Your email address"
+                class="w-full"
+                autocomplete="email"
+                required
+              />
+            </UFormField>
           </div>
 
           <div class="space-y-2">
-            <label for="password" class="block text-sm font-medium text-gray-700">
-              Password <span class="text-red-500">*</span>
-            </label>
-            <UInput
-              id="password"
-              v-model="password"
-              name="password"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="Choose a strong password"
-              required
-              size="lg"
-              class="w-full"
-              :ui="{ trailing: 'pe-1' }"
-            >
-              <template #trailing>
-                <UButton
-                  color="neutral"
-                  variant="link"
-                  size="sm"
-                  :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                  @click="showPassword = !showPassword"
-                />
-              </template>
-            </UInput>
-            <div v-if="password && !isPasswordValid" class="mt-2">
-              <div class="flex justify-between items-center mb-1">
-                <span class="text-sm text-gray-600">Password strength</span>
-                <span
-                  class="text-sm"
-                  :class="{
-                    'text-red-500': passwordStrength <= 1,
-                    'text-yellow-500': passwordStrength === 2,
-                    'text-blue-500': passwordStrength === 3,
-                    'text-green-500': passwordStrength === 4,
-                  }"
-                >
-                  {{
-                    passwordStrength === 0
-                      ? 'Very weak'
-                      : passwordStrength === 1
-                        ? 'Weak'
-                        : passwordStrength === 2
-                          ? 'Fair'
-                          : passwordStrength === 3
-                            ? 'Good'
-                            : 'Strong'
-                  }}
-                </span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
+            <UFormField label="Password" name="password">
+              <UInput
+                id="password"
+                v-model="state.password"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Choose a strong password"
+                size="lg"
+                class="w-full"
+                autocomplete="new-password"
+                required
+              >
+                <template #trailing>
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    :icon="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </UInput>
+            </UFormField>
+            <div v-if="state.password" class="mt-2">
+              <div class="flex items-center gap-2">
                 <div
-                  class="h-2 rounded-full transition-all duration-300"
-                  :class="{
-                    'bg-red-500': passwordStrength <= 1,
-                    'bg-yellow-500': passwordStrength === 2,
-                    'bg-blue-500': passwordStrength === 3,
-                    'bg-green-500': passwordStrength === 4,
-                  }"
-                  :style="{ width: `${(passwordStrength / 4) * 100}%` }"
-                ></div>
+                  class="h-1 flex-grow rounded-full"
+                  :class="[passwordStrength >= 1 ? 'bg-green-500' : 'bg-gray-200']"
+                />
+                <div
+                  class="h-1 flex-grow rounded-full"
+                  :class="[passwordStrength >= 2 ? 'bg-green-500' : 'bg-gray-200']"
+                />
+                <div
+                  class="h-1 flex-grow rounded-full"
+                  :class="[passwordStrength >= 3 ? 'bg-green-500' : 'bg-gray-200']"
+                />
+                <div
+                  class="h-1 flex-grow rounded-full"
+                  :class="[passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200']"
+                />
               </div>
-
-              <!-- Password criteria checklist -->
-              <div class="mt-3 space-y-1">
-                <div class="text-sm">
-                  <div class="flex items-center space-x-2">
-                    <UIcon
-                      :name="
-                        password.length >= 8 ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'
-                      "
-                      :class="password.length >= 8 ? 'text-green-600' : 'text-gray-500'"
-                      class="h-4 w-4"
-                    />
-                    <span :class="password.length >= 8 ? 'text-green-600' : 'text-gray-500'"
-                      >At least 8 characters</span
-                    >
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <UIcon
-                      :name="
-                        hasUpperCase(password) && hasLowerCase(password)
-                          ? 'i-heroicons-check-circle'
-                          : 'i-heroicons-x-circle'
-                      "
-                      :class="
-                        hasUpperCase(password) && hasLowerCase(password)
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      "
-                      class="h-4 w-4"
-                    />
-                    <span
-                      :class="
-                        hasUpperCase(password) && hasLowerCase(password)
-                          ? 'text-green-600'
-                          : 'text-gray-500'
-                      "
-                      >Upper and lowercase letters</span
-                    >
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <UIcon
-                      :name="
-                        hasNumber(password) ? 'i-heroicons-check-circle' : 'i-heroicons-x-circle'
-                      "
-                      :class="hasNumber(password) ? 'text-green-600' : 'text-gray-500'"
-                      class="h-4 w-4"
-                    />
-                    <span :class="hasNumber(password) ? 'text-green-600' : 'text-gray-500'"
-                      >At least one number</span
-                    >
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <UIcon
-                      :name="
-                        hasSpecialChar(password)
-                          ? 'i-heroicons-check-circle'
-                          : 'i-heroicons-x-circle'
-                      "
-                      :class="hasSpecialChar(password) ? 'text-green-600' : 'text-gray-500'"
-                      class="h-4 w-4"
-                    />
-                    <span :class="hasSpecialChar(password) ? 'text-green-600' : 'text-gray-500'"
-                      >Special character</span
-                    >
-                  </div>
-                </div>
-              </div>
+              <p class="text-xs mt-1 text-gray-600">
+                Password should be at least 8 characters with uppercase, lowercase, number and
+                special character
+              </p>
             </div>
-            <p v-if="formErrors.password" class="mt-1 text-sm text-red-600">
-              {{ formErrors.password }}
-            </p>
           </div>
 
           <div class="space-y-2">
-            <label for="confirmPassword" class="block text-sm font-medium text-gray-700">
-              Confirm Password <span class="text-red-500">*</span>
-            </label>
-            <UInput
-              id="confirmPassword"
-              v-model="confirmPassword"
-              name="confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              placeholder="Confirm your password"
-              required
-              size="lg"
-              class="w-full"
-              :color="passwordMismatchError ? 'error' : undefined"
-              :ui="{ trailing: 'pe-1' }"
-            >
-              <template #trailing>
-                <UButton
-                  color="neutral"
-                  variant="link"
-                  size="sm"
-                  :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
-                  :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'"
-                  @click="showConfirmPassword = !showConfirmPassword"
-                />
-              </template>
-            </UInput>
-            <div v-if="passwordMismatchError" class="text-red-500 text-sm mt-1">
-              <div class="flex items-center">
-                <UIcon name="i-heroicons-exclamation-circle" class="mr-1 h-4 w-4" />
-                Passwords do not match
-              </div>
-            </div>
-            <p v-else-if="formErrors.confirmPassword" class="mt-1 text-sm text-red-600">
-              {{ formErrors.confirmPassword }}
-            </p>
+            <UFormField label="Confirm Password" name="confirmPassword">
+              <UInput
+                id="confirmPassword"
+                v-model="state.confirmPassword"
+                name="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="Confirm your password"
+                size="lg"
+                class="w-full"
+                :ui="{ trailing: 'pe-1' }"
+                autocomplete="new-password"
+                required
+              >
+                <template #trailing>
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    :icon="showConfirmPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                    :aria-label="showConfirmPassword ? 'Hide password' : 'Show password'"
+                    @click="showConfirmPassword = !showConfirmPassword"
+                  />
+                </template>
+              </UInput>
+            </UFormField>
           </div>
         </div>
 
-        <div class="flex items-center">
+        <UFormField name="agreeToTerms">
           <div class="flex items-center">
             <UCheckbox
-id="terms"
-v-model="agreeToTerms"
-name="terms"
-required
-size="lg" />
+              id="terms"
+              v-model="state.agreeToTerms"
+              name="agreeToTerms"
+              required
+              size="lg"
+            />
             <label for="terms" class="ml-2 block text-sm text-gray-700">
               I agree to the
-              <ULink :to="ROUTE_PATHS[LEGAL.TERMS]" class="font-medium"> terms </ULink>
+              <ULink to="/legal/terms" class="font-medium text-primary-600"> terms </ULink>
               and
-              <ULink :to="ROUTE_PATHS[LEGAL.PRIVACY]" class="font-medium"> privacy policies </ULink>
+              <ULink to="/legal/privacy" class="font-medium text-primary-600">
+                privacy policies
+              </ULink>
               <span class="text-red-500">*</span>
             </label>
           </div>
-        </div>
-        <p v-if="formErrors.terms" class="mt-1 text-sm text-red-600">
-          {{ formErrors.terms }}
-        </p>
+        </UFormField>
 
         <div>
           <UButton
@@ -287,7 +176,7 @@ size="lg" />
             block
             size="lg"
             :loading="isLoading"
-            :disabled="!isFormValid"
+            :disabled="isLoading"
             aria-label="Create account with email"
           >
             Create Account with Email
@@ -297,204 +186,82 @@ size="lg" />
         <div class="text-center my-4">
           <p class="text-sm text-gray-600">
             Already have an account?
-            <ULink :to="ROUTE_PATHS[AUTH.LOGIN]" class="font-medium"> Sign in </ULink>
+            <ULink to="/auth/login" class="font-medium text-primary-600 hover:text-primary-500">
+              Sign in
+            </ULink>
           </p>
         </div>
-      </form>
+      </UForm>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ROUTE_NAMES, ROUTE_PATHS } from '~/constants/routes'
+import type { FormSubmitEvent } from '#ui/types'
+import { registerSchema, type RegisterData } from '~/schemas/auth'
 
-const router = useRouter()
+definePageMeta({
+  layout: 'auth',
+})
+
+const { register, isLoading } = useAuth()
 const toast = useToast()
 
-// Constants
-const { AUTH, LEGAL } = ROUTE_NAMES
-const CONFIRM_PATH = ROUTE_NAMES.AUTH.CONFIRM
+// Form state
+const state = reactive<RegisterData>({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreeToTerms: true,
+})
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const agreeToTerms = ref(false)
-const isLoading = ref(false)
+const isGoogleLoading = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const formErrors = ref<Record<string, string>>({})
 
-const hasLowerCase = (str: string) => /[a-z]/.test(str)
-const hasUpperCase = (str: string) => /[A-Z]/.test(str)
-const hasNumber = (str: string) => /\d/.test(str)
-const hasSpecialChar = (str: string) => /[!@#$%^&*()_+\-={}();':"\\|,.<>/?]/.test(str)
+// Password strength and validation
+const passwordStrength = computed(() => getPasswordStrength(state.password))
+const _isPasswordValid = computed(() => validatePassword(state.password).length === 0)
 
-const passwordStrength = computed(() => {
-  if (!password.value) return 0
-
-  let strength = 0
-  if (password.value.length >= 8) strength++
-  if (hasLowerCase(password.value) && hasUpperCase(password.value)) strength++
-  if (hasNumber(password.value)) strength++
-  if (hasSpecialChar(password.value)) strength++
-
-  return strength
-})
-
-const passwordMismatchError = computed(() => {
-  return password.value && confirmPassword.value && password.value !== confirmPassword.value
-})
-
-const isPasswordValid = computed(() => {
-  return (
-    password.value.length >= 8 &&
-    hasUpperCase(password.value) &&
-    hasLowerCase(password.value) &&
-    hasNumber(password.value) &&
-    hasSpecialChar(password.value)
-  )
-})
-
-const isFormValid = computed(() => {
-  const fieldsValid =
-    !!name.value &&
-    !!email.value &&
-    !!password.value &&
-    password.value === confirmPassword.value &&
-    agreeToTerms.value
-
-  return fieldsValid && isPasswordValid.value
-})
-
-const validateForm = () => {
-  const errors: Record<string, string> = {}
-
-  if (!name.value.trim()) {
-    errors.name = 'Name is required'
-  }
-
-  if (!email.value.trim()) {
-    errors.email = 'Email is required'
-  } else if (!/^\S+@\S+\.\S+$/.test(email.value)) {
-    errors.email = 'Please enter a valid email address'
-  }
-
-  if (!password.value) {
-    errors.password = 'Password is required'
-  } else {
-    const passwordIssues = []
-
-    if (password.value.length < 8) {
-      passwordIssues.push('at least 8 characters')
-    }
-    if (!hasUpperCase(password.value)) {
-      passwordIssues.push('an uppercase letter')
-    }
-    if (!hasLowerCase(password.value)) {
-      passwordIssues.push('a lowercase letter')
-    }
-    if (!hasNumber(password.value)) {
-      passwordIssues.push('a number')
-    }
-    if (!hasSpecialChar(password.value)) {
-      passwordIssues.push('a special character')
-    }
-
-    if (passwordIssues.length > 0) {
-      errors.password = `Password must include ${passwordIssues.join(', ')}`
-    }
-  }
-
-  if (password.value !== confirmPassword.value) {
-    errors.confirmPassword = 'Passwords do not match'
-  }
-
-  if (!agreeToTerms.value) {
-    errors.terms = 'You must agree to the terms and privacy policy'
-  }
-
-  formErrors.value = errors
-  return Object.keys(errors).length === 0
-}
-
-async function handleRegister() {
-  formErrors.value = {}
-
-  if (!validateForm()) {
-    return
-  }
-
-  isLoading.value = true
-
+// Submit handler (schema is enforced by UForm)
+const onSubmit = async (_event: FormSubmitEvent<RegisterData>) => {
   try {
-    const response = await $fetch('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: name.value,
-        email: email.value,
-        password: password.value,
-        subscriptionPlan: 'free',
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response) {
-      throw new Error('No response received from server')
-    }
-
-    // The API returns { user, token } directly, not wrapped in success/data
-    if (!response.user || !response.token) {
-      throw new Error('Invalid response format from server')
-    }
-
-    // Show success message
-    toast.add({
-      title: 'Registration Successful',
-      description: 'Your account has been created. Please select your subscription plan.',
-      color: 'primary',
-      icon: 'i-heroicons-check-circle',
-    })
-
-    // Redirect to subscription plan confirmation page
-    await router.push(CONFIRM_PATH)
-  } catch (error: any) {
-    console.error('Registration error:', error)
-    const errorMessage = error.data?.message || error.message || 'Registration failed'
-
-    // Handle specific error cases
-    if (
-      errorMessage.toLowerCase().includes('email is already registered') ||
-      errorMessage.toLowerCase().includes('email already exists') ||
-      errorMessage.toLowerCase().includes('email already registered')
-    ) {
-      formErrors.value.email =
-        'This email is already registered. Please use a different email or login instead.'
-    } else if (errorMessage.toLowerCase().includes('email')) {
-      formErrors.value.email = errorMessage
-    } else if (errorMessage.toLowerCase().includes('password')) {
-      formErrors.value.password = errorMessage
-    } else {
+    const { error } = await register(state.name, state.email, state.password)
+    if (error) {
       toast.add({
-        title: 'Registration Error',
-        description: errorMessage,
+        title: 'Registration failed',
+        description: error.message || 'An error occurred during registration',
         color: 'error',
-        icon: 'i-heroicons-exclamation-triangle',
+        icon: 'i-heroicons-exclamation-circle',
       })
+      return
     }
-  } finally {
-    isLoading.value = false
+
+    toast.add({
+      title: 'Registration successful!',
+      description: 'Please check your email to confirm your account.',
+      icon: 'i-heroicons-check-circle',
+      color: 'success',
+    })
+
+    await navigateTo({
+      path: '/auth/confirm',
+      query: { email: state.email },
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Error',
+      description: error.message || 'An unexpected error occurred',
+      icon: 'i-heroicons-exclamation-circle',
+      color: 'error',
+    })
   }
 }
 
 // Handle Google registration (same as login)
-async function handleGoogleRegister() {
+const handleGoogleRegister = async () => {
   try {
-    // Show notification that Google sign-up is not currently available
     toast.add({
       title: 'Google Sign-up',
       description: 'Google sign-up is currently not available. Please use email and password.',

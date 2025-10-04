@@ -1,48 +1,12 @@
 import { drizzle } from 'drizzle-orm/libsql'
 
-import {
-  eq,
-  and,
-  or,
-  sql,
-  lte,
-  inArray,
-  desc,
-  asc,
-  gt,
-  gte,
-  lt,
-  ne,
-  isNull,
-  isNotNull,
-  like,
-  notLike,
-  between,
-} from 'drizzle-orm'
+import { eq, and, or, sql, desc, asc, gt, isNull, count, exists, between } from 'drizzle-orm'
 
 import * as schema from '../database/schema'
 
 // Export tables and query helpers
 export const tables = { ...schema }
-export {
-  eq,
-  and,
-  or,
-  sql,
-  lte,
-  inArray,
-  desc,
-  asc,
-  gt,
-  gte,
-  lt,
-  ne,
-  isNull,
-  isNotNull,
-  like,
-  notLike,
-  between,
-}
+export { eq, and, or, sql, desc, asc, gt, isNull, count, exists, between }
 
 // Cache the database connection
 let _db: ReturnType<typeof createDrizzleClient> | null = null

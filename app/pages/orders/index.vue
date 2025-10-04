@@ -314,7 +314,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h, resolveComponent, watch } from 'vue'
+import { ref, computed, h, resolveComponent } from 'vue'
 import { ROUTE_NAMES } from '~/constants/routes'
 import type { Order } from '~/types/order'
 import { useListData } from '~/composables/useListData'

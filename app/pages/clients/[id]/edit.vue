@@ -289,7 +289,7 @@ const clientId = Array.isArray(route.params.id) ? route.params.id[0] : (route.pa
 
 // Constants
 const _CLIENTS_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.CLIENTS.INDEX] as string
-const getClientPath = (id: string): string =>
+const _getClientPath = (id: string): string =>
   (
     routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.CLIENTS.VIEW] as (params: {
       id: string
@@ -319,7 +319,7 @@ const measurements = ref({
 // Use client store and auth store
 const toast = useToast()
 const clientStore = useClientStore()
-const authStore = useAuthStore()
+const _authStore = useAuthStore()
 const { currentClient: client, error: _clientError } = storeToRefs(clientStore) // Prefix with underscore to indicate intentionally unused
 const isLoading = ref(false)
 

@@ -1,4 +1,4 @@
-import { eq, and, sql, isNull, gt } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import { useDrizzle } from '../utils/drizzle'
 import * as tables from '../database/schema'
 import { addDays, isBefore, differenceInDays } from 'date-fns'
@@ -54,9 +54,7 @@ export async function createNotification({
           eq(tables.notifications.userId, userId),
           eq(tables.notifications.type, type),
           eq(tables.notifications.title, title),
-          sql`${tables.notifications.expiresAt} IS NULL OR ${tables.notifications.expiresAt} > ${
-            new Date()
-          }`
+          sql`${tables.notifications.expiresAt} IS NULL OR ${tables.notifications.expiresAt} > ${new Date()}`
         )
       )
       .limit(1)

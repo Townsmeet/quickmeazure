@@ -9,19 +9,24 @@
     </div>
 
     <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
-      <form class="mt-8 space-y-6">
+      <UForm
+        :schema="forgotPasswordSchema"
+        :state="state"
+        class="mt-8 space-y-6"
+        @submit="sendResetLink"
+      >
         <div class="space-y-4 flex flex-col">
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Email address</label>
+          <UFormField label="Email address" name="email">
             <UInput
-              v-model="email"
+              v-model="state.email"
               type="email"
               placeholder="Email address"
-              required
               class="w-full"
               size="lg"
+              autocomplete="email"
+              required
             />
-          </div>
+          </UFormField>
         </div>
 
         <UButton
@@ -30,51 +35,51 @@
           size="lg"
           color="primary"
           :loading="loading"
-          :disabled="!email || loading"
-          @click.prevent="sendResetLink"
+          :disabled="loading"
+          class="mb-4"
         >
           Send Reset Link
         </UButton>
-      </form>
+
+        <div class="text-center text-sm text-gray-600">
+          Remember your password?
+          <NuxtLink to="/auth/login" class="text-primary-600 hover:text-primary-500 font-medium">
+            Sign in
+          </NuxtLink>
+        </div>
+      </UForm>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useAppRoutes } from '~/composables/useRoutes'
-import { useRouter } from 'vue-router'
+import type { FormSubmitEvent } from '#ui/types'
+import { forgotPasswordSchema, type ForgotPasswordData } from '~/schemas/auth'
 
-// Composable
-const routes = useAppRoutes()
-const router = useRouter()
-const toast = useToast()
-
-// Constants
-const LOGIN_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.AUTH.LOGIN] as string
+definePageMeta({
+  layout: 'auth',
+})
 
 // Set page metadata
 useHead({
   title: 'Forgot Password',
 })
 
-// Set layout for this page
-definePageMeta({
-  layout: 'auth',
-})
-
 // State
-const email = ref('')
+const state = reactive<ForgotPasswordData>({
+  email: '',
+})
 const loading = ref(false)
+const router = useRouter()
+const toast = useToast()
 
-const sendResetLink = async () => {
-  if (!email.value) return
-
+const sendResetLink = async (_event: FormSubmitEvent<ForgotPasswordData>) => {
   loading.value = true
   try {
     // Send request to reset password
     const response = await $fetch('/api/auth/forgot-password', {
       method: 'POST',
-      body: { email: email.value },
+      body: { email: state.email },
     })
 
     if (response.success) {
@@ -86,11 +91,11 @@ const sendResetLink = async () => {
       })
 
       // Clear email
-      email.value = ''
+      state.email = ''
 
       // Redirect to login page after a short delay
       setTimeout(() => {
-        router.push(LOGIN_PATH)
+        router.push('/auth/login')
       }, 2000)
     }
   } catch (_error) {

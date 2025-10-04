@@ -87,7 +87,7 @@ export default defineNuxtPlugin({
 
         return response
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const _errorMessage = error instanceof Error ? error.message : 'Unknown error'
         // Log error for debugging
         console.error(`API Error: ${fullUrl}`, error)
 

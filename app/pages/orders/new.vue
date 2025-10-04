@@ -232,7 +232,7 @@ const authStore = useAuthStore()
 const toast = useToast()
 
 // Constants
-const ORDERS_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.ORDERS.INDEX] as string
+const _ORDERS_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.ORDERS.INDEX] as string
 
 useHead({
   title: 'Create New Order',

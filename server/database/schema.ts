@@ -1,46 +1,15 @@
-import {
-  sqliteTable,
-  integer,
-  text,
-  real,
-  uniqueIndex,
-} from 'drizzle-orm/sqlite-core'
+import { sqliteTable, integer, text, real, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-// Better Auth tables (migrated here from better-auth-schema)
-export const user = sqliteTable('ba_user', {
+export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
   name: text('name'),
   email: text('email').notNull().unique(),
-  emailVerified: integer('email_verified', { mode: 'boolean' }).default(false).notNull(),
   image: text('image'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
 })
 
-// User profiles table (replaces removed local users' profile fields)
-export const userProfiles = sqliteTable(
-  'user_profiles',
-  {
-    userId: text('user_id')
-      .primaryKey()
-      .references(() => user.id, { onDelete: 'cascade' }),
-    name: text('name'),
-    avatar: text('avatar'),
-    businessName: text('business_name'),
-    phone: text('phone'),
-    location: text('location'),
-    bio: text('bio'),
-    specializations: text('specializations'), // JSON string
-    services: text('services'), // JSON string
-    hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' })
-      .notNull()
-      .default(false),
-    createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
-  }
-)
-
-export const session = sqliteTable('ba_session', {
+export const session = sqliteTable('session', {
   id: text('id').primaryKey(),
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   token: text('token').notNull().unique(),
@@ -48,14 +17,17 @@ export const session = sqliteTable('ba_session', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
 })
-
-export const account = sqliteTable('ba_account', {
+export const account = sqliteTable('account', {
   id: text('id').primaryKey(),
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
-  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
   idToken: text('id_token'),
@@ -67,7 +39,7 @@ export const account = sqliteTable('ba_account', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
 })
 
-export const verification = sqliteTable('ba_verification', {
+export const verification = sqliteTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
@@ -76,7 +48,27 @@ export const verification = sqliteTable('ba_verification', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
 })
 
-// NOTE: Local users table removed; all FKs now reference Better Auth user.id (text)
+export const businesses = sqliteTable('businesses', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  image: text('image'),
+  businessName: text('business_name'),
+  businessType: text('business_type'),
+  yearsInBusiness: integer('years_in_business'),
+  businessDescription: text('business_description'),
+  phone: text('phone'),
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  location: text('location'),
+  bio: text('bio'),
+  specializations: text('specializations'), // JSON string
+  services: text('services'), // JSON string
+  hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+})
 
 // Plans table
 export const plans = sqliteTable('plans', {
@@ -114,59 +106,6 @@ export const subscriptions = sqliteTable('subscriptions', {
   paymentMethod: text('payment_method').default('paystack'), // Payment method used
   paymentReference: text('payment_reference'), // Reference ID from payment provider
   metadata: text('metadata'), // JSON string
-  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
-})
-
-// Business table (one-to-one with users)
-export const businesses = sqliteTable(
-  'businesses',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    userId: text('user_id')
-      .notNull()
-      .references(() => user.id),
-    name: text('name').notNull(),
-    logo: text('logo'),
-    address: text('address'),
-    city: text('city'),
-    state: text('state'),
-    country: text('country'),
-    zipCode: text('zip_code'),
-    phone: text('phone'),
-    email: text('email'),
-    website: text('website'),
-    taxId: text('tax_id'),
-    businessType: text('business_type'),
-    description: text('description'),
-    socialMedia: text('social_media'), // JSON string
-    operatingHours: text('operating_hours'), // JSON string
-    settings: text('settings'), // JSON string
-    createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
-  },
-  table => {
-    return {
-      // Ensure one-to-one relationship with user
-      userIdUnique: uniqueIndex('business_user_unique').on(table.userId),
-    }
-  }
-)
-
-// Business profiles table
-export const businessProfiles = sqliteTable('business_profiles', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
-  shopName: text('shop_name'),
-  businessType: text('business_type'),
-  yearsInBusiness: integer('years_in_business'),
-  businessDescription: text('business_description'),
-  phone: text('phone'),
-  address: text('address'),
-  city: text('city'),
-  state: text('state'),
-  specializations: text('specializations'),
-  services: text('services'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })
@@ -215,26 +154,41 @@ export const styles = sqliteTable('styles', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })
 
-// Measurements table (one-to-one with clients)
+// Measurements table with template support
 export const measurements = sqliteTable(
   'measurements',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     clientId: integer('client_id')
       .notNull()
-      .references(() => clients.id),
-    // Use only fields that are known to exist in the database
-    // We'll use the values field for all measurements
-    values: text('values'),
+      .references(() => clients.id, { onDelete: 'cascade' }),
+    templateId: integer('template_id').references(() => measurementTemplates.id, {
+      onDelete: 'set null',
+    }),
+    name: text('name'), // Optional name for this measurement set
+    values: text('values').notNull(), // JSON string of field values
     notes: text('notes'),
-    lastUpdated: integer('last_updated', { mode: 'timestamp' }).defaultNow().notNull(),
+    isCurrent: integer('is_current', { mode: 'boolean' }).notNull().default(true), // Mark as current measurement set
+    takenAt: integer('taken_at', { mode: 'timestamp' }).defaultNow().notNull(),
+    takenBy: text('taken_by').references(() => user.id, { onDelete: 'set null' }),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
     createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   },
   table => {
-    return {
-      // Ensure one-to-one relationship with client
-      clientIdUnique: uniqueIndex('measurement_client_unique').on(table.clientId),
-    }
+    // Index for faster lookups of current measurements
+    const currentMeasurementIdx = uniqueIndex('measurement_client_current_idx').on(
+      table.clientId,
+      table.isCurrent
+    )
+
+    // Index for template-based lookups
+    const templateIdx = uniqueIndex('measurement_template_idx').on(
+      table.clientId,
+      table.templateId,
+      table.takenAt
+    )
+
+    return { currentMeasurementIdx, templateIdx }
   }
 )
 
@@ -310,32 +264,7 @@ export const measurementFields = sqliteTable(
   })
 )
 
-// Client Measurements
-export const clientMeasurements = sqliteTable(
-  'client_measurements',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    clientId: integer('client_id')
-      .notNull()
-      .references(() => clients.id, { onDelete: 'cascade' }),
-    templateId: integer('template_id')
-      .notNull()
-      .references(() => measurementTemplates.id, { onDelete: 'cascade' }),
-    values: text('values').notNull(), // JSON string of fieldId: value pairs
-    notes: text('notes'),
-    takenAt: integer('taken_at', { mode: 'timestamp' }).defaultNow().notNull(),
-    takenBy: text('taken_by').references(() => user.id, { onDelete: 'set null' }),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
-    createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  },
-  table => ({
-    // Ensure one measurement record per client per template
-    uniqueClientTemplate: uniqueIndex('client_template_unique').on(
-      table.clientId,
-      table.templateId
-    ),
-  })
-)
+// Client Measurements table has been consolidated into the measurements table
 
 // User Measurement Settings
 export const userMeasurementSettings = sqliteTable('user_measurement_settings', {
@@ -433,7 +362,6 @@ export type User = typeof user.$inferSelect
 export type Plan = typeof plans.$inferSelect
 export type Subscription = typeof subscriptions.$inferSelect
 export type Business = typeof businesses.$inferSelect
-export type BusinessProfile = typeof businessProfiles.$inferSelect
 export type Client = typeof clients.$inferSelect
 export type Order = typeof orders.$inferSelect
 export type Style = typeof styles.$inferSelect
@@ -446,7 +374,13 @@ export type MeasurementTemplate = typeof measurementTemplates.$inferSelect
 export type NewMeasurementTemplate = typeof measurementTemplates.$inferInsert
 export type MeasurementField = typeof measurementFields.$inferSelect
 export type NewMeasurementField = typeof measurementFields.$inferInsert
-export type ClientMeasurement = typeof clientMeasurements.$inferSelect
-export type NewClientMeasurement = typeof clientMeasurements.$inferInsert
+// Client measurement types now reference the consolidated measurements table
+export type ClientMeasurement = typeof measurements.$inferSelect & {
+  template?: MeasurementTemplate
+}
+export type NewClientMeasurement = Omit<
+  typeof measurements.$inferInsert,
+  'id' | 'createdAt' | 'updatedAt'
+>
 export type UserMeasurementSettings = typeof userMeasurementSettings.$inferSelect
 export type NewUserMeasurementSettings = typeof userMeasurementSettings.$inferInsert

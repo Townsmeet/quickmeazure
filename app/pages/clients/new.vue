@@ -292,7 +292,7 @@ class="block text-sm font-medium text-gray-700"
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '~/store/modules/auth'
 import { storeToRefs } from 'pinia'
 import { useMeasurementTemplateStore } from '~/store'

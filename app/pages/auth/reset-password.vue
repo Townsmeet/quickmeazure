@@ -16,19 +16,24 @@
         </UButton>
       </div>
 
-      <form v-else class="mt-8 space-y-6" @submit.prevent="resetPassword">
+      <UForm
+        :schema="resetPasswordSchema"
+        :state="state"
+        class="mt-8 space-y-6"
+        @submit="resetPassword"
+      >
         <div class="space-y-4 flex flex-col">
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">New Password</label>
+          <UFormField label="New Password" name="password">
             <UInput
-              v-model="password"
+              v-model="state.password"
               type="password"
               placeholder="Enter your new password"
-              required
               class="w-full"
               size="lg"
+              autocomplete="new-password"
+              required
             />
-            <div v-if="password" class="mt-2">
+            <div v-if="state.password" class="mt-2">
               <div class="flex items-center gap-2">
                 <div
                   class="h-1 flex-grow rounded-full"
@@ -52,19 +57,19 @@
                 special character
               </p>
             </div>
-          </div>
+          </UFormField>
 
-          <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+          <UFormField label="Confirm New Password" name="confirmPassword">
             <UInput
-              v-model="confirmPassword"
+              v-model="state.confirmPassword"
               type="password"
               placeholder="Confirm your new password"
-              required
               class="w-full"
               size="lg"
+              autocomplete="new-password"
+              required
             />
-          </div>
+          </UFormField>
         </div>
 
         <UButton
@@ -73,16 +78,19 @@
           size="lg"
           color="primary"
           :loading="loading"
-          :disabled="!isFormValid || loading"
+          :disabled="loading"
         >
           Reset Password
         </UButton>
-      </form>
+      </UForm>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { FormSubmitEvent } from '#ui/types'
+import { resetPasswordSchema, type ResetPasswordData } from '~/schemas/auth'
+
 // Set page metadata
 useHead({
   title: 'Reset Password',
@@ -97,16 +105,17 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
-const token = ref(route.query.token || '')
-const password = ref('')
-const confirmPassword = ref('')
+const state = reactive<ResetPasswordData>({
+  password: '',
+  confirmPassword: '',
+  token: route.query.token as string,
+})
 const loading = ref(false)
-const error = ref('')
 const invalidToken = ref(false)
 
 // Check token on page load
 onMounted(async () => {
-  if (!token.value) {
+  if (!state.token) {
     invalidToken.value = true
     return
   }
@@ -116,7 +125,7 @@ onMounted(async () => {
     loading.value = true
     const response = await $fetch('/api/auth/verify-reset-token', {
       method: 'POST',
-      body: { token: token.value },
+      body: { token: state.token },
     })
 
     if (!response.valid) {
@@ -130,46 +139,19 @@ onMounted(async () => {
   }
 })
 
-// Password validation
-const hasLowerCase = str => /[a-z]/.test(str)
-const hasUpperCase = str => /[A-Z]/.test(str)
-const hasNumber = str => /\d/.test(str)
-const hasSpecialChar = str => /[!@#$%^&*()_+\-={}();':"\\|,.<>/?]/.test(str)
-
-const passwordStrength = computed(() => {
-  if (!password.value) return 0
-
-  let strength = 0
-  if (password.value.length >= 8) strength++
-  if (hasLowerCase(password.value) && hasUpperCase(password.value)) strength++
-  if (hasNumber(password.value)) strength++
-  if (hasSpecialChar(password.value)) strength++
-
-  return strength
-})
-
-// Form validation
-const isFormValid = computed(() => {
-  return (
-    password.value.length >= 8 &&
-    password.value === confirmPassword.value &&
-    passwordStrength.value >= 3
-  )
-})
+// Password strength indicator
+const passwordStrength = computed(() => getPasswordStrength(state.password))
 
 // Reset password
-const resetPassword = async () => {
-  if (!isFormValid.value) return
-
+const resetPassword = async (_event: FormSubmitEvent<ResetPasswordData>) => {
   loading.value = true
-  error.value = ''
 
   try {
     const response = await $fetch('/api/auth/reset-password', {
       method: 'POST',
       body: {
-        token: token.value,
-        password: password.value,
+        token: state.token,
+        password: state.password,
       },
     })
 
@@ -186,11 +168,21 @@ const resetPassword = async () => {
         router.push('/auth/login')
       }, 1500)
     } else {
-      error.value = response.message || 'Failed to reset password'
+      toast.add({
+        title: 'Error',
+        description: response.message || 'Failed to reset password',
+        color: 'error',
+        icon: 'i-heroicons-exclamation-circle',
+      })
     }
   } catch (error) {
     console.error('Password reset error:', error)
-    error.value = 'An error occurred while resetting your password'
+    toast.add({
+      title: 'Error',
+      description: 'An error occurred while resetting your password',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle',
+    })
   } finally {
     loading.value = false
   }

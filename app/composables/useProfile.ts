@@ -1,5 +1,4 @@
 import { useApi } from './useApi'
-import type { Ref } from 'vue'
 
 export type Profile = {
   userId: string

@@ -25,11 +25,7 @@
 </template>
 
 <script setup>
-import { useLayout } from '~/composables/useLayout'
 import InstallPrompt from '~/components/InstallPrompt.vue'
-
-// Get the current layout
-const { layout } = useLayout()
 
 // Check if we're in development mode
 const isDev = import.meta.dev

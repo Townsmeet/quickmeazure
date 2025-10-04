@@ -18,7 +18,7 @@ interface SubscriptionResponse {
  * Composable for managing subscription-related operations
  */
 export function useSubscriptionManagement() {
-  const authStore = useAuthStore()
+  const _authStore = useAuthStore()
   const toast = useToast()
 
   /**

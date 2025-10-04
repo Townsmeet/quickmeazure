@@ -1,8 +1,7 @@
 // Vue and Pinia imports
 import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { useRuntimeConfig } from '#imports'
-import { navigateTo } from '#imports'
+import { useRuntimeConfig, navigateTo } from '#imports'
 
 // Types - Use relative paths from the store module
 import type { User } from '../../types/auth'
@@ -15,15 +14,12 @@ import { useUserStore } from './user'
 import { STORAGE_KEYS } from '../../constants/storage'
 
 // Utils - Use relative paths from the store module
-import { 
-  getLocalStorage, 
-  setLocalStorage, 
-  removeLocalStorage,
+import {
   getStringFromStorage,
   setStringToStorage,
   removeFromStorage,
   getFromStorage,
-  setToStorage
+  setToStorage,
 } from '../../utils'
 import { migrateTokenStorage } from '../../utils/storage-migration'
 
@@ -190,7 +186,7 @@ export const useAuthStore = defineStore(
         const userStore = useUserStore()
 
         // Use standardized storage utility to load auth data
-        const storedUser = getFromStorage<any>(STORAGE_KEYS.USER)
+        const _storedUser = getFromStorage<any>(STORAGE_KEYS.USER)
         const storedToken = getStringFromStorage(STORAGE_KEYS.AUTH_TOKEN)
         const storedRefreshToken = getStringFromStorage(STORAGE_KEYS.REFRESH_TOKEN)
         const authData = storedToken

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Order, OrderFilterOptions, OrderStats, OrderStatus } from '../../types/order'
+import type { Order, OrderFilterOptions, OrderStats } from '../../types/order'
 
 export const useOrderStore = defineStore('order', () => {
   // State

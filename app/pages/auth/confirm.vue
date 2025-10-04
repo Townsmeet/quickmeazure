@@ -135,7 +135,6 @@ import { useToast } from '#imports'
 import { monthlyPlans, annualPlans } from '~/data/subscription-plans'
 import { useAppRoutes } from '~/composables/useRoutes'
 import { usePaystack } from '~/composables/usePaystack'
-import { useAuthStore } from '~/store/modules/auth'
 import { useSubscriptionStore } from '~/store/modules/subscription'
 import PlanSelectionModal from '~/components/plans/PlanSelectionModal.vue'
 
@@ -145,7 +144,7 @@ const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const { processPayment } = usePaystack()
-const subscriptionStore = useSubscriptionStore()
+const _subscriptionStore = useSubscriptionStore()
 
 // Constants
 const DASHBOARD_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.INDEX] as string

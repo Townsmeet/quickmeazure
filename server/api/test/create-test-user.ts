@@ -1,6 +1,5 @@
 import { useDrizzle, tables, eq } from '../../utils/drizzle'
 import { v4 as uuidv4 } from 'uuid'
-import bcrypt from 'bcryptjs'
 
 export default defineEventHandler(async event => {
   // Skip authentication check for this endpoint

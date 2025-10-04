@@ -33,48 +33,56 @@
       </div>
 
       <ClientOnly>
-        <form class="space-y-6" @submit.prevent="handleLogin">
+        <UForm
+:schema="loginSchema"
+:state="state"
+class="space-y-6"
+@submit="onSubmit">
           <div class="space-y-4 flex flex-col">
-            <div class="space-y-2">
-              <label for="email" class="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
+            <UFormField label="Email" name="email">
               <UInput
-                id="email"
-                v-model="form.email"
+                v-model="state.email"
                 type="email"
-                placeholder="Email address"
-                required
+                placeholder="you@example.com"
+                icon="i-heroicons-envelope"
                 class="w-full"
-                size="lg"
+                required
               />
-            </div>
+            </UFormField>
 
-            <div class="space-y-2">
-              <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <UFormField label="Password" name="password">
               <UInput
-                id="password"
-                v-model="form.password"
+                v-model="state.password"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Password"
-                required
+                placeholder="••••••••"
+                icon="i-heroicons-lock-closed"
                 class="w-full"
-                size="lg"
+                required
               >
                 <template #trailing>
-                  <UButton color="neutral" variant="ghost" @click="showPassword = !showPassword">
-                    <UIcon :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'" />
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    :padded="false"
+                    @click="showPassword = !showPassword"
+                  >
+                    <UIcon
+                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                      class="h-5 w-5 text-gray-500 hover:text-gray-700"
+                    />
                   </UButton>
                 </template>
               </UInput>
-              <div class="flex justify-end mt-1">
-                <NuxtLink
-                  :to="AUTH.FORGOT_PASSWORD"
-                  class="text-sm font-medium text-primary hover:text-primary"
-                >
-                  Forgot your password?
-                </NuxtLink>
-              </div>
+            </UFormField>
+
+            <div class="flex items-center justify-between">
+              <UCheckbox v-model="state.remember" name="remember" label="Remember me" />
+              <NuxtLink
+                to="/auth/forgot-password"
+                class="text-sm font-medium text-primary-600 hover:text-primary-500"
+              >
+                Forgot password?
+              </NuxtLink>
             </div>
           </div>
 
@@ -83,9 +91,8 @@
             block
             color="primary"
             size="lg"
-            :loading="isFormLoading"
-            :disabled="!form.email || !form.password"
-            @click.prevent="handleLogin"
+            :loading="isLoading"
+            :disabled="isLoading"
           >
             Sign in with Email
           </UButton>
@@ -94,102 +101,84 @@
             <p class="mt-4 text-center text-sm text-gray-600">
               Don't have an account?
               <NuxtLink
-                :to="AUTH.REGISTER"
+                to="/auth/register"
                 class="font-medium text-primary-600 hover:text-primary-500"
               >
                 Sign up
               </NuxtLink>
             </p>
           </div>
-        </form>
+        </UForm>
       </ClientOnly>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import type { FormSubmitEvent } from '#ui/types'
+import { ref, reactive } from 'vue'
+import { loginSchema, type LoginData } from '~/schemas/auth'
 
-import type { LoginCredentials } from '~/types/auth'
-import { ROUTE_NAMES } from '~/constants/routes'
-import { useAuthStore } from '~/store/modules/auth'
-
-const toast = useToast()
-const router = useRouter()
-const authStore = useAuthStore()
-
-const { AUTH, DASHBOARD } = ROUTE_NAMES
-
-// Form state
-const form = ref({
-  email: '',
-  password: '',
+definePageMeta({
+  layout: 'auth',
 })
 
-// UI state
-const showPassword = ref(false)
-const isFormLoading = ref(false)
+const { login, isLoading } = useAuth()
 const isGoogleLoading = ref(false)
+const toast = useToast()
 
-// Form submission handler
-async function handleLogin() {
-  isFormLoading.value = true
+// Form state
+const state = reactive<LoginData>({
+  email: '',
+  password: '',
+  remember: false,
+})
 
+const showPassword = ref(false)
+
+// Handle form submission (Nuxt UI v4 provides validated state through UForm)
+const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
   try {
-    const loginCredentials: LoginCredentials = {
-      email: form.value.email,
-      password: form.value.password,
+    const { error } = await login(state.email, state.password, state.remember)
+    if (error) {
+      toast.add({
+        title: 'Login failed',
+        description: error.message || 'An unexpected error occurred',
+        icon: 'i-heroicons-exclamation-circle',
+        color: 'error',
+      })
+      return
     }
 
-    const response = await $fetch('/api/auth/login', {
-      method: 'POST',
-      body: {
-        email: loginCredentials.email,
-        password: loginCredentials.password,
-      },
+    toast.add({
+      title: 'Login successful',
+      description: 'Welcome back!',
+      icon: 'i-heroicons-check-circle',
+      color: 'success',
     })
 
-    // Handle successful login
-    const userData = response.user
-    const authToken = response.token
-
-    // Update auth state
-    await authStore.setAuthState({
-      user: userData,
-      token: authToken,
-    })
-
-    // Redirect to dashboard or intended route
-    const redirectTo = router.currentRoute.value.query.redirect as string
-    await router.push(redirectTo || DASHBOARD.INDEX)
+    await navigateTo('/dashboard')
   } catch (error: any) {
     toast.add({
-      title: 'Login Error',
-      description: error.data.message,
+      title: 'Error',
+      description: error.message || 'An unexpected error occurred',
+      icon: 'i-heroicons-exclamation-circle',
       color: 'error',
-      icon: 'i-heroicons-exclamation-triangle',
     })
-  } finally {
-    isFormLoading.value = false
   }
 }
 
-async function handleGoogleLogin() {
+// Google login handler
+const handleGoogleLogin = async () => {
   try {
-    isGoogleLoading.value = true
-
-    // Show notification that Google login is not currently available
     toast.add({
-      title: 'Google Login',
-      description: 'Google login is currently not available. Please use email and password.',
+      title: 'Google Sign-in',
+      description: 'Google sign-in is currently not available. Please use email and password.',
       color: 'warning',
-      icon: 'i-heroicons-exclamation-triangle',
+      icon: 'i-heroicons-information-circle',
     })
-  } catch (e) {
-    console.error('Google login error:', e)
-  } finally {
-    isGoogleLoading.value = false
+  } catch (error) {
+    console.error('Google sign-in error:', error)
   }
 }
 </script>

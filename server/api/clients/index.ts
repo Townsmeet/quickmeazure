@@ -1,7 +1,7 @@
 import { eq, count, exists, desc, asc, sql, and } from 'drizzle-orm'
 import { defineEventHandler, createError } from 'h3'
 import { useDrizzle, tables } from '../../utils/drizzle'
-import { ok, badRequest } from '../../validators'
+import { ok } from '../../validators'
 import { z } from 'zod'
 
 // Define event handler for GET requests
@@ -70,14 +70,15 @@ export default defineEventHandler(async event => {
       if (hasOrdersFilter !== undefined) {
         if (hasOrdersFilter) {
           whereConditions.push(
-            exists(db.select().from(tables.orders).where(eq(tables.orders.clientId, tables.clients.id)))
+            exists(
+              db.select().from(tables.orders).where(eq(tables.orders.clientId, tables.clients.id))
+            )
           )
         } else {
           whereConditions.push(
-            sql`NOT ${exists(db
-              .select()
-              .from(tables.orders)
-              .where(eq(tables.orders.clientId, tables.clients.id)))}`
+            sql`NOT ${exists(
+              db.select().from(tables.orders).where(eq(tables.orders.clientId, tables.clients.id))
+            )}`
           )
         }
       }
