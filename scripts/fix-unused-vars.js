@@ -9,10 +9,10 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
-// Run ESLint to get the list of warnings
-console.log('Running ESLint to identify warnings...')
-const eslintOutput = execSync('npx eslint . --format json', { encoding: 'utf8' })
-const eslintResults = JSON.parse(eslintOutput)
+  // Run ESLint to get the list of warnings
+  console.log('Running ESLint to identify warnings...')
+  const eslintOutput = execSync('pnpm exec eslint . --format json', { encoding: 'utf8' })
+  const eslintResults = JSON.parse(eslintOutput)
 
 // Group warnings by type
 const warnings = {

@@ -54,20 +54,19 @@ function runCommand(command, description) {
   }
 }
 
-// Main execution
 console.log('🧹 Code Quality Tool')
 console.log('===================')
 
 let success = true
 
 if (runFormat) {
-  const formatCommand = `npx prettier ${hasFixFlag ? '--write' : '--check'} ${targetPathsArg}`
+  const formatCommand = `pnpm exec prettier ${hasFixFlag ? '--write' : '--check'} ${targetPathsArg}`
   const formatDesc = `Running Prettier ${hasFixFlag ? 'to format code' : 'to check formatting'}`
   success = runCommand(formatCommand, formatDesc) && success
 }
 
 if (runLint) {
-  const lintCommand = `npx eslint ${hasFixFlag ? '--fix' : ''} ${targetPathsArg}`
+  const lintCommand = `pnpm exec eslint ${hasFixFlag ? '--fix' : ''} ${targetPathsArg}`
   const lintDesc = `Running ESLint ${hasFixFlag ? 'to fix issues' : 'to check for issues'}`
   success = runCommand(lintCommand, lintDesc) && success
 }
