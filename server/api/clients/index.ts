@@ -1,7 +1,8 @@
-// uuid import removed as it's not being used
 import { eq, count, exists, desc, asc, sql, and } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { clients, orders, measurements, users } from '~/server/database/schema'
+import { defineEventHandler, createError } from 'h3'
+import { useDrizzle, tables } from '../../utils/drizzle'
+import { ok, badRequest } from '../../validators'
+import { z } from 'zod'
 
 // Define event handler for GET requests
 export default defineEventHandler(async event => {
@@ -18,18 +19,23 @@ export default defineEventHandler(async event => {
   }
   console.log('Authenticated user ID:', auth.userId)
 
+  const db = useDrizzle()
+
   // Handle GET request to fetch all clients
   if (method === 'GET') {
     try {
-      // Get query parameters
-      const query = getQuery(event)
-      const page = parseInt((query.page as string) || '1')
-      const limit = parseInt((query.limit as string) || '10')
-      const sortField = (query.sortField as string) || 'name'
-      const sortOrder = (query.sortOrder as string) || 'asc'
-      const search = query.search as string | undefined
-
-      const hasOrdersFilter = query.hasOrders !== undefined ? query.hasOrders === 'true' : undefined
+      // Validate query parameters
+      const QuerySchema = z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(10),
+        sortField: z.enum(['name', 'email', 'createdAt', 'updatedAt']).default('name'),
+        sortOrder: z.enum(['asc', 'desc']).default('asc'),
+        search: z.string().trim().optional(),
+        hasOrders: z.union([z.literal('true'), z.literal('false')]).optional(),
+      })
+      const q = QuerySchema.parse(getQuery(event))
+      const { page, limit, sortField, sortOrder, search } = q
+      const hasOrdersFilter = q.hasOrders ? q.hasOrders === 'true' : undefined
 
       // Debug: Log query parameters
       console.log('Query parameters:', {
@@ -41,38 +47,22 @@ export default defineEventHandler(async event => {
         hasOrdersFilter,
       })
 
-      // Validate pagination parameters
-      if (isNaN(page) || page < 1) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Invalid page parameter',
-        })
-      }
-
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Invalid limit parameter (must be between 1 and 100)',
-        })
-      }
-
       // Calculate offset
       const offset = (page - 1) * limit
 
       // Build where conditions for filtering
       const whereConditions = []
 
-      // Always filter by user ID (ensure integer comparison)
-      const userIdAsInt = typeof auth.userId === 'string' ? parseInt(auth.userId) : auth.userId
-      whereConditions.push(eq(clients.userId, userIdAsInt))
-      console.log('Where conditions for user ID:', auth.userId, 'converted to:', userIdAsInt)
+      // Always filter by user ID (Better Auth string id)
+      whereConditions.push(eq(tables.clients.userId, String(auth.userId)))
+      console.log('Where conditions for user ID:', auth.userId)
 
       // Add search condition if provided
       if (search && search.trim() !== '') {
         whereConditions.push(
-          sql`(lower(${clients.name}) like ${`%${search.toLowerCase()}%`} OR 
-              lower(${clients.email}) like ${`%${search.toLowerCase()}%`} OR 
-              ${clients.phone} like ${`%${search}%`})`
+          sql`(lower(${tables.clients.name}) like ${`%${search.toLowerCase()}%`} OR 
+              lower(${tables.clients.email}) like ${`%${search.toLowerCase()}%`} OR 
+              ${tables.clients.phone} like ${`%${search}%`})`
         )
       }
 
@@ -80,11 +70,14 @@ export default defineEventHandler(async event => {
       if (hasOrdersFilter !== undefined) {
         if (hasOrdersFilter) {
           whereConditions.push(
-            exists(db.select().from(orders).where(eq(orders.clientId, clients.id)))
+            exists(db.select().from(tables.orders).where(eq(tables.orders.clientId, tables.clients.id)))
           )
         } else {
           whereConditions.push(
-            sql`NOT ${exists(db.select().from(orders).where(eq(orders.clientId, clients.id)))}`
+            sql`NOT ${exists(db
+              .select()
+              .from(tables.orders)
+              .where(eq(tables.orders.clientId, tables.clients.id)))}`
           )
         }
       }
@@ -92,23 +85,24 @@ export default defineEventHandler(async event => {
       // Debug: Log whereConditions before building query
       console.log('whereConditions array:', whereConditions)
       console.log('whereConditions length:', whereConditions.length)
-      console.log('userIdAsInt:', userIdAsInt)
 
       // Build base query with all conditions
       const baseQuery = db
         .select({
-          id: clients.id,
-          name: clients.name,
-          email: clients.email,
-          phone: clients.phone,
-          address: clients.address,
-          notes: clients.notes,
-          createdAt: clients.createdAt,
+          id: tables.clients.id,
+          name: tables.clients.name,
+          email: tables.clients.email,
+          phone: tables.clients.phone,
+          address: tables.clients.address,
+          notes: tables.clients.notes,
+          createdAt: tables.clients.createdAt,
 
           // Check if client has orders
-          hasOrders: exists(db.select().from(orders).where(eq(orders.clientId, clients.id))),
+          hasOrders: exists(
+            db.select().from(tables.orders).where(eq(tables.orders.clientId, tables.clients.id))
+          ),
         })
-        .from(clients)
+        .from(tables.clients)
         .where(and(...whereConditions))
 
       // Build count query with same conditions
@@ -116,7 +110,7 @@ export default defineEventHandler(async event => {
         .select({
           count: count(),
         })
-        .from(clients)
+        .from(tables.clients)
         .where(and(...whereConditions))
 
       // Determine sort direction
@@ -126,19 +120,19 @@ export default defineEventHandler(async event => {
       let orderByClause
       switch (sortField) {
         case 'name':
-          orderByClause = sortDirection(clients.name)
+          orderByClause = sortDirection(tables.clients.name)
           break
         case 'email':
-          orderByClause = sortDirection(clients.email)
+          orderByClause = sortDirection(tables.clients.email)
           break
         case 'createdAt':
-          orderByClause = sortDirection(clients.createdAt)
+          orderByClause = sortDirection(tables.clients.createdAt)
           break
         case 'updatedAt':
-          orderByClause = sortDirection(clients.createdAt)
+          orderByClause = sortDirection(tables.clients.createdAt)
           break
         default:
-          orderByClause = sortDirection(clients.name)
+          orderByClause = sortDirection(tables.clients.name)
           break
       }
 
@@ -156,23 +150,10 @@ export default defineEventHandler(async event => {
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit)
 
-      // Additional debugging: Let's check if there are ANY clients in the database
-      const allClientsCount = await db.select({ count: count() }).from(clients)
-      console.log('Total clients in database (all users):', allClientsCount[0]?.count || 0)
-
-      // Check if there are any users in the database
-      const allUsersCount = await db.select({ count: count() }).from(users)
-      console.log('Total users in database:', allUsersCount[0]?.count || 0)
-
-      return {
-        data: clientsData,
-        pagination: {
-          page,
-          limit,
-          totalCount,
-          totalPages,
-        },
-      }
+      return ok({
+        items: clientsData,
+        pagination: { page, limit, totalCount, totalPages },
+      })
     } catch (error) {
       console.error('Error fetching clients:', error)
       throw createError({
@@ -185,26 +166,32 @@ export default defineEventHandler(async event => {
   // Handle POST request to create a new client
   if (method === 'POST') {
     try {
-      const body = await readBody(event)
-
-      // Validate required fields
-      if (!body.name) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Name is required',
-        })
-      }
+      const BodySchema = z.object({
+        name: z.string().min(1),
+        email: z.string().email().nullable().optional(),
+        phone: z.string().max(40).nullable().optional(),
+        address: z.string().max(200).nullable().optional(),
+        notes: z.string().max(2000).nullable().optional(),
+        measurements: z
+          .object({
+            values: z.record(z.any()).optional(),
+            notes: z.string().nullable().optional(),
+            additionalMeasurements: z.record(z.any()).optional(),
+          })
+          .optional(),
+      })
+      const body = BodySchema.parse(await readBody(event))
 
       // Create new client
       const newClient = await db
-        .insert(clients)
+        .insert(tables.clients)
         .values({
           name: body.name,
           email: body.email || null,
           phone: body.phone || null,
           address: body.address || null,
           notes: body.notes || null,
-          userId: auth.userId,
+          userId: String(auth.userId),
         })
         .returning()
 
@@ -254,10 +241,10 @@ export default defineEventHandler(async event => {
         }
 
         // Create measurement record
-        await db.insert(measurements).values(processedMeasurements)
+        await db.insert(tables.measurements).values(processedMeasurements)
       }
 
-      return newClient[0]
+      return ok(newClient[0])
     } catch (error) {
       console.error('Error creating client:', error)
       throw createError({

@@ -1,16 +1,14 @@
-import { defineEventHandler, createError } from 'h3'
-import { eq, desc } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { plans } from '~/server/database/schema'
+import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
 
 export default defineEventHandler(async _event => {
   try {
+    const db = useDrizzle()
     // Fetch all active plans from the database
     const availablePlans = await db
       .select()
-      .from(plans)
-      .where(eq(plans.isActive, true))
-      .orderBy(desc(plans.price)) // Order by price in descending order (highest first)
+      .from(tables.plans)
+      .where(eq(tables.plans.isActive, true))
+      .orderBy(desc(tables.plans.price)) // Order by price in descending order (highest first)
 
     // Transform the data to match the format expected by the frontend
     const formattedPlans = availablePlans.map(plan => {

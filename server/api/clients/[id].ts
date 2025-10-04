@@ -1,6 +1,4 @@
-import { eq } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { clients, measurements } from '~/server/database/schema'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
 
 // Define event handler
 export default defineEventHandler(async event => {
@@ -24,8 +22,9 @@ export default defineEventHandler(async event => {
     })
   }
 
+  const db = useDrizzle()
   // Verify client belongs to authenticated user
-  const clientData = await db.select().from(clients).where(eq(clients.id, id)).limit(1)
+  const clientData = await db.select().from(tables.tables.clients).where(eq(tables.tables.clients.id, id)).limit(1)
 
   if (clientData.length === 0) {
     throw createError({
@@ -41,14 +40,14 @@ export default defineEventHandler(async event => {
     })
   }
 
-  // Handle GET request to fetch a single client with measurements
+  // Handle GET request to fetch a single client with tables.measurements
   if (method === 'GET') {
     try {
       // Get client measurement data
       const measurementData = await db
         .select()
-        .from(measurements)
-        .where(eq(measurements.clientId, id))
+        .from(tables.measurements)
+        .where(eq(tables.measurements.clientId, id))
         .limit(1)
 
       // Combine client and measurement data
@@ -65,7 +64,7 @@ export default defineEventHandler(async event => {
     }
   }
 
-  // Handle PUT request to update a client and possibly its measurements
+  // Handle PUT request to update a client and possibly its tables.measurements
   if (method === 'PUT') {
     try {
       const body = await readBody(event)
@@ -80,7 +79,7 @@ export default defineEventHandler(async event => {
 
       // Update client
       await db
-        .update(clients)
+        .update(tables.clients)
         .set({
           name: body.name,
           email: body.email || null,
@@ -88,22 +87,22 @@ export default defineEventHandler(async event => {
           address: body.address || null,
           notes: body.notes || null,
         })
-        .where(eq(clients.id, id))
+        .where(eq(tables.clients.id, id))
 
-      // Handle measurements
-      if (body.measurements) {
+      // Handle tables.measurements
+      if (body.tables.measurements) {
         // Check if measurement exists for this client
         const existingMeasurement = await db
           .select()
-          .from(measurements)
-          .where(eq(measurements.clientId, id))
+          .from(tables.measurements)
+          .where(eq(tables.measurements.clientId, id))
           .limit(1)
 
-        // Process measurements for the new schema
+        // Process tables.measurements for the new schema
         const processedMeasurements = {
-          // Store all measurements in the values field
-          values: body.measurements.values || {},
-          notes: body.measurements.notes || null,
+          // Store all tables.measurements in the values field
+          values: body.tables.measurements.values || {},
+          notes: body.tables.measurements.notes || null,
           lastUpdated: new Date(),
         }
 
@@ -111,25 +110,25 @@ export default defineEventHandler(async event => {
         if (existingMeasurement.length > 0) {
           // Update existing measurement
           await db
-            .update(measurements)
+            .update(tables.measurements)
             .set(processedMeasurements)
-            .where(eq(measurements.clientId, id))
+            .where(eq(tables.measurements.clientId, id))
         } else {
           // Create new measurement
-          await db.insert(measurements).values({
+          await db.insert(tables.measurements).values({
             ...processedMeasurements,
             clientId: id,
           })
         }
       }
 
-      // Return updated client with measurements
-      const updatedClient = await db.select().from(clients).where(eq(clients.id, id)).limit(1)
+      // Return updated client with tables.measurements
+      const updatedClient = await db.select().from(tables.clients).where(eq(tables.clients.id, id)).limit(1)
 
       const updatedMeasurement = await db
         .select()
-        .from(measurements)
-        .where(eq(measurements.clientId, id))
+        .from(tables.measurements)
+        .where(eq(tables.measurements.clientId, id))
         .limit(1)
 
       return {
@@ -148,11 +147,11 @@ export default defineEventHandler(async event => {
   // Handle DELETE request to delete a client
   if (method === 'DELETE') {
     try {
-      // Delete associated measurements first (to maintain referential integrity)
-      await db.delete(measurements).where(eq(measurements.clientId, id))
+      // Delete associated tables.measurements first (to maintain referential integrity)
+      await db.delete(tables.measurements).where(eq(tables.measurements.clientId, id))
 
       // Delete client
-      await db.delete(clients).where(eq(clients.id, id))
+      await db.delete(tables.clients).where(eq(tables.clients.id, id))
 
       return { success: true }
     } catch (error) {

@@ -1,5 +1,5 @@
-import { useDrizzle, tables, eq, desc } from '~/server/utils/drizzle'
-import { verifyToken } from '~/server/utils/auth'
+import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
+import { verifyToken } from '../../utils/auth'
 
 /**
  * Get all notifications for the authenticated user

@@ -1,7 +1,8 @@
-// uuid import removed as it's not being used
 import { eq, and, desc, asc, sql, count } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { orders, clients, styles, measurements } from '~/server/database/schema'
+import { defineEventHandler, createError, getMethod, getQuery, readBody } from 'h3'
+import { useDrizzle, tables } from '../../utils/drizzle'
+import { ok } from '../../validators'
+import { z } from 'zod'
 
 // Define event handler for orders API
 export default defineEventHandler(async event => {
@@ -16,20 +17,25 @@ export default defineEventHandler(async event => {
     })
   }
 
+  const db = useDrizzle()
+
   // Handle GET request to fetch all orders
   if (method === 'GET') {
     try {
-      // Get query parameters
-      const query = getQuery(event)
-      const clientId = query.clientId ? parseInt(query.clientId as string) : undefined
-      const page = parseInt((query.page as string) || '1')
-      const limit = parseInt((query.limit as string) || '10')
-      const sortField = (query.sortField as string) || 'createdAt'
-      const sortOrder = (query.sortOrder as string) || 'desc'
-      const search = query.search as string | undefined
-      const status = query.status as string | undefined
-      const dueDateStart = query.dueDateStart as string | undefined
-      const dueDateEnd = query.dueDateEnd as string | undefined
+      // Validate query parameters
+      const QuerySchema = z.object({
+        clientId: z.coerce.number().int().optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(10),
+        sortField: z.enum(['createdAt', 'updatedAt', 'dueDate', 'status', 'totalAmount', 'client']).default('createdAt'),
+        sortOrder: z.enum(['asc', 'desc']).default('desc'),
+        search: z.string().trim().optional(),
+        status: z.string().trim().optional(),
+        dueDateStart: z.string().optional(),
+        dueDateEnd: z.string().optional(),
+      })
+      const { clientId, page, limit, sortField, sortOrder, search, status, dueDateStart, dueDateEnd } =
+        QuerySchema.parse(getQuery(event))
 
       // Validate pagination parameters
       if (isNaN(page) || page < 1) {
@@ -52,58 +58,64 @@ export default defineEventHandler(async event => {
       // Build where conditions for filtering
       const whereConditions = []
 
-      // Always filter by user ID (via clients table)
-      whereConditions.push(eq(clients.userId, auth.userId))
+      // Always filter by user ID (via clients table) - Better Auth string id
+      whereConditions.push(eq(tables.clients.userId, String(auth.userId)))
 
       // Add client filter if provided
       if (clientId) {
-        whereConditions.push(eq(orders.clientId, clientId))
+        whereConditions.push(eq(tables.orders.clientId, clientId))
       }
 
       // Add search filter if provided
       if (search && search.trim() !== '') {
         whereConditions.push(
-          sql`(lower(${clients.name}) like ${`%${search.toLowerCase()}%`} OR
-               ${orders.id} like ${`%${search}%`})`
+          sql`(lower(${tables.clients.name}) like ${`%${search.toLowerCase()}%`} OR
+               ${tables.orders.id} like ${`%${search}%`})`
         )
       }
 
       // Add status filter if provided
       if (status) {
-        whereConditions.push(eq(orders.status, status))
+        whereConditions.push(eq(tables.orders.status, status))
       }
 
       // Add due date range filters if provided
       if (dueDateStart) {
-        whereConditions.push(sql`${orders.dueDate} >= ${dueDateStart}`)
+        whereConditions.push(sql`${tables.orders.dueDate} >= ${dueDateStart}`)
       }
 
       if (dueDateEnd) {
-        whereConditions.push(sql`${orders.dueDate} <= ${dueDateEnd}`)
+        whereConditions.push(sql`${tables.orders.dueDate} <= ${dueDateEnd}`)
       }
 
       // Build base query with all conditions
       const baseQuery = db
         .select({
-          id: orders.id,
-          clientId: orders.clientId,
-          dueDate: orders.dueDate,
-          totalAmount: orders.totalAmount,
-          status: orders.status,
-          description: orders.description,
-          details: orders.details,
-          createdAt: orders.createdAt,
-          updatedAt: orders.updatedAt,
+          id: tables.orders.id,
+          clientId: tables.orders.clientId,
+          dueDate: tables.orders.dueDate,
+          totalAmount: tables.orders.totalAmount,
+          status: tables.orders.status,
+          description: tables.orders.description,
+          details: tables.orders.details,
+          createdAt: tables.orders.createdAt,
+          updatedAt: tables.orders.updatedAt,
           // Include client name for display
-          clientName: clients.name,
+          clientName: tables.clients.name,
           // Include style name if available
-          styleName: styles.name,
-          styleImageUrl: styles.imageUrl,
+          styleName: tables.styles.name,
+          styleImageUrl: tables.styles.imageUrl,
         })
-        .from(orders)
-        .innerJoin(clients, eq(orders.clientId, clients.id))
-        .leftJoin(measurements, eq(measurements.clientId, clients.id))
-        .leftJoin(styles, eq(styles.id, sql`CAST((${orders.details}->>'styleId') AS INTEGER)`))
+        .from(tables.orders)
+        .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
+        .leftJoin(tables.measurements, eq(tables.measurements.clientId, tables.clients.id))
+        .leftJoin(
+          tables.styles,
+          eq(
+            tables.styles.id,
+            sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER)`
+          )
+        )
         .where(and(...whereConditions))
 
       // Build count query with same conditions
@@ -111,8 +123,8 @@ export default defineEventHandler(async event => {
         .select({
           count: count(),
         })
-        .from(orders)
-        .innerJoin(clients, eq(orders.clientId, clients.id))
+        .from(tables.orders)
+        .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
         .where(and(...whereConditions))
 
       // Determine sort direction
@@ -122,25 +134,25 @@ export default defineEventHandler(async event => {
       let orderByClause
       switch (sortField) {
         case 'client':
-          orderByClause = sortDirection(clients.name)
+          orderByClause = sortDirection(tables.clients.name)
           break
         case 'dueDate':
-          orderByClause = sortDirection(orders.dueDate)
+          orderByClause = sortDirection(tables.orders.dueDate)
           break
         case 'status':
-          orderByClause = sortDirection(orders.status)
+          orderByClause = sortDirection(tables.orders.status)
           break
         case 'totalAmount':
-          orderByClause = sortDirection(orders.totalAmount)
+          orderByClause = sortDirection(tables.orders.totalAmount)
           break
         case 'createdAt':
-          orderByClause = sortDirection(orders.createdAt)
+          orderByClause = sortDirection(tables.orders.createdAt)
           break
         case 'updatedAt':
-          orderByClause = sortDirection(orders.updatedAt)
+          orderByClause = sortDirection(tables.orders.updatedAt)
           break
         default:
-          orderByClause = sortDirection(orders.createdAt)
+          orderByClause = sortDirection(tables.orders.createdAt)
           break
       }
 
@@ -154,9 +166,22 @@ export default defineEventHandler(async event => {
       // Calculate total pages
       const totalPages = Math.ceil(total / limit)
 
+      // Parse details JSON text
+      const items = ordersData.map(o => {
+        let details: any = null
+        if (typeof o.details === 'string' && o.details) {
+          try {
+            details = JSON.parse(o.details as unknown as string)
+          } catch {
+            details = o.details
+          }
+        }
+        return { ...o, details }
+      })
+
       // Return data with pagination info
-      return {
-        data: ordersData,
+      return ok({
+        items,
         pagination: {
           total,
           page,
@@ -165,7 +190,7 @@ export default defineEventHandler(async event => {
           hasNextPage: page < totalPages,
           hasPrevPage: page > 1,
         },
-      }
+      })
     } catch (error) {
       console.error('Error fetching orders:', error)
       throw createError({
@@ -178,73 +203,73 @@ export default defineEventHandler(async event => {
   // Handle POST request to create a new order
   if (method === 'POST') {
     try {
-      const body = await readBody(event)
-
-      // Validate required fields
-      if (!body.clientId) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Client ID is required',
-        })
-      }
-
-      if (!body.totalAmount) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Total amount is required',
-        })
-      }
+      const BodySchema = z.object({
+        clientId: z.coerce.number().int(),
+        totalAmount: z.coerce.number(),
+        dueDate: z.string().nullable().optional(),
+        status: z.string().default('Pending').optional(),
+        description: z.string().nullable().optional(),
+        styleId: z.coerce.number().int().nullable().optional(),
+        measurementId: z.coerce.number().int().nullable().optional(),
+        depositAmount: z.coerce.number().nullable().optional(),
+        notes: z.string().nullable().optional(),
+      })
+      const body = BodySchema.parse(await readBody(event))
 
       // Verify client exists and belongs to user
       const clientExists = await db
         .select()
-        .from(clients)
-        .where(and(eq(clients.id, body.clientId), eq(clients.userId, auth.userId)))
+        .from(tables.clients)
+        .where(and(eq(tables.clients.id, body.clientId), eq(tables.clients.userId, String(auth.userId))))
 
       if (clientExists.length === 0) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: 'Client not found',
-        })
+        throw createError({ statusCode: 404, statusMessage: 'Client not found' })
       }
 
-      // Store additional details in the details JSON field
+      // Store additional details in the details JSON text field
       const orderDetails = {
-        styleId: body.styleId ? parseInt(body.styleId) : null,
-        measurementId: body.measurementId ? parseInt(body.measurementId) : null,
-        depositAmount: body.depositAmount ? parseFloat(body.depositAmount) : 0,
-        balanceAmount:
-          parseFloat(body.totalAmount) - (body.depositAmount ? parseFloat(body.depositAmount) : 0),
-        notes: body.notes || null,
+        styleId: body.styleId ?? null,
+        measurementId: body.measurementId ?? null,
+        depositAmount: body.depositAmount ?? 0,
+        balanceAmount: body.totalAmount - (body.depositAmount ?? 0),
+        notes: body.notes ?? null,
       }
 
       // Create new order
       const newOrder = {
-        clientId: parseInt(body.clientId),
-        dueDate: body.dueDate ? body.dueDate : null,
-        totalAmount: parseFloat(body.totalAmount),
-        status: body.status || 'Pending',
-        description: body.description || null,
-        details: orderDetails,
+        clientId: body.clientId,
+        dueDate: body.dueDate ?? null,
+        totalAmount: body.totalAmount,
+        status: body.status ?? 'Pending',
+        description: body.description ?? null,
+        details: JSON.stringify(orderDetails),
         createdAt: new Date(),
         updatedAt: new Date(),
       }
 
-      const result = await db.insert(orders).values(newOrder).returning()
+      const result = await db.insert(tables.orders).values(newOrder).returning()
       const insertedOrder = result[0]
 
-      // Return the new order with client and style info
-      return {
-        ...insertedOrder,
-        clientName: clientExists[0].name,
-        styleName: body.styleId
-          ? (await db.select().from(styles).where(eq(styles.id, body.styleId)))[0]?.name
-          : null,
-        styleImageUrl: body.styleId
-          ? (await db.select().from(styles).where(eq(styles.id, body.styleId)))[0]?.imageUrl
-          : null,
-        ...orderDetails,
+      // Enrich with client and style info
+      let styleName: string | null = null
+      let styleImageUrl: string | null = null
+      if (body.styleId) {
+        const s = await db
+          .select({ name: tables.styles.name, imageUrl: tables.styles.imageUrl })
+          .from(tables.styles)
+          .where(eq(tables.styles.id, body.styleId))
+          .limit(1)
+        styleName = s[0]?.name ?? null
+        styleImageUrl = s[0]?.imageUrl ?? null
       }
+
+      return ok({
+        ...insertedOrder,
+        details: orderDetails,
+        clientName: clientExists[0].name,
+        styleName,
+        styleImageUrl,
+      })
     } catch (error: any) {
       console.error('Error creating order:', error)
       if (error.statusCode) {

@@ -1,5 +1,5 @@
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
-import { verifyToken } from '~/server/utils/auth'
+import { useDrizzle, tables, eq, and } from '../../../utils/drizzle'
+import { verifyToken } from '../../../utils/auth'
 
 /**
  * Delete a notification

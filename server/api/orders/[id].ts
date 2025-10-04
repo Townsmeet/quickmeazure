@@ -1,6 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { orders, clients, styles, measurements } from '~/server/database/schema'
+import { useDrizzle, tables, eq, and, sql } from '../../utils/drizzle'
 
 // Define interfaces for our data structures
 interface OrderDetails {
@@ -42,28 +40,29 @@ export default defineEventHandler(async event => {
     })
   }
 
+  const db = useDrizzle()
   // Verify order exists and belongs to this user
   const orderWithClient = await db
     .select({
-      id: orders.id,
-      clientId: orders.clientId,
-      status: orders.status,
-      dueDate: orders.dueDate,
-      totalAmount: orders.totalAmount,
-      description: orders.description,
-      details: orders.details,
-      createdAt: orders.createdAt,
-      updatedAt: orders.updatedAt,
+      id: tables.orders.id,
+      clientId: tables.orders.clientId,
+      status: tables.orders.status,
+      dueDate: tables.orders.dueDate,
+      totalAmount: tables.orders.totalAmount,
+      description: tables.orders.description,
+      details: tables.orders.details,
+      createdAt: tables.orders.createdAt,
+      updatedAt: tables.orders.updatedAt,
       // Include client name
-      clientName: clients.name,
+      clientName: tables.clients.name,
       // Include style if available
-      styleName: styles.name,
-      styleImageUrl: styles.imageUrl,
+      styleName: tables.styles.name,
+      styleImageUrl: tables.styles.imageUrl,
     })
-    .from(orders)
-    .innerJoin(clients, eq(orders.clientId, clients.id))
-    .leftJoin(styles, eq(sql`CAST(json_extract(${orders.details}, '$.styleId') AS INTEGER)`, styles.id))
-    .where(and(eq(orders.id, parseInt(orderId)), eq(clients.userId, auth.userId)))
+    .from(tables.orders)
+    .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
+    .leftJoin(tables.styles, eq(sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER)`, tables.styles.id))
+    .where(and(eq(tables.orders.id, parseInt(orderId)), eq(tables.clients.userId, auth.userId)))
 
   if (orderWithClient.length === 0) {
     throw createError({
@@ -129,10 +128,10 @@ export default defineEventHandler(async event => {
       // Handle measurementId separately due to validation requirement
       if (body.measurementId !== undefined && body.measurementId !== currentDetails.measurementId) {
         // Additional check to ensure measurement belongs to this client
-        const measurement = await db.query.measurements.findFirst({
+        const measurement = await db.query.tables.measurements.findFirst({
           where: and(
-            eq(measurements.id, parseInt(body.measurementId)),
-            eq(measurements.clientId, orderWithClient[0].clientId)
+            eq(tables.measurements.id, parseInt(body.measurementId)),
+            eq(tables.measurements.clientId, orderWithClient[0].clientId)
           ),
         })
 
@@ -200,9 +199,9 @@ export default defineEventHandler(async event => {
       // Use try/catch specifically for the database operation
       try {
         await db
-          .update(orders)
+          .update(tables.orders)
           .set(finalUpdateData)
-          .where(eq(orders.id, parseInt(orderId)))
+          .where(eq(tables.orders.id, parseInt(orderId)))
 
         console.log('Order updated successfully')
       } catch (dbError: any) {
@@ -238,7 +237,7 @@ export default defineEventHandler(async event => {
   // Handle DELETE request to delete order
   if (method === 'DELETE') {
     try {
-      await db.delete(orders).where(eq(orders.id, parseInt(orderId)))
+      await db.delete(tables.orders).where(eq(tables.orders.id, parseInt(orderId)))
       return { success: true }
     } catch (error: any) {
       console.error('Error deleting order:', error)

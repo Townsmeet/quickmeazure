@@ -1,98 +1,51 @@
-import { eq } from 'drizzle-orm'
-import { v4 as uuidv4 } from 'uuid'
-import { db } from '~/server/database'
-import { businessProfiles } from '~/server/database/schema'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { ok, validateBody } from '../../validators'
+import { BusinessUpdateSchema, type BusinessUpdateInput } from '../../validators/business'
 
 export default defineEventHandler(async event => {
-  try {
-    const auth = event.context.auth
-    if (!auth || !auth.userId) {
-      throw createError({
-        statusCode: 401,
-        statusMessage: 'Unauthorized',
-      })
-    }
-
-    const body = await readBody(event)
-    const {
-      shopName,
-      businessType,
-      yearsInBusiness,
-      businessDescription,
-      phone,
-      address,
-      city,
-      state,
-      specializations,
-      services,
-    } = body
-
-    // Check if business profile exists
-    const existingProfile = await db
-      .select()
-      .from(businessProfiles)
-      .where(eq(businessProfiles.userId, auth.userId))
-      .limit(1)
-
-    let result
-    if (existingProfile.length) {
-      // Update existing profile
-      result = await db
-        .update(businessProfiles)
-        .set({
-          shopName,
-          businessType,
-          yearsInBusiness,
-          businessDescription,
-          phone,
-          address,
-          city,
-          state,
-          specializations,
-          services,
-          updatedAt: new Date(),
-        })
-        .where(eq(businessProfiles.userId, auth.userId))
-        .returning()
-    } else {
-      // Create new profile
-      result = await db
-        .insert(businessProfiles)
-        .values({
-          id: uuidv4(),
-          userId: auth.userId,
-          shopName,
-          businessType,
-          yearsInBusiness,
-          businessDescription,
-          phone,
-          address,
-          city,
-          state,
-          specializations,
-          services,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning()
-    }
-
-    if (!result.length) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to update business profile',
-      })
-    }
-
-    return {
-      success: true,
-      data: result[0],
-    }
-  } catch (error: any) {
-    console.error('Error updating business profile:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to update business profile',
-    })
+  const auth = event.context.auth
+  if (!auth || !auth.userId) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
+
+  const db = useDrizzle()
+  const input: BusinessUpdateInput = await validateBody(event, BusinessUpdateSchema)
+
+  const existing = await db
+    .select()
+    .from(tables.businessProfiles)
+    .where(eq(tables.businessProfiles.userId, auth.userId as string))
+    .limit(1)
+    .then(r => r[0])
+
+  const updateData: any = {
+    ...('shopName' in input ? { shopName: input.shopName ?? null } : {}),
+    ...('businessType' in input ? { businessType: input.businessType ?? null } : {}),
+    ...('yearsInBusiness' in input ? { yearsInBusiness: input.yearsInBusiness ?? null } : {}),
+    ...('businessDescription' in input
+      ? { businessDescription: input.businessDescription ?? null }
+      : {}),
+    ...('phone' in input ? { phone: input.phone ?? null } : {}),
+    ...('address' in input ? { address: input.address ?? null } : {}),
+    ...('city' in input ? { city: input.city ?? null } : {}),
+    ...('state' in input ? { state: input.state ?? null } : {}),
+    ...('specializations' in input ? { specializations: input.specializations ?? null } : {}),
+    ...('services' in input ? { services: input.services ?? null } : {}),
+    updatedAt: new Date(),
+  }
+
+  const saved = existing
+    ? await db
+        .update(tables.businessProfiles)
+        .set(updateData)
+        .where(eq(tables.businessProfiles.userId, auth.userId as string))
+        .returning()
+        .then(res => res[0])
+    : await db
+        .insert(tables.businessProfiles)
+        .values({ userId: String(auth.userId), ...updateData, createdAt: new Date() })
+        .returning()
+        .then(res => res[0])
+
+  return ok(saved)
 })

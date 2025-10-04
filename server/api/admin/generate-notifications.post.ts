@@ -4,8 +4,8 @@ import {
   generateSubscriptionExpirationAlerts,
   generateUsageLimitWarnings,
   cleanupExpiredNotifications,
-} from '~/server/services/notificationService'
-import { verifyToken } from '~/server/utils/auth'
+} from '../../services/notificationService'
+import { verifyToken } from '../../utils/auth'
 
 export default defineEventHandler(async event => {
   try {

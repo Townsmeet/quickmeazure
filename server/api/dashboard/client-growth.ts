@@ -1,7 +1,7 @@
 import type { H3Event, EventHandlerRequest } from 'h3'
 import { createError } from 'h3'
 import { count } from 'drizzle-orm'
-import { useDrizzle, tables, eq, and, sql } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq, and, sql } from '../../utils/drizzle'
 
 interface GrowthItem {
   date: string

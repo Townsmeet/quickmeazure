@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { useDrizzle, tables, eq } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
 import type { H3Event } from 'h3'
 
 export default defineEventHandler(async (event: H3Event) => {

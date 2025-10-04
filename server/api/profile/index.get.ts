@@ -1,6 +1,5 @@
 import { eq, and, desc, isNull, or, gt } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { users, subscriptions, plans } from '~/server/database/schema'
+import { useDrizzle, tables } from '../../utils/drizzle'
 
 export default defineEventHandler(async event => {
   try {
@@ -12,24 +11,21 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Get user data with their latest active subscription
+    const db = useDrizzle()
+
+    // Get user data from Better Auth user table
     const userData = await db
       .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        avatar: users.avatar,
-        businessName: users.businessName,
-        phone: users.phone,
-        location: users.location,
-        bio: users.bio,
-        specializations: users.specializations,
-        services: users.services,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
+        id: tables.user.id,
+        email: tables.user.email,
+        name: tables.user.name,
+        avatar: tables.user.image,
+        emailVerified: tables.user.emailVerified,
+        createdAt: tables.user.createdAt,
+        updatedAt: tables.user.updatedAt,
       })
-      .from(users)
-      .where(eq(users.id, auth.userId))
+      .from(tables.user)
+      .where(eq(tables.user.id, auth.userId))
       .limit(1)
       .then(results => results[0])
 
@@ -40,31 +36,40 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Get the user's active subscription
-    const activeSubscription = await db
-      .select({
-        id: subscriptions.id,
-        status: subscriptions.status,
-        startDate: subscriptions.startDate,
-        endDate: subscriptions.endDate,
-        planName: plans.name,
-      })
-      .from(subscriptions)
-      .leftJoin(plans, eq(subscriptions.planId, plans.id))
-      .where(
-        and(
-          eq(subscriptions.userId, auth.userId),
-          eq(subscriptions.status, 'active'),
-          or(isNull(subscriptions.endDate), gt(subscriptions.endDate, new Date()))
-        )
-      )
-      .orderBy(desc(subscriptions.startDate))
+    // Get user profile data
+    const profileData = await db
+      .select()
+      .from(tables.userProfiles)
+      .where(eq(tables.userProfiles.userId, auth.userId))
       .limit(1)
       .then(results => results[0] || null)
 
-    // Combine user data with subscription info
+    // Get the user's active subscription
+    const activeSubscription = await db
+      .select({
+        id: tables.subscriptions.id,
+        status: tables.subscriptions.status,
+        startDate: tables.subscriptions.startDate,
+        endDate: tables.subscriptions.endDate,
+        planName: tables.plans.name,
+      })
+      .from(tables.subscriptions)
+      .leftJoin(tables.plans, eq(tables.subscriptions.planId, tables.plans.id))
+      .where(
+        and(
+          eq(tables.subscriptions.userId, auth.userId),
+          eq(tables.subscriptions.status, 'active'),
+          or(isNull(tables.subscriptions.endDate), gt(tables.subscriptions.endDate, new Date()))
+        )
+      )
+      .orderBy(desc(tables.subscriptions.startDate))
+      .limit(1)
+      .then(results => results[0] || null)
+
+    // Combine user data with profile and subscription info
     return {
       ...userData,
+      ...profileData,
       subscription: activeSubscription
         ? {
             plan: activeSubscription.planName,

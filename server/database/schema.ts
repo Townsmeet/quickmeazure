@@ -6,23 +6,77 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 
-// Users table
-export const users = sqliteTable('users', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
+// Better Auth tables (migrated here from better-auth-schema)
+export const user = sqliteTable('ba_user', {
+  id: text('id').primaryKey(),
+  name: text('name'),
   email: text('email').notNull().unique(),
-  password: text('password').notNull(),
-  avatar: text('avatar'),
-  businessName: text('business_name'),
-  phone: text('phone'),
-  location: text('location'),
-  bio: text('bio'),
-  specializations: text('specializations'),
-  services: text('services'),
-  hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' }).notNull().default(false),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).default(false).notNull(),
+  image: text('image'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
 })
+
+// User profiles table (replaces removed local users' profile fields)
+export const userProfiles = sqliteTable(
+  'user_profiles',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name'),
+    avatar: text('avatar'),
+    businessName: text('business_name'),
+    phone: text('phone'),
+    location: text('location'),
+    bio: text('bio'),
+    specializations: text('specializations'), // JSON string
+    services: text('services'), // JSON string
+    hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+  }
+)
+
+export const session = sqliteTable('ba_session', {
+  id: text('id').primaryKey(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+})
+
+export const account = sqliteTable('ba_account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
+  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+})
+
+export const verification = sqliteTable('ba_verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+})
+
+// NOTE: Local users table removed; all FKs now reference Better Auth user.id (text)
 
 // Plans table
 export const plans = sqliteTable('plans', {
@@ -44,9 +98,9 @@ export const plans = sqliteTable('plans', {
 // Subscriptions table to track user subscriptions
 export const subscriptions = sqliteTable('subscriptions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   planId: integer('plan_id')
     .notNull()
     .references(() => plans.id),
@@ -69,9 +123,9 @@ export const businesses = sqliteTable(
   'businesses',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    userId: integer('user_id')
+    userId: text('user_id')
       .notNull()
-      .references(() => users.id),
+      .references(() => user.id),
     name: text('name').notNull(),
     logo: text('logo'),
     address: text('address'),
@@ -120,9 +174,9 @@ export const businessProfiles = sqliteTable('business_profiles', {
 // Clients table
 export const clients = sqliteTable('clients', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   name: text('name').notNull(),
   email: text('email'),
   phone: text('phone'),
@@ -149,9 +203,9 @@ export const orders = sqliteTable('orders', {
 // Styles table
 export const styles = sqliteTable('styles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   name: text('name').notNull(),
   description: text('description'),
   imageUrl: text('image_url'),
@@ -189,9 +243,9 @@ export const payments = sqliteTable('payments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   orderId: integer('order_id').references(() => orders.id),
   subscriptionId: integer('subscription_id').references(() => subscriptions.id),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   amount: real('amount').notNull(),
   currency: text('currency').notNull().default('NGN'),
   paymentMethod: text('payment_method').notNull(),
@@ -214,9 +268,9 @@ export const measurementTemplates = sqliteTable(
   'measurement_templates',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    userId: integer('user_id')
+    userId: text('user_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
     isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
@@ -270,7 +324,7 @@ export const clientMeasurements = sqliteTable(
     values: text('values').notNull(), // JSON string of fieldId: value pairs
     notes: text('notes'),
     takenAt: integer('taken_at', { mode: 'timestamp' }).defaultNow().notNull(),
-    takenBy: integer('taken_by').references(() => users.id, { onDelete: 'set null' }),
+    takenBy: text('taken_by').references(() => user.id, { onDelete: 'set null' }),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
     createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   },
@@ -285,9 +339,9 @@ export const clientMeasurements = sqliteTable(
 
 // User Measurement Settings
 export const userMeasurementSettings = sqliteTable('user_measurement_settings', {
-  userId: integer('user_id')
+  userId: text('user_id')
     .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => user.id, { onDelete: 'cascade' }),
   defaultUnit: text('default_unit').notNull().default('cm'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })
@@ -295,9 +349,9 @@ export const userMeasurementSettings = sqliteTable('user_measurement_settings', 
 // Payment methods table
 export const paymentMethods = sqliteTable('payment_methods', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   type: text('type').notNull(), // 'card', 'bank', etc.
   last4: text('last4'),
   expiryMonth: text('expiry_month'),
@@ -314,9 +368,9 @@ export const paymentMethods = sqliteTable('payment_methods', {
 // Subscription Payments table for subscription-related transactions
 export const subscriptionPayments = sqliteTable('subscription_payments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   subscriptionId: integer('subscription_id')
     .references(() => subscriptions.id)
     .notNull(),
@@ -336,9 +390,9 @@ export const subscriptionPayments = sqliteTable('subscription_payments', {
 // Order Payments table for order-related transactions
 export const orderPayments = sqliteTable('order_payments', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   orderId: integer('order_id')
     .references(() => orders.id)
     .notNull(),
@@ -358,9 +412,9 @@ export const orderPayments = sqliteTable('order_payments', {
 // Notifications table for user notifications
 export const notifications = sqliteTable('notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id')
+  userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => user.id),
   type: text('type').notNull(), // 'payment', 'subscription', 'usage', 'system'
   severity: text('severity').notNull(), // 'info', 'warning', 'critical'
   title: text('title').notNull(),
@@ -375,7 +429,7 @@ export const notifications = sqliteTable('notifications', {
 })
 
 // Export types
-export type User = typeof users.$inferSelect
+export type User = typeof user.$inferSelect
 export type Plan = typeof plans.$inferSelect
 export type Subscription = typeof subscriptions.$inferSelect
 export type Business = typeof businesses.$inferSelect

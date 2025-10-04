@@ -1,6 +1,8 @@
-import { defineEventHandler, readBody, createError, getRequestHeaders } from 'h3'
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
-import { verifyToken, generateToken } from '~/server/utils/auth'
+import { defineEventHandler, readBody, createError } from 'h3'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { generateToken } from '../../utils/auth'
+import { ok } from '../../validators'
+import { z } from 'zod'
 // Subscription type import removed as it's not being used
 
 /**
@@ -28,15 +30,27 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Read request body
-    const {
-      planId,
-      planName = '',
-      paymentReference,
-      billingPeriod,
-      amount,
-      cardDetails, // Added to capture card details from payment provider
-    } = await readBody(event)
+    // Read and validate request body
+    const BodySchema = z.object({
+      planId: z.union([z.number().int(), z.string()]),
+      planName: z.string().default(''),
+      paymentReference: z.string().optional(),
+      billingPeriod: z.enum(['monthly', 'annual']),
+      amount: z.number().int().nonnegative().optional(),
+      cardDetails: z
+        .object({
+          type: z.string().optional(),
+          last4: z.string().optional(),
+          expiryMonth: z.string().optional(),
+          expiryYear: z.string().optional(),
+          brand: z.string().optional(),
+          providerId: z.string().optional(),
+          metadata: z.union([z.string(), z.record(z.any())]).optional(),
+        })
+        .optional(),
+    })
+    const { planId, planName = '', paymentReference, billingPeriod, amount, cardDetails } =
+      BodySchema.parse(await readBody(event))
 
     // Validate required fields - planId and billingPeriod are always required
     if (!planId || !billingPeriod) {
@@ -94,7 +108,7 @@ export default defineEventHandler(async event => {
     // Check if user already has an active subscription
     const existingSubscription = await db.query.subscriptions.findFirst({
       where: and(
-        eq(tables.subscriptions.userId, Number(userId)),
+        eq(tables.subscriptions.userId, String(userId)),
         eq(tables.subscriptions.status, 'active')
       ),
     })
@@ -131,18 +145,13 @@ export default defineEventHandler(async event => {
         subscriptionExpiry: Math.floor(endDate.getTime() / 1000),
       })
 
-      return {
-        success: true,
-        message: 'Subscription updated successfully',
-        data: updatedSubscription[0],
-        token: newToken,
-      }
+      return ok({ subscription: updatedSubscription[0], token: newToken })
     } else {
       // Create new subscription
       const newSubscription = await db
         .insert(tables.subscriptions)
         .values({
-          userId: typeof userId === 'string' ? Number(userId) : userId,
+          userId: String(userId),
           planId: planIdNum,
           status: 'active',
           startDate: new Date(),
@@ -157,14 +166,17 @@ export default defineEventHandler(async event => {
         })
         .returning()
 
-      // Update user's hasCompletedSetup to false to ensure they complete the setup
-      await db
-        .update(tables.users)
-        .set({
-          hasCompletedSetup: false,
-          updatedAt: new Date(),
-        })
-        .where(eq(tables.users.id, userId))
+      // Update userProfiles.hasCompletedSetup to false to ensure setup completeness
+      const updatedProfile = await db
+        .update(tables.userProfiles)
+        .set({ hasCompletedSetup: false, updatedAt: new Date() })
+        .where(eq(tables.userProfiles.userId, String(userId)))
+        .returning()
+      if (!updatedProfile.length) {
+        await db
+          .insert(tables.userProfiles)
+          .values({ userId: String(userId), hasCompletedSetup: false, createdAt: new Date() })
+      }
 
       // Get the plan details for the token
       const planDetails = await db.query.plans.findFirst({
@@ -191,7 +203,7 @@ export default defineEventHandler(async event => {
 
           // Check if the user already has a payment method
           const existingPaymentMethod = await db.query.paymentMethods.findFirst({
-            where: eq(tables.paymentMethods.userId, Number(userId)),
+            where: eq(tables.paymentMethods.userId, String(userId)),
           })
 
           if (existingPaymentMethod) {
@@ -220,7 +232,7 @@ export default defineEventHandler(async event => {
             console.log('Creating new payment method for user ID:', userId)
 
             await db.insert(tables.paymentMethods).values({
-              userId: Number(userId),
+              userId: String(userId),
               type: cardDetails.type || 'card',
               last4: cardDetails.last4,
               expiryMonth: cardDetails.expiryMonth,
@@ -241,12 +253,7 @@ export default defineEventHandler(async event => {
         }
       }
 
-      return {
-        success: true,
-        message: 'Subscription created successfully',
-        data: newSubscription[0],
-        token: newToken,
-      }
+      return ok({ subscription: newSubscription[0], token: newToken })
     }
   } catch (error: any) {
     console.error('Error creating subscription:', error)

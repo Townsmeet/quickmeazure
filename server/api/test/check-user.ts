@@ -1,6 +1,4 @@
-import { eq } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { users } from '~/server/database/schema'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
 
 export default defineEventHandler(async event => {
   // Skip authentication check for this endpoint
@@ -23,6 +21,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    const db = useDrizzle()
     const query = getQuery(event)
 
     // Validate required fields
@@ -36,8 +35,8 @@ export default defineEventHandler(async event => {
     // Get user from database
     const userResults = await db
       .select()
-      .from(users)
-      .where(eq(users.email, query.email.toString().toLowerCase()))
+      .from(tables.user)
+      .where(eq(tables.user.email, query.email.toString().toLowerCase()))
 
     return {
       userExists: userResults.length > 0,

@@ -1,22 +1,31 @@
-// Types
+// Vue and Pinia imports
+import { ref, computed, watch } from 'vue'
+import { defineStore } from 'pinia'
+import { useRuntimeConfig } from '#imports'
+import { navigateTo } from '#imports'
+
+// Types - Use relative paths from the store module
 import type { User } from '../../types/auth'
 import type { AuthHeaders } from '../../types/api'
 
 // Stores
 import { useUserStore } from './user'
 
-// Constants
+// Constants - Use relative paths from the store module
 import { STORAGE_KEYS } from '../../constants/storage'
 
-// Utils
-import {
-  getFromStorage,
-  setToStorage,
-  removeFromStorage,
+// Utils - Use relative paths from the store module
+import { 
+  getLocalStorage, 
+  setLocalStorage, 
+  removeLocalStorage,
   getStringFromStorage,
   setStringToStorage,
-} from '../../app/utils/storage'
-import { migrateTokenStorage } from '../../app/utils/storage-migration'
+  removeFromStorage,
+  getFromStorage,
+  setToStorage
+} from '../../utils'
+import { migrateTokenStorage } from '../../utils/storage-migration'
 
 // Composables
 // Note: useAuthApi removed - using direct API calls

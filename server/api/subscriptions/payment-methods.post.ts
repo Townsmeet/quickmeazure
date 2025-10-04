@@ -1,114 +1,92 @@
-/**
- * Create or update a payment method for the user
- * This endpoint is called after a successful Paystack payment verification
- * Using the single payment method approach - each user has only one payment method
- */
-import { useDrizzle, tables, eq } from '~/server/utils/drizzle'
-import { verifyToken } from '~/server/utils/auth'
+import { defineEventHandler, readBody, createError } from 'h3'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { ok } from '../../validators'
+import { z } from 'zod'
 
 export default defineEventHandler(async event => {
-  try {
-    // Get request body
-    const body = await readBody(event)
-    const { reference, cardDetails } = body
-
-    if (!reference) {
-      return {
-        statusCode: 400,
-        success: false,
-        message: 'Payment reference is required',
-      }
-    }
-
-    // Get authenticated user from event context (set by auth middleware)
-    const auth = event.context.auth
-    if (!auth || !auth.userId) {
-      return {
-        statusCode: 401,
-        success: false,
-        message: 'Unauthorized',
-      }
-    }
-
-    console.log('Authenticated user ID:', auth.userId)
-    const userId = auth.userId
-
-    // Initialize the database
-    const db = useDrizzle()
-
-    // Check if the user already has a payment method
-    const existingPaymentMethod = await db.query.paymentMethods.findFirst({
-      where: eq(tables.paymentMethods.userId, Number(userId)),
-    })
-
-    let paymentMethod
-
-    if (existingPaymentMethod) {
-      // Update the existing payment method
-      console.log('Updating existing payment method for user ID:', userId)
-
-      paymentMethod = await db
-        .update(tables.paymentMethods)
-        .set({
-          type: cardDetails.type || 'card',
-          last4: cardDetails.last4,
-          expiryMonth: cardDetails.expiryMonth,
-          expiryYear: cardDetails.expiryYear,
-          brand: cardDetails.brand,
-          provider: 'paystack',
-          providerId: cardDetails.providerId || reference,
-          metadata: cardDetails.metadata || {},
-          updatedAt: new Date(),
-        })
-        .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
-        .returning()
-    } else {
-      // Create a new payment method
-      console.log('Creating new payment method for user ID:', userId)
-
-      paymentMethod = await db
-        .insert(tables.paymentMethods)
-        .values({
-          userId: Number(userId),
-          type: cardDetails.type || 'card',
-          last4: cardDetails.last4,
-          expiryMonth: cardDetails.expiryMonth,
-          expiryYear: cardDetails.expiryYear,
-          brand: cardDetails.brand,
-          isDefault: true, // Always true since it's the only one
-          provider: 'paystack',
-          providerId: cardDetails.providerId || reference,
-          metadata: cardDetails.metadata || {},
-        })
-        .returning()
-    }
-
-    const result = paymentMethod[0]
-
-    return {
-      statusCode: existingPaymentMethod ? 200 : 201,
-      success: true,
-      message: existingPaymentMethod
-        ? 'Payment method updated successfully'
-        : 'Payment method created successfully',
-      data: {
-        id: result.id,
-        type: result.type,
-        last4: result.last4,
-        expiryMonth: result.expiryMonth,
-        expiryYear: result.expiryYear,
-        brand: result.brand,
-        isDefault: true, // Always true in the single payment method approach
-        createdAt: result.createdAt,
-        updatedAt: result.updatedAt,
-      },
-    }
-  } catch (err: any) {
-    console.error('Error creating payment method:', err)
-    return {
-      statusCode: 500,
-      success: false,
-      message: err.message || 'An error occurred while creating the payment method',
-    }
+  // Get authenticated user from event context (set by auth middleware)
+  const auth = event.context.auth
+  if (!auth || !auth.userId) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
+
+  // Validate body
+  const BodySchema = z.object({
+    reference: z.string().min(1),
+    cardDetails: z
+      .object({
+        type: z.string().optional(),
+        last4: z.string().optional(),
+        expiryMonth: z.string().optional(),
+        expiryYear: z.string().optional(),
+        brand: z.string().optional(),
+        providerId: z.string().optional(),
+        metadata: z.union([z.string(), z.record(z.any())]).optional(),
+      })
+      .optional(),
+  })
+  const { reference, cardDetails } = BodySchema.parse(await readBody(event))
+
+  const userId = String(auth.userId)
+  const db = useDrizzle()
+
+  // Check if the user already has a payment method
+  const existingPaymentMethod = await db.query.paymentMethods.findFirst({
+    where: eq(tables.paymentMethods.userId, userId),
+  })
+
+  let paymentMethod
+
+  const metadataValue = cardDetails?.metadata
+    ? typeof cardDetails.metadata === 'string'
+      ? cardDetails.metadata
+      : JSON.stringify(cardDetails.metadata)
+    : undefined
+
+  if (existingPaymentMethod) {
+    paymentMethod = await db
+      .update(tables.paymentMethods)
+      .set({
+        type: cardDetails?.type || 'card',
+        last4: cardDetails?.last4,
+        expiryMonth: cardDetails?.expiryMonth,
+        expiryYear: cardDetails?.expiryYear,
+        brand: cardDetails?.brand,
+        provider: 'paystack',
+        providerId: cardDetails?.providerId || reference,
+        ...(metadataValue !== undefined ? { metadata: metadataValue } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
+      .returning()
+  } else {
+    paymentMethod = await db
+      .insert(tables.paymentMethods)
+      .values({
+        userId,
+        type: cardDetails?.type || 'card',
+        last4: cardDetails?.last4,
+        expiryMonth: cardDetails?.expiryMonth,
+        expiryYear: cardDetails?.expiryYear,
+        brand: cardDetails?.brand,
+        isDefault: true,
+        provider: 'paystack',
+        providerId: cardDetails?.providerId || reference,
+        ...(metadataValue !== undefined ? { metadata: metadataValue } : {}),
+      })
+      .returning()
+  }
+
+  const result = paymentMethod[0]
+  return ok({
+    id: result.id,
+    type: result.type,
+    last4: result.last4,
+    expiryMonth: result.expiryMonth,
+    expiryYear: result.expiryYear,
+    brand: result.brand,
+    isDefault: true,
+    createdAt: result.createdAt,
+    updatedAt: result.updatedAt,
+  })
 })

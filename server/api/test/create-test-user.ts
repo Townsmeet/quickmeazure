@@ -1,8 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
 import { v4 as uuidv4 } from 'uuid'
 import bcrypt from 'bcryptjs'
-import { users } from '~/server/database/schema'
-import { db } from '~/server/database'
 
 export default defineEventHandler(async event => {
   // Skip authentication check for this endpoint
@@ -25,6 +23,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    const db = useDrizzle()
     const body = await readBody(event)
 
     // Validate required fields
@@ -38,8 +37,8 @@ export default defineEventHandler(async event => {
     // Check if user already exists
     const existingUser = await db
       .select()
-      .from(users)
-      .where(eq(users.email, body.email.toLowerCase()))
+      .from(tables.user)
+      .where(eq(tables.user.email, body.email.toLowerCase()))
 
     if (existingUser.length > 0) {
       return {
@@ -50,18 +49,18 @@ export default defineEventHandler(async event => {
       }
     }
 
-    // Hash password (default: 'password123')
-    const hashedPassword = await bcrypt.hash(body.password || 'password123', 10)
-
-    // Create user
+    // Create user for Better Auth (no password field in user table)
     const newUser = {
+      id: uuidv4(),
       name: body.name || 'Test User',
       email: body.email.toLowerCase(),
-      password: hashedPassword,
+      emailVerified: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     // Insert user
-    const [insertedUser] = await db.insert(users).values(newUser).returning()
+    const [insertedUser] = await db.insert(tables.user).values(newUser).returning()
 
     return {
       message: 'Test user created successfully',

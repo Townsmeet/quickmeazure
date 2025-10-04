@@ -1,6 +1,6 @@
-import { defineEventHandler, createError, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
-import { useDrizzle, tables, eq } from '~/server/utils/drizzle'
+import { defineEventHandler, createError } from 'h3'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { ok } from '../../validators'
 
 /**
  * Get available subscription plans from the database
@@ -70,7 +70,7 @@ export default defineEventHandler(async event => {
       'Returning plans:',
       plans.map(p => `${p.name} (${p.id}): ${p.price}`)
     )
-    return plans
+    return ok(plans)
   } catch (error) {
     console.error('Error fetching subscription plans:', error)
     throw createError({

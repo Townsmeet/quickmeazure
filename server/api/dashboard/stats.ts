@@ -2,7 +2,7 @@ import type { H3Event, EventHandlerRequest } from 'h3'
 import { defineCachedEventHandler } from '#imports'
 import { createError } from 'h3'
 import { count, sql } from 'drizzle-orm'
-import { useDrizzle, tables, eq, and, desc } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq, and, desc } from '../../utils/drizzle'
 
 // Helper function to safely extract count from query result
 const getCount = (result: { count: number }[]): number => result[0]?.count || 0

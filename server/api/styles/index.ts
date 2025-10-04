@@ -1,10 +1,7 @@
-import { createError, getMethod } from 'h3'
 // uuid import removed as it's not being used
-import { and, eq, desc, asc, sql } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { styles } from '~/server/database/schema'
-import { extractFileFromMultipart, extractFieldsFromMultipart } from '~/server/utils/multipart'
-import { uploadFileToS3, getFileExtension, getContentType } from '~/server/utils/s3'
+import { useDrizzle, tables, and, eq, desc, asc, sql } from '../../utils/drizzle'
+import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
+import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 // Define event handler for styles API
 export default defineEventHandler(async event => {
@@ -24,6 +21,7 @@ export default defineEventHandler(async event => {
   // Handle GET request to get all styles
   if (method === 'GET') {
     try {
+      const db = useDrizzle()
       // Get the query parameters
       const query = getQuery(event)
       const page = parseInt((query.page as string) || '1')
@@ -36,17 +34,17 @@ export default defineEventHandler(async event => {
       const offset = (page - 1) * limit
 
       // Build query based on search parameter
-      let stylesQuery = db.select().from(styles).where(eq(styles.userId, userId))
+      let stylesQuery = db.select().from(tables.styles).where(eq(tables.styles.userId, userId))
 
       // Apply search filter if provided
       if (search && search.trim() !== '') {
         stylesQuery = db
           .select()
-          .from(styles)
+          .from(tables.styles)
           .where(
             and(
-              eq(styles.userId, userId),
-              sql`lower(${styles.name}) like ${`%${search.toLowerCase()}%`}`
+              eq(tables.styles.userId, userId),
+              sql`lower(${tables.styles.name}) like ${`%${search.toLowerCase()}%`}`
             )
           )
       }
@@ -56,12 +54,12 @@ export default defineEventHandler(async event => {
         .select({
           count: sql<number>`count(*)`,
         })
-        .from(styles)
+        .from(tables.styles)
         .where(
           and(
-            eq(styles.userId, userId),
+            eq(tables.styles.userId, userId),
             search && search.trim() !== ''
-              ? sql`lower(${styles.name}) like ${`%${search.toLowerCase()}%`}`
+              ? sql`lower(${tables.styles.name}) like ${`%${search.toLowerCase()}%`}`
               : undefined
           )
         )
@@ -73,11 +71,11 @@ export default defineEventHandler(async event => {
       let orderByClause
       switch (sortField) {
         case 'name':
-          orderByClause = sortDirection(styles.name)
+          orderByClause = sortDirection(tables.styles.name)
           break
         case 'createdAt':
         default:
-          orderByClause = sortDirection(styles.createdAt)
+          orderByClause = sortDirection(tables.styles.createdAt)
           break
       }
 
@@ -113,6 +111,7 @@ export default defineEventHandler(async event => {
   // Handle POST request to create a new style
   if (method === 'POST') {
     try {
+      const db = useDrizzle()
       // Check if content type is multipart/form-data
       const contentType = event.node.req.headers['content-type'] || ''
       const isMultipart = contentType.includes('multipart/form-data')
@@ -260,7 +259,7 @@ export default defineEventHandler(async event => {
       // Create new style - noting the id field is a serial in the schema, not a UUID
       const newStyle = {
         // Let the database handle the id field
-        userId: Number(userId),
+        userId: String(userId),
         name: styleName,
         description: styleDescription,
         imageUrl: imageUrl,
@@ -269,8 +268,8 @@ export default defineEventHandler(async event => {
       }
 
       // Insert and get the generated id
-      const result = await db.insert(styles).values(newStyle).returning({ id: styles.id })
-      const styleId = result[0].id
+      const result = await db.insert(tables.styles).values(newStyle).returning({ id: tables.styles.id })
+      const styleId = result[0]?.id
 
       console.log('Style created successfully with ID:', styleId)
       return { ...newStyle, id: styleId }

@@ -8,17 +8,25 @@
 /**
  * Get a value from localStorage with proper error handling
  * @param key The localStorage key
+ * @param defaultValue The default value to return if not found or error
  * @returns The parsed value or null if not found or error
  */
-export function getFromStorage<T>(key: string): T | null {
-  if (typeof window === 'undefined') return null
+export function getFromStorage<T = any>(key: string, defaultValue: T | null = null): T | null {
+  return getLocalStorage(key, defaultValue)
+}
+
+/**
+ * Alias for getFromStorage for backward compatibility
+ */
+export function getLocalStorage<T = any>(key: string, defaultValue: T | null = null): T | null {
+  if (typeof window === 'undefined') return defaultValue
 
   try {
     const value = localStorage.getItem(key)
-    return value ? (JSON.parse(value) as T) : null
+    return value ? JSON.parse(value) : defaultValue
   } catch (error) {
     console.error(`Error retrieving ${key} from localStorage:`, error)
-    return null
+    return defaultValue
   }
 }
 
@@ -65,6 +73,13 @@ export function setStringToStorage(key: string, value: string): boolean {
  * @returns True if successful, false otherwise
  */
 export function setToStorage<T>(key: string, value: T): boolean {
+  return setLocalStorage(key, value)
+}
+
+/**
+ * Alias for setToStorage for backward compatibility
+ */
+export function setLocalStorage<T>(key: string, value: T): boolean {
   if (typeof window === 'undefined') return false
 
   try {
@@ -82,6 +97,13 @@ export function setToStorage<T>(key: string, value: T): boolean {
  * @returns True if successful, false otherwise
  */
 export function removeFromStorage(key: string): boolean {
+  return removeLocalStorage(key)
+}
+
+/**
+ * Alias for removeFromStorage for backward compatibility
+ */
+export function removeLocalStorage(key: string): boolean {
   if (typeof window === 'undefined') return false
 
   try {

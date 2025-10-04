@@ -23,7 +23,7 @@ import {
 import * as schema from '../database/schema'
 
 // Export tables and query helpers
-export const tables = schema
+export const tables = { ...schema }
 export {
   eq,
   and,
@@ -78,8 +78,11 @@ export function useDrizzle() {
   return _db
 }
 
+// Direct export for convenience (like epison pattern)
+export const db = useDrizzle()
+
 // Export types for convenience
-export type User = typeof schema.users.$inferSelect
+export type User = typeof schema.user.$inferSelect
 export type Business = typeof schema.businesses.$inferSelect
 export type Client = typeof schema.clients.$inferSelect
 export type Order = typeof schema.orders.$inferSelect

@@ -1,6 +1,7 @@
-import { defineEventHandler, createError, getRequestHeaders } from 'h3'
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
-import { verifyToken, generateToken } from '~/server/utils/auth'
+import { defineEventHandler, createError } from 'h3'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { generateToken } from '../../utils/auth'
+import { ok } from '../../validators'
 
 /**
  * Get the current user's active subscription
@@ -31,7 +32,7 @@ export default defineEventHandler(async event => {
       .from(tables.subscriptions)
       .where(
         and(
-          eq(tables.subscriptions.userId, Number(userId)),
+          eq(tables.subscriptions.userId, String(userId)),
           eq(tables.subscriptions.status, 'active')
         )
       )
@@ -74,20 +75,16 @@ export default defineEventHandler(async event => {
         })
       }
 
-      return {
-        success: true,
-        message: 'No active subscription found, using free plan',
-        data: {
-          active: true,
-          planId: freePlan && freePlan.length > 0 ? freePlan[0].id : null,
-          trialEndsAt: null,
-          currentPeriodEndsAt: null,
-          canceledAt: null,
-          pastDue: false,
-          plan: freePlan && freePlan.length > 0 ? freePlan[0] : null,
-        },
+      return ok({
+        active: true,
+        planId: freePlan && freePlan.length > 0 ? freePlan[0].id : null,
+        trialEndsAt: null,
+        currentPeriodEndsAt: null,
+        canceledAt: null,
+        pastDue: false,
+        plan: freePlan && freePlan.length > 0 ? freePlan[0] : null,
         token: newToken,
-      }
+      })
     }
 
     // Get the first subscription (we limited to 1 in the query)
@@ -111,33 +108,17 @@ export default defineEventHandler(async event => {
       })
     }
 
-    return {
-      success: true,
-      data: {
-        active: true,
-        planId: sub.planId,
-        trialEndsAt: sub.trialEndsAt,
-        currentPeriodEndsAt: sub.currentPeriodEndsAt,
-        canceledAt: sub.canceledAt,
-        pastDue: sub.pastDue,
-        // Include the complete plan object
-        plan: planDetails
-          ? {
-              id: planDetails.id,
-              name: planDetails.name,
-              description: planDetails.description,
-              price: planDetails.price,
-              interval: planDetails.interval,
-              features: planDetails.features,
-              isActive: planDetails.isActive,
-              maxClients: planDetails.maxClients,
-              maxStyles: planDetails.maxStyles,
-              maxStorage: planDetails.maxStorage,
-            }
-          : null,
-      },
+    return ok({
+      active: true,
+      planId: sub.planId,
+      trialEndsAt: sub.trialEndsAt,
+      currentPeriodEndsAt: sub.currentPeriodEndsAt,
+      canceledAt: sub.canceledAt,
+      pastDue: sub.pastDue,
+      // Include the complete plan object (as-is)
+      plan: planDetails,
       token: newToken,
-    }
+    })
   } catch (error: any) {
     console.error('Error retrieving subscription:', error)
 

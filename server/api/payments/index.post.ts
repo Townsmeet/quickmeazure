@@ -1,152 +1,58 @@
-import { defineEventHandler, readBody, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
+import { defineEventHandler, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { useDrizzle } from '~/server/utils/drizzle'
-import { orders, payments } from '~/server/database/schema'
+import { useDrizzle, tables } from '../../utils/drizzle'
+import { ok } from '../../validators'
+import { z } from 'zod'
 
 /**
  * Record payment for an order
  */
 export default defineEventHandler(async event => {
   try {
-    // Verify auth token
-    const headers = getRequestHeaders(event)
-    const authHeader = headers.authorization
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return {
-        statusCode: 401,
-        body: {
-          success: false,
-          message: 'Authentication required',
-        },
-      }
+    // Auth via middleware
+    const auth = event.context.auth
+    if (!auth || !auth.userId) {
+      throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
     }
 
-    const token = authHeader.split(' ')[1]
-    const config = useRuntimeConfig()
+    // Validate body
+    const BodySchema = z.object({
+      orderId: z.coerce.number().int(),
+      amount: z.coerce.number().positive(),
+      paymentMethod: z.string().min(1),
+      paymentDate: z.union([z.string(), z.date()]),
+      notes: z.string().nullable().optional(),
+    })
+    const { orderId, amount, paymentMethod, paymentDate, notes } = BodySchema.parse(
+      await readBody(event)
+    )
 
-    // Verify JWT token
-    try {
-      const decoded = jwt.verify(token, config.jwtSecret) as { id: string }
-      if (!decoded || !decoded.id) {
-        throw new Error('Invalid token payload')
-      }
+    const db = useDrizzle()
 
-      const userId = decoded.id
+    // Verify order exists
+    const order = await db.query.orders.findFirst({ where: eq(tables.orders.id, orderId) })
+    if (!order) {
+      throw createError({ statusCode: 404, statusMessage: 'Order not found' })
+    }
 
-      // Read request body
-      const body = await readBody(event)
-
-      const { orderId, amount, paymentMethod, paymentDate, notes = '' } = body
-
-      // Validate required fields
-      if (!orderId) {
-        return {
-          statusCode: 400,
-          body: {
-            success: false,
-            message: 'Order ID is required',
-          },
-        }
-      }
-
-      if (!amount || amount <= 0) {
-        return {
-          statusCode: 400,
-          body: {
-            success: false,
-            message: 'Valid payment amount is required',
-          },
-        }
-      }
-
-      if (!paymentMethod) {
-        return {
-          statusCode: 400,
-          body: {
-            success: false,
-            message: 'Payment method is required',
-          },
-        }
-      }
-
-      if (!paymentDate) {
-        return {
-          statusCode: 400,
-          body: {
-            success: false,
-            message: 'Payment date is required',
-          },
-        }
-      }
-
-      // Get database instance
-      const db = useDrizzle()
-
-      // Check if order exists
-      const order = await db.query.orders.findFirst({
-        where: eq(orders.id, orderId),
+    // Insert payment
+    const result = await db
+      .insert(tables.payments)
+      .values({
+        orderId,
+        amount,
+        paymentMethod,
+        paymentDate: new Date(paymentDate as any),
+        notes: notes || '',
+        createdAt: new Date(),
+        createdBy: String(auth.userId),
       })
+      .returning({ id: tables.payments.id })
 
-      if (!order) {
-        return {
-          statusCode: 404,
-          body: {
-            success: false,
-            message: 'Order not found',
-          },
-        }
-      }
-
-      // Create payment record in database
-      const createdAt = new Date()
-
-      // Insert the payment record
-      const result = await db
-        .insert(payments)
-        .values({
-          orderId: Number(orderId), // Ensure orderId is a number
-          amount: Number(amount), // Ensure amount is a number
-          paymentMethod,
-          paymentDate: new Date(paymentDate), // Convert timestamp to Date
-          notes: notes || '',
-          createdAt,
-          createdBy: userId,
-        })
-        .returning({ id: payments.id })
-
-      // Get the generated payment ID
-      const paymentId = result[0]?.id
-
-      return {
-        success: true,
-        message: 'Payment recorded successfully',
-        data: {
-          paymentId,
-          amount,
-          orderId,
-        },
-      }
-    } catch (tokenError) {
-      console.error('Token verification error:', tokenError)
-      return {
-        statusCode: 401,
-        body: {
-          success: false,
-          message: 'Invalid or expired authentication token',
-        },
-      }
-    }
+    const paymentId = result[0]?.id
+    return ok({ paymentId, amount, orderId })
   } catch (error: any) {
     console.error('Error recording payment:', error)
-
-    return {
-      statusCode: 500,
-      body: {
-        success: false,
-        message: 'An error occurred while recording payment',
-      },
-    }
+    throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message || 'An error occurred while recording payment' })
   }
 })

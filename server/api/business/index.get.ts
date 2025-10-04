@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { createError } from 'h3'
-import { useDrizzle, tables, eq } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {

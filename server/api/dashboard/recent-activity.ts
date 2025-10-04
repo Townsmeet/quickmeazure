@@ -1,7 +1,7 @@
 import type { H3Event, EventHandlerRequest } from 'h3'
 import { defineCachedEventHandler } from '#imports'
 import { createError } from 'h3'
-import { useDrizzle, tables, eq, sql, desc, and } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq, sql, desc, and } from '../../utils/drizzle'
 
 interface ActivityItem {
   id: number

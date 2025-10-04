@@ -1,6 +1,8 @@
-import { defineEventHandler, createError, readBody, getRequestHeaders } from 'h3'
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
-import { verifyToken, generateToken } from '~/server/utils/auth'
+import { defineEventHandler, createError, readBody } from 'h3'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { generateToken } from '../../utils/auth'
+import { ok } from '../../validators'
+import { z } from 'zod'
 
 /**
  * Change the current user's subscription plan
@@ -23,7 +25,25 @@ export default defineEventHandler(async event => {
     const db = useDrizzle()
 
     // Read request body (plan change details)
-    const { planId, billingInterval, paymentReference, cardDetails } = await readBody(event)
+    const BodySchema = z.object({
+      planId: z.union([z.number().int(), z.string()]),
+      billingInterval: z.enum(['month', 'year', 'monthly', 'annual']).default('monthly'),
+      paymentReference: z.string().optional(),
+      cardDetails: z
+        .object({
+          type: z.string().optional(),
+          last4: z.string().optional(),
+          expiryMonth: z.string().optional(),
+          expiryYear: z.string().optional(),
+          brand: z.string().optional(),
+          providerId: z.string().optional(),
+          metadata: z.union([z.string(), z.record(z.any())]).optional(),
+        })
+        .optional(),
+    })
+    const { planId, billingInterval, paymentReference, cardDetails } = BodySchema.parse(
+      await readBody(event)
+    )
 
     if (!planId) {
       throw createError({
@@ -35,7 +55,7 @@ export default defineEventHandler(async event => {
     // Find the active subscription for the user
     const subscription = await db.query.subscriptions.findFirst({
       where: and(
-        eq(tables.subscriptions.userId, Number(userId)),
+        eq(tables.subscriptions.userId, String(userId)),
         eq(tables.subscriptions.status, 'active')
       ),
     })
@@ -64,24 +84,23 @@ export default defineEventHandler(async event => {
     }
 
     // Calculate the new price based on the billing interval
-    const price =
-      billingInterval === 'year'
-        ? plan.price * 12 * 0.85 // 15% discount for annual billing
-        : plan.price
+    const price = billingInterval === 'year' || billingInterval === 'annual'
+      ? plan.price * 12 * 0.85 // 15% discount for annual billing
+      : plan.price
 
     // Update the subscription with the new plan
     const updatedSubscription = await db
       .update(tables.subscriptions)
       .set({
-        planId: planId,
-        interval: billingInterval,
-        price,
+        planId: typeof planId === 'string' ? Number(planId) : planId,
+        billingPeriod: billingInterval === 'year' ? 'annual' : 'monthly',
+        amount: price,
         updatedAt: new Date(),
-        metadata: {
-          ...((subscription.metadata as Record<string, any>) || {}),
+        metadata: JSON.stringify({
+          ...((subscription.metadata as unknown as Record<string, any>) || {}),
           previousPlanId: subscription.planId,
           planChangedAt: new Date().toISOString(),
-        },
+        }),
       })
       .where(eq(tables.subscriptions.id, subscription.id))
       .returning()
@@ -118,7 +137,7 @@ export default defineEventHandler(async event => {
         const paymentRecord = await db
           .insert(tables.subscriptionPayments)
           .values({
-            userId: Number(userId),
+            userId: String(userId),
             subscriptionId: subscription.id,
             amount: price,
             currency: 'NGN',
@@ -126,12 +145,12 @@ export default defineEventHandler(async event => {
             reference: reference,
             description: `Subscription changed to ${plan.name} (${billingInterval === 'year' ? 'yearly' : 'monthly'})`,
             provider: 'paystack',
-            metadata: {
+            metadata: JSON.stringify({
               planId: plan.id,
               previousPlanId: subscription.planId,
               billingInterval: billingInterval,
               planChangedAt: new Date().toISOString(),
-            },
+            }),
           })
           .returning()
 
@@ -143,7 +162,7 @@ export default defineEventHandler(async event => {
 
           // Check if the user already has a payment method
           const existingPaymentMethod = await db.query.paymentMethods.findFirst({
-            where: eq(tables.paymentMethods.userId, Number(userId)),
+            where: eq(tables.paymentMethods.userId, String(userId)),
           })
 
           if (existingPaymentMethod) {
@@ -160,7 +179,10 @@ export default defineEventHandler(async event => {
                 brand: cardDetails.brand,
                 provider: 'paystack',
                 providerId: cardDetails.providerId || reference,
-                metadata: cardDetails.metadata || {},
+                metadata:
+                  typeof cardDetails.metadata === 'string'
+                    ? cardDetails.metadata
+                    : JSON.stringify(cardDetails.metadata || {}),
                 updatedAt: new Date(),
               })
               .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
@@ -169,7 +191,7 @@ export default defineEventHandler(async event => {
             console.log('Creating new payment method for user ID:', userId)
 
             await db.insert(tables.paymentMethods).values({
-              userId: Number(userId),
+              userId: String(userId),
               type: cardDetails.type || 'card',
               last4: cardDetails.last4,
               expiryMonth: cardDetails.expiryMonth,
@@ -178,7 +200,10 @@ export default defineEventHandler(async event => {
               isDefault: true, // Always true since it's the only one
               provider: 'paystack',
               providerId: cardDetails.providerId || reference,
-              metadata: cardDetails.metadata || {},
+              metadata:
+                typeof cardDetails.metadata === 'string'
+                  ? cardDetails.metadata
+                  : JSON.stringify(cardDetails.metadata || {}),
             })
           }
         }
@@ -188,12 +213,7 @@ export default defineEventHandler(async event => {
       }
     }
 
-    return {
-      success: true,
-      message: 'Subscription plan changed successfully',
-      data: updatedSubscription[0],
-      token: newToken,
-    }
+    return ok({ subscription: updatedSubscription[0], token: newToken })
   } catch (error: any) {
     console.error('Error changing subscription plan:', error)
 

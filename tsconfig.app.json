@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["node", "vite/client", "@nuxt/types", "@pinia/nuxt"]
+  },
+  "include": [
+    "./app/**/*.ts",
+    "./app/**/*.js",
+    "./app/**/*.d.ts",
+    "./app/**/*.tsx",
+    "./app/**/*.vue"
+  ],
+  "exclude": ["node_modules", ".nuxt", ".output"]
+}

@@ -1,8 +1,5 @@
-import { eq } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { users } from '~/server/database/schema'
-import { readMultipartFormData } from 'h3'
-import { uploadFileToS3, getFileExtension, getContentType } from '~/server/utils/s3'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 export default defineEventHandler(async event => {
   try {
@@ -14,11 +11,12 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Get the current user
+    const db = useDrizzle()
+    // Get the current user from userProfiles
     const currentUser = await db
       .select()
-      .from(users)
-      .where(eq(users.id, auth.userId))
+      .from(tables.userProfiles)
+      .where(eq(tables.userProfiles.userId, auth.userId))
       .limit(1)
       .then(results => results[0])
 
@@ -65,12 +63,12 @@ export default defineEventHandler(async event => {
 
     // Update the user's avatar in the database
     const result = await db
-      .update(users)
+      .update(tables.userProfiles)
       .set({
         avatar: avatarUrl,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, auth.userId))
+      .where(eq(tables.userProfiles.userId, auth.userId))
       .returning()
 
     if (!result.length) {

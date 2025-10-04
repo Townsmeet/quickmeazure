@@ -1,5 +1,7 @@
 import { defineEventHandler, createError, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
+import { auth } from '../utils/auth'
+import { useDrizzle, tables, eq } from '../utils/drizzle'
 
 // Define the token payload type
 interface TokenPayload {
@@ -36,23 +38,44 @@ export default defineEventHandler(async event => {
     return
   }
 
-  // Get user session from nuxt-auth-utils
-  const session = await getUserSession(event)
+  // Try Better Auth session first
+  try {
+    const session = await auth.api.getSession(event)
+    const sessionUser: any = (session as any)?.user || null
+    const email: string | undefined = sessionUser?.email
+    const name: string | undefined = sessionUser?.name
 
-  // If we have a valid session, continue
-  if (session && session.user) {
-    // Attach user to context for use in API routes
-    event.context.user = session.user
+    if (email) {
+      const db = useDrizzle()
+      // Resolve or create a local user mapped by email
+      const existing = await db
+        .select()
+        .from(tables.users)
+        .where(eq(tables.users.email, email))
+        .limit(1)
+        .then(r => r[0])
 
-    // Set auth context for backward compatibility with existing API endpoints
-    // Use type assertion to access id property safely
-    const user = session.user as any
-    event.context.auth = {
-      userId: user.id,
-      user: session.user,
+      let localUser = existing
+      if (!localUser) {
+        // Create a minimal local user; empty password since Better Auth manages auth
+        const inserted = await db
+          .insert(tables.users)
+          .values({
+            name: name || email.split('@')[0],
+            email,
+            password: '',
+          })
+          .returning()
+        localUser = inserted[0]
+      }
+
+      // Populate context
+      event.context.auth = { userId: localUser.id, user: { id: localUser.id, email, name } }
+      event.context.user = { id: localUser.id, email, name }
+      return
     }
-
-    return
+  } catch {
+    // ignore and continue to JWT fallback
   }
 
   // If no valid session, check for Authorization header (JWT token)

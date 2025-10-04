@@ -1,23 +1,39 @@
-import { defineEventHandler, readBody, getRequestHeaders } from 'h3'
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
-import { verifyToken, generateToken } from '~/server/utils/auth'
+import { defineEventHandler, readBody, createError } from 'h3'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { generateToken } from '../../utils/auth'
+import { ok } from '../../validators'
+import { z } from 'zod'
 
 /**
  * Verify Paystack payment
  */
 export default defineEventHandler(async event => {
   try {
-    const { reference, plan_id, billing_period } = await readBody(event)
+    // Auth via middleware
+    const auth = event.context.auth
+    if (!auth || !auth.userId) {
+      throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+    }
+
+    // Validate body and support legacy field names
+    const BodySchema = z.object({
+      reference: z.string().min(1),
+      plan_id: z.union([z.number().int(), z.string()]).optional(),
+      planId: z.union([z.number().int(), z.string()]).optional(),
+      billing_period: z.enum(['month', 'monthly', 'year', 'annual']).optional(),
+      billingPeriod: z.enum(['monthly', 'annual']).optional(),
+    })
+    const raw = BodySchema.parse(await readBody(event))
+    const reference = raw.reference
+    const planIdRaw = raw.planId ?? raw.plan_id
+    const billingPeriodRaw = raw.billingPeriod ?? raw.billing_period
 
     if (!reference) {
-      return {
-        success: false,
-        message: 'Payment reference is required',
-      }
+      return { success: false, message: 'Payment reference is required' }
     }
 
     // Get Paystack secret key from server environment
-    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY
+    const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
 
     if (!paystackSecretKey) {
       console.error('Paystack secret key not found in environment variables')
@@ -48,57 +64,29 @@ export default defineEventHandler(async event => {
 
     if (data.status && data.data.status === 'success') {
       // Payment was successful
-
-      // Get authentication header from the original request
-      const headers = getRequestHeaders(event)
-      const authHeader = headers.authorization
-
-      if (!authHeader) {
-        console.error('No authorization header found in request')
-        return {
-          success: false,
-          message: 'Authentication required',
-        }
-      }
-
-      console.log('Auth header for subscription creation:', authHeader.substring(0, 15) + '...')
-
       try {
-        // Extract token from auth header
-        const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader
-
-        // Verify the token directly here instead of making another API call
-        const decoded = await verifyToken(token)
-        if (!decoded || !decoded.id) {
-          console.error('Invalid token payload')
-          return {
-            success: false,
-            message: 'Invalid authentication token',
-          }
-        }
-
-        const userId = decoded.id
-        console.log('Verified user ID from token:', userId)
+        const userId = String(auth.userId)
+        console.log('Verified user ID from context:', userId)
 
         // Get database instance
         const db = useDrizzle()
 
         // Ensure plan_id is a number
-        const planIdNum =
-          typeof plan_id === 'string' && !isNaN(Number(plan_id)) ? Number(plan_id) : plan_id
-        console.log('Looking for plan with ID:', planIdNum, 'Original value:', plan_id)
+        const planIdNum = typeof planIdRaw === 'string' && !isNaN(Number(planIdRaw))
+          ? Number(planIdRaw)
+          : (planIdRaw as number | undefined)
+        if (!planIdNum) {
+          console.warn('No planId provided in verify payload; skipping subscription update')
+        }
 
         // Find the plan
-        const plan = await db.query.plans.findFirst({
-          where: eq(tables.plans.id, planIdNum),
-        })
+        const plan = planIdNum
+          ? await db.query.plans.findFirst({ where: eq(tables.plans.id, planIdNum) })
+          : null
 
-        if (!plan) {
+        if (planIdNum && !plan) {
           console.error('Plan not found:', planIdNum)
-          return {
-            success: false,
-            message: 'Selected plan not found',
-          }
+          return { success: false, message: 'Selected plan not found' }
         }
 
         console.log('Found plan:', plan.name, 'with ID:', plan.id)
@@ -107,35 +95,33 @@ export default defineEventHandler(async event => {
         const startDate = new Date()
         const endDate = new Date(startDate)
 
-        if (billing_period === 'month' || billing_period === 'monthly') {
+        const normalizedBilling =
+          billingPeriodRaw === 'month' || billingPeriodRaw === 'monthly'
+            ? 'monthly'
+            : 'annual'
+        if (normalizedBilling === 'monthly') {
           endDate.setMonth(endDate.getMonth() + 1)
-        } else if (billing_period === 'year' || billing_period === 'annual') {
-          endDate.setFullYear(endDate.getFullYear() + 1)
         } else {
-          console.error('Invalid billing period:', billing_period)
-          return {
-            success: false,
-            message: 'Invalid billing period',
-          }
+          endDate.setFullYear(endDate.getFullYear() + 1)
         }
 
         // Check if user already has an active subscription
         const existingSubscription = await db.query.subscriptions.findFirst({
           where: and(
-            eq(tables.subscriptions.userId, Number(userId)),
+            eq(tables.subscriptions.userId, String(userId)),
             eq(tables.subscriptions.status, 'active')
           ),
         })
 
         let subscriptionResult
 
-        if (existingSubscription) {
+        if (existingSubscription && plan) {
           // Update existing subscription
           subscriptionResult = await db
             .update(tables.subscriptions)
             .set({
               planId: plan.id,
-              billingPeriod: billing_period,
+              billingPeriod: normalizedBilling,
               startDate,
               endDate,
               nextBillingDate: endDate,
@@ -147,17 +133,17 @@ export default defineEventHandler(async event => {
             .returning()
 
           console.log('Updated existing subscription:', subscriptionResult[0]?.id)
-        } else {
+        } else if (plan) {
           // Create new subscription
           subscriptionResult = await db
             .insert(tables.subscriptions)
             .values({
-              userId: Number(userId),
+              userId: String(userId),
               planId: plan.id,
               status: 'active',
               startDate,
               endDate,
-              billingPeriod: billing_period,
+              billingPeriod: normalizedBilling,
               amount: data.data.amount / 100, // Convert from kobo to naira
               paymentReference: reference,
               paymentMethod: 'paystack',
@@ -169,58 +155,39 @@ export default defineEventHandler(async event => {
         }
 
         // Generate a new token with updated subscription information
-        const newToken = generateToken({
-          id: userId,
-          subscriptionPlan: plan.id.toString(),
-          subscriptionExpiry: Math.floor(endDate.getTime() / 1000),
-        })
+        const newToken = plan
+          ? generateToken({
+              id: userId,
+              subscriptionPlan: plan.id.toString(),
+              subscriptionExpiry: Math.floor(endDate.getTime() / 1000),
+            })
+          : null
 
         console.log('Generated new token with subscription data')
 
         // Return success with the new token
-        return {
-          success: true,
-          message: 'Payment verified and subscription created successfully',
-          data: {
-            amount: data.data.amount / 100,
-            reference: data.data.reference,
-            plan_id: plan.id,
-            subscription: subscriptionResult[0],
-          },
-          token: newToken,
-        }
+        return ok({
+          amount: data.data.amount / 100,
+          reference: data.data.reference,
+          plan_id: plan?.id,
+          subscription: subscriptionResult?.[0] || null,
+          token: newToken || undefined,
+        })
       } catch (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError)
-        return {
-          success: false,
-          message: 'Payment verified, but subscription creation failed',
-        }
+        throw createError({ statusCode: 500, statusMessage: 'Payment verified, but subscription creation failed' })
       }
 
-      return {
-        success: true,
-        message: 'Payment verified successfully',
-        data: {
-          amount: data.data.amount / 100, // Convert from kobo to naira
-          reference: data.data.reference,
-          plan_id,
-        },
-      }
+      return ok({
+        amount: data.data.amount / 100,
+        reference: data.data.reference,
+        plan_id: planIdRaw,
+      })
     } else {
-      return {
-        success: false,
-        message: 'Payment not successful',
-        data: {
-          reference: data.data.reference,
-        },
-      }
+      return ok({ reference: data.data.reference, status: 'not_successful' })
     }
   } catch (error) {
     console.error('Error verifying payment:', error)
-
-    return {
-      success: false,
-      message: 'An error occurred while verifying payment',
-    }
+    throw createError({ statusCode: 500, statusMessage: 'An error occurred while verifying payment' })
   }
 })

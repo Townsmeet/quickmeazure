@@ -1,6 +1,6 @@
-import { defineEventHandler, createError, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
-import { useDrizzle, tables, eq } from '~/server/utils/drizzle'
+import { defineEventHandler, createError } from 'h3'
+import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { ok } from '../../validators'
 
 /**
  * Get the current user's payment methods
@@ -28,12 +28,11 @@ export default defineEventHandler(async event => {
     const paymentMethods = await db
       .select()
       .from(tables.paymentMethods)
-      .where(eq(tables.paymentMethods.userId, Number(userId)))
+      .where(eq(tables.paymentMethods.userId, String(userId)))
       .execute()
 
-    return {
-      success: true,
-      data: paymentMethods.map(method => ({
+    return ok(
+      paymentMethods.map(method => ({
         id: method.id,
         type: method.type,
         last4: method.last4,
@@ -42,8 +41,9 @@ export default defineEventHandler(async event => {
         isDefault: method.isDefault,
         brand: method.brand,
         createdAt: method.createdAt,
-      })),
-    }
+        updatedAt: method.updatedAt,
+      }))
+    )
   } catch (err) {
     console.error('Error retrieving payment methods:', err)
     throw createError({

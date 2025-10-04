@@ -1,9 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
-import { eq, and } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { orders, clients, styles } from '~/server/database/schema'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
 
-// Define a specialized endpoint just for creating orders
+// Define a specialized endpoint just for creating tables.orders
 export default defineEventHandler(async event => {
   // Only allow POST requests
   const method = getMethod(event)
@@ -24,6 +22,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
+    const db = useDrizzle()
     // Read request body
     const body = await readBody(event)
     console.log('CREATE ENDPOINT: Received order data:', JSON.stringify(body, null, 2))
@@ -46,8 +45,8 @@ export default defineEventHandler(async event => {
     // Verify client exists and belongs to user
     const clientExists = await db
       .select()
-      .from(clients)
-      .where(and(eq(clients.id, body.clientId), eq(clients.userId, auth.userId)))
+      .from(tables.clients)
+      .where(and(eq(tables.clients.id, body.clientId), eq(tables.clients.userId, auth.userId)))
 
     if (clientExists.length === 0) {
       throw createError({
@@ -61,8 +60,8 @@ export default defineEventHandler(async event => {
     if (body.styleId) {
       const styleExists = await db
         .select()
-        .from(styles)
-        .where(and(eq(styles.id, body.styleId), eq(styles.userId, auth.userId)))
+        .from(tables.styles)
+        .where(and(eq(tables.styles.id, body.styleId), eq(tables.styles.userId, auth.userId)))
 
       if (styleExists.length === 0) {
         throw createError({
@@ -114,7 +113,7 @@ export default defineEventHandler(async event => {
       // Insert the order - KEEP THIS SIMPLE
       try {
         console.log('CREATE ENDPOINT: Using ORM insert attempt...')
-        await db.insert(orders).values({
+        await db.insert(tables.orders).values({
           id: newOrder.id,
           clientId: newOrder.clientId,
           measurementId: newOrder.measurementId,
@@ -142,7 +141,7 @@ export default defineEventHandler(async event => {
 
           // Use direct SQL with minimal fields
           const sql = `
-            INSERT INTO orders (
+            INSERT INTO tables.orders (
               id, client_id, measurement_id, style_id, status,
               total_amount, deposit_amount, balance_amount, notes
             ) VALUES (

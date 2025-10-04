@@ -1,6 +1,5 @@
-import { defineEventHandler, createError, readBody, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
-import { useDrizzle, tables, eq, and } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { ok } from '../../validators'
 
 /**
  * Cancel the current user's subscription
@@ -28,7 +27,7 @@ export default defineEventHandler(async event => {
     // Find the active subscription for the user
     const subscription = await db.query.subscriptions.findFirst({
       where: and(
-        eq(tables.subscriptions.userId, Number(userId)),
+        eq(tables.subscriptions.userId, String(userId)),
         eq(tables.subscriptions.status, 'active')
       ),
     })
@@ -46,20 +45,16 @@ export default defineEventHandler(async event => {
       .set({
         status: 'canceled',
         canceledAt: new Date(),
-        metadata: {
-          ...((subscription.metadata as Record<string, any>) || {}),
+        metadata: JSON.stringify({
+          ...((subscription.metadata as unknown as Record<string, any>) || {}),
           cancellationReason: reason || 'User requested cancellation',
-        },
+        }),
         updatedAt: new Date(),
       })
       .where(eq(tables.subscriptions.id, subscription.id))
       .returning()
 
-    return {
-      success: true,
-      message: 'Subscription canceled successfully',
-      data: canceledSubscription[0],
-    }
+    return ok(canceledSubscription[0])
   } catch (error: any) {
     console.error('Error canceling subscription:', error)
 

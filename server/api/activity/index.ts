@@ -1,6 +1,4 @@
-import type { H3Event, EventHandlerRequest } from 'h3'
-import { createError } from 'h3'
-import { useDrizzle, tables, eq, sql, desc, or, between } from '~/server/utils/drizzle'
+import { useDrizzle, tables, eq, sql, desc, or, between } from '../../utils/drizzle'
 
 interface ActivityResponse {
   activities: ActivityItem[]

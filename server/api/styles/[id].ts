@@ -1,9 +1,6 @@
-import { createError, getMethod } from 'h3'
-import { and, eq, sql } from 'drizzle-orm'
-import { db } from '~/server/database'
-import { styles, orders, clients } from '~/server/database/schema'
-import { extractFileFromMultipart, extractFieldsFromMultipart } from '~/server/utils/multipart'
-import { uploadFileToS3, getFileExtension, getContentType } from '~/server/utils/s3'
+import { useDrizzle, tables, and, eq, sql } from '../../utils/drizzle'
+import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
+import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 // Define event handler for style-specific operations
 export default defineEventHandler(async event => {
@@ -29,11 +26,12 @@ export default defineEventHandler(async event => {
     })
   }
 
+  const db = useDrizzle()
   // Check if style exists and belongs to the user
   const styleExists = await db
     .select()
-    .from(styles)
-    .where(and(eq(styles.id, parseInt(styleId)), eq(styles.userId, userId)))
+    .from(tables.styles)
+    .where(and(eq(tables.styles.id, parseInt(styleId)), eq(tables.styles.userId, userId)))
 
   if (!styleExists || styleExists.length === 0) {
     throw createError({
@@ -47,25 +45,25 @@ export default defineEventHandler(async event => {
     try {
       console.log(`API: Fetching style with ID ${styleId}`)
 
-      // Fetch related orders for this style
+      // Fetch related tables.orders for this style
       const relatedOrders = await db
         .select({
-          id: orders.id,
-          clientName: clients.name,
-          createdAt: orders.createdAt,
-          status: orders.status,
-          totalAmount: orders.totalAmount,
+          id: tables.orders.id,
+          clientName: tables.clients.name,
+          createdAt: tables.orders.createdAt,
+          status: tables.orders.status,
+          totalAmount: tables.orders.totalAmount,
         })
-        .from(orders)
-        .innerJoin(clients, eq(orders.clientId, clients.id))
-        .where(sql`CAST(json_extract(${orders.details}, '$.styleId') AS INTEGER) = ${
+        .from(tables.orders)
+        .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
+        .where(sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER) = ${
           parseInt(styleId)
         }`)
 
-      console.log(`API: Found ${relatedOrders.length} related orders`)
+      console.log(`API: Found ${relatedOrders.length} related tables.orders`)
       console.log('API: Style data:', styleExists[0])
 
-      // Return both style and related orders
+      // Return both style and related tables.orders
       return {
         style: styleExists[0],
         relatedOrders,
@@ -148,9 +146,9 @@ export default defineEventHandler(async event => {
       }
 
       await db
-        .update(styles)
+        .update(tables.styles)
         .set(updatedStyle)
-        .where(and(eq(styles.id, parseInt(styleId)), eq(styles.userId, userId)))
+        .where(and(eq(tables.styles.id, parseInt(styleId)), eq(tables.styles.userId, userId)))
 
       return { ...styleExists[0], ...updatedStyle }
     } catch (error: any) {
@@ -169,8 +167,8 @@ export default defineEventHandler(async event => {
   if (method === 'DELETE') {
     try {
       await db
-        .delete(styles)
-        .where(and(eq(styles.id, parseInt(styleId)), eq(styles.userId, userId)))
+        .delete(tables.styles)
+        .where(and(eq(tables.styles.id, parseInt(styleId)), eq(tables.styles.userId, userId)))
 
       return { success: true, message: 'Style deleted successfully' }
     } catch (error) {

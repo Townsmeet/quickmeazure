@@ -1,6 +1,6 @@
-import { defineEventHandler, createError, getRequestHeaders } from 'h3'
-import jwt from 'jsonwebtoken'
-import { useDrizzle, tables, eq, desc } from '~/server/utils/drizzle'
+import { defineEventHandler, createError } from 'h3'
+import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
+import { ok } from '../../validators'
 
 /**
  * Get the current user's billing history
@@ -29,14 +29,13 @@ export default defineEventHandler(async event => {
     const payments = await db
       .select()
       .from(tables.subscriptionPayments)
-      .where(eq(tables.subscriptionPayments.userId, Number(userId)))
+      .where(eq(tables.subscriptionPayments.userId, String(userId)))
       .orderBy(desc(tables.subscriptionPayments.createdAt))
       .limit(10) // Limit to last 10 payments
       .execute()
 
-    return {
-      success: true,
-      data: payments.map(payment => ({
+    return ok(
+      payments.map(payment => ({
         id: payment.id,
         date: payment.createdAt,
         description: payment.description || 'Subscription Payment',
@@ -44,8 +43,8 @@ export default defineEventHandler(async event => {
         status: payment.status,
         reference: payment.reference,
         metadata: payment.metadata,
-      })),
-    }
+      }))
+    )
   } catch (err) {
     console.error('Error retrieving billing history:', err)
     throw createError({

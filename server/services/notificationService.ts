@@ -1,6 +1,6 @@
 import { eq, and, sql, isNull, gt } from 'drizzle-orm'
-import { useDrizzle } from '~/server/utils/drizzle'
-import * as tables from '~/server/database/schema'
+import { useDrizzle } from '../utils/drizzle'
+import * as tables from '../database/schema'
 import { addDays, isBefore, differenceInDays } from 'date-fns'
 
 // Notification types
@@ -107,11 +107,11 @@ export async function generatePaymentReminders() {
     const upcomingRenewals = await db
       .select({
         subscription: tables.subscriptions,
-        user: tables.users,
+        user: tables.user,
         plan: tables.plans,
       })
       .from(tables.subscriptions)
-      .innerJoin(tables.users, eq(tables.subscriptions.userId, tables.users.id))
+      .innerJoin(tables.user, eq(tables.subscriptions.userId, tables.user.id))
       .innerJoin(tables.plans, eq(tables.subscriptions.planId, tables.plans.id))
       .where(
         and(
@@ -176,11 +176,11 @@ export async function generateSubscriptionExpirationAlerts() {
     const upcomingExpirations = await db
       .select({
         subscription: tables.subscriptions,
-        user: tables.users,
+        user: tables.user,
         plan: tables.plans,
       })
       .from(tables.subscriptions)
-      .innerJoin(tables.users, eq(tables.subscriptions.userId, tables.users.id))
+      .innerJoin(tables.user, eq(tables.subscriptions.userId, tables.user.id))
       .innerJoin(tables.plans, eq(tables.subscriptions.planId, tables.plans.id))
       .where(
         and(
@@ -238,11 +238,11 @@ export async function generateUsageLimitWarnings() {
     const subscriptionsWithUsage = await db
       .select({
         subscription: tables.subscriptions,
-        user: tables.users,
+        user: tables.user,
         plan: tables.plans,
       })
       .from(tables.subscriptions)
-      .innerJoin(tables.users, eq(tables.subscriptions.userId, tables.users.id))
+      .innerJoin(tables.user, eq(tables.subscriptions.userId, tables.user.id))
       .innerJoin(tables.plans, eq(tables.subscriptions.planId, tables.plans.id))
       .where(eq(tables.subscriptions.status, 'active'))
 

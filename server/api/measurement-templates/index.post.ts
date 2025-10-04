@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { createTemplate } from '../../utils/templates'
 import { useDrizzle, eq, and } from '../../utils/drizzle'
-import { measurementTemplates, measurementFields, users } from '../../database/schema'
+import { measurementTemplates, measurementFields, user as userTable } from '../../database/schema'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -99,7 +99,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // If this is part of the setup process, mark the user's setup as completed
     if (isSetupProcess) {
-      await db.update(users).set({ hasCompletedSetup: true }).where(eq(users.id, user.id)).execute()
+      await db.update(userTable).set({ hasCompletedSetup: true }).where(eq(userTable.id, user.id)).execute()
 
       console.log(`User ${user.id} has completed setup`)
     }

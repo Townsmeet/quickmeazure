@@ -4,7 +4,7 @@
  * Handles migration of localStorage data between different storage formats
  */
 
-import { STORAGE_KEYS } from '../../constants/storage'
+import { STORAGE_KEYS } from '../constants/storage'
 import { removeFromStorage, setStringToStorage } from './storage'
 
 /**

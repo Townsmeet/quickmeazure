@@ -1,7 +1,25 @@
-/**
- * Authentication utility functions for server-side operations
- */
-import jwt from 'jsonwebtoken'
+import { betterAuth } from 'better-auth'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import * as jwt from 'jsonwebtoken'
+import { useDrizzle } from './drizzle'
+import * as schema from '../database/schema'
+import { useRuntimeConfig } from '#imports'
+
+// Better Auth server instance
+export const auth = betterAuth({
+  database: drizzleAdapter(useDrizzle(), {
+    provider: 'sqlite',
+    schema,
+  }),
+  emailAndPassword: { enabled: true },
+  socialProviders: {
+    google: {
+      clientId: process.env.NUXT_GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.NUXT_GOOGLE_CLIENT_SECRET as string,
+    },
+  },
+  baseURL: process.env.NUXT_BETTER_AUTH_URL,
+})
 
 // Define the token payload type
 export interface TokenPayload {
@@ -14,35 +32,18 @@ export interface TokenPayload {
   exp?: number
 }
 
-/**
- * Verify a JWT token and return the decoded payload
- * @param token JWT token to verify
- * @param requireSubscription Whether to verify if the user has an active subscription
- * @returns Decoded token payload or null if invalid
- */
 export const verifyToken = async (
   token: string,
   requireSubscription: boolean = false
 ): Promise<TokenPayload | null> => {
   try {
     const config = useRuntimeConfig()
-    const decoded = jwt.verify(token, config.jwtSecret) as TokenPayload
-
-    // If subscription verification is required, check if the token contains subscription data
+    const decoded = jwt.verify(token, config.jwtSecret as jwt.Secret) as TokenPayload
     if (requireSubscription) {
-      if (!decoded.subscriptionPlan) {
-        console.error('No subscription plan found in token')
-        throw new Error('No active subscription found')
-      }
-
-      // Check if subscription has expired
-      if (decoded.subscriptionExpiry && decoded.subscriptionExpiry < Date.now() / 1000) {
-        console.error('Subscription has expired')
+      if (!decoded.subscriptionPlan) throw new Error('No active subscription found')
+      if (decoded.subscriptionExpiry && decoded.subscriptionExpiry < Date.now() / 1000)
         throw new Error('Subscription has expired')
-      }
     }
-
-    // Return the decoded token payload
     return decoded
   } catch (error) {
     console.error('JWT verification failed:', error)
@@ -50,13 +51,7 @@ export const verifyToken = async (
   }
 }
 
-/**
- * Generate a JWT token for a user
- * @param payload Data to include in the token
- * @param expiresIn Token expiration time (default: '7d')
- * @returns Generated JWT token
- */
 export const generateToken = (payload: TokenPayload, expiresIn: string = '7d'): string => {
   const config = useRuntimeConfig()
-  return jwt.sign(payload, config.jwtSecret, { expiresIn })
+  return jwt.sign(payload, config.jwtSecret as jwt.Secret, { expiresIn })
 }
