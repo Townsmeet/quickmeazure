@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, and, sql, isNull, gt } from 'drizzle-orm'
 import { useDrizzle } from '~/server/utils/drizzle'
 import * as tables from '~/server/database/schema'
 import { addDays, isBefore, differenceInDays } from 'date-fns'
@@ -54,7 +54,9 @@ export async function createNotification({
           eq(tables.notifications.userId, userId),
           eq(tables.notifications.type, type),
           eq(tables.notifications.title, title),
-          sql`(${tables.notifications.expiresAt} IS NULL OR ${tables.notifications.expiresAt} > NOW())`
+          sql`${tables.notifications.expiresAt} IS NULL OR ${tables.notifications.expiresAt} > ${
+            new Date()
+          }`
         )
       )
       .limit(1)
@@ -76,7 +78,7 @@ export async function createNotification({
         actionUrl,
         actionText,
         expiresAt,
-        metadata,
+        metadata: JSON.stringify(metadata ?? {}),
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -352,7 +354,9 @@ export async function cleanupExpiredNotifications() {
     const db = useDrizzle()
 
     // Delete notifications that have expired
-    await db.delete(tables.notifications).where(sql`${tables.notifications.expiresAt} < NOW()`)
+    await db
+      .delete(tables.notifications)
+      .where(sql`${tables.notifications.expiresAt} < ${new Date()}`)
 
     return { success: true }
   } catch (error) {

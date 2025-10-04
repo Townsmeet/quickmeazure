@@ -20,7 +20,7 @@ async function seedPlans() {
         description: 'Perfect for small tailoring businesses',
         price: 0,
         interval: 'month',
-        features: ['Basic measurements', 'Payment tracking'],
+        features: JSON.stringify(['Basic measurements', 'Payment tracking']),
         isActive: true,
         isFeatured: false,
         maxClients: 100,
@@ -32,12 +32,12 @@ async function seedPlans() {
         description: 'For growing tailoring businesses',
         price: 5000,
         interval: 'month',
-        features: [
+        features: JSON.stringify([
           'Advanced measurements',
           'Payment tracking',
           'Style catalog',
           'Email notifications',
-        ],
+        ]),
         isActive: true,
         isFeatured: true,
         maxClients: 500,
@@ -49,14 +49,14 @@ async function seedPlans() {
         description: 'For established tailoring businesses',
         price: 10000,
         interval: 'month',
-        features: [
+        features: JSON.stringify([
           'Advanced measurements',
           'Payment tracking',
           'Style catalog',
           'Email notifications',
           'Analytics dashboard',
           'Priority support',
-        ],
+        ]),
         isActive: true,
         isFeatured: false,
         maxClients: -1, // Unlimited

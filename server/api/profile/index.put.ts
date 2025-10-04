@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import bcrypt from 'bcryptjs'
+import * as bcrypt from 'bcryptjs'
 import { db } from '~/server/database'
 import { users } from '~/server/database/schema'
 
@@ -56,8 +56,11 @@ export default defineEventHandler(async event => {
 
     // Only update these fields if they are provided
     if (avatar !== undefined) updateData.avatar = avatar
-    if (specializations !== undefined) updateData.specializations = specializations
-    if (services !== undefined) updateData.services = services
+    if (specializations !== undefined)
+      updateData.specializations =
+        typeof specializations === 'string' ? specializations : JSON.stringify(specializations)
+    if (services !== undefined)
+      updateData.services = typeof services === 'string' ? services : JSON.stringify(services)
 
     // Handle password change if provided
     if (currentPassword && newPassword) {
@@ -93,6 +96,27 @@ export default defineEventHandler(async event => {
 
     // Return updated user (exclude password)
     const updatedUser = result[0]
+    // Parse JSON text fields for response
+    const parsedSpecializations =
+      typeof updatedUser.specializations === 'string' && updatedUser.specializations
+        ? (() => {
+            try {
+              return JSON.parse(updatedUser.specializations as unknown as string)
+            } catch {
+              return updatedUser.specializations
+            }
+          })()
+        : updatedUser.specializations
+    const parsedServices =
+      typeof updatedUser.services === 'string' && updatedUser.services
+        ? (() => {
+            try {
+              return JSON.parse(updatedUser.services as unknown as string)
+            } catch {
+              return updatedUser.services
+            }
+          })()
+        : updatedUser.services
     return {
       success: true,
       data: {
@@ -103,8 +127,8 @@ export default defineEventHandler(async event => {
         phone: updatedUser.phone,
         location: updatedUser.location,
         bio: updatedUser.bio,
-        specializations: updatedUser.specializations,
-        services: updatedUser.services,
+        specializations: parsedSpecializations,
+        services: parsedServices,
         avatar: updatedUser.avatar,
         createdAt: updatedUser.createdAt,
         updatedAt: updatedUser.updatedAt,

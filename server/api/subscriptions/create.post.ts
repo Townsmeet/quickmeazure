@@ -208,7 +208,10 @@ export default defineEventHandler(async event => {
                 brand: cardDetails.brand,
                 provider: 'paystack',
                 providerId: cardDetails.providerId || paymentReference,
-                metadata: cardDetails.metadata || {},
+                metadata:
+                  typeof cardDetails.metadata === 'string'
+                    ? cardDetails.metadata
+                    : JSON.stringify(cardDetails.metadata || {}),
                 updatedAt: new Date(),
               })
               .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
@@ -226,7 +229,10 @@ export default defineEventHandler(async event => {
               isDefault: true, // Always true since it's the only one
               provider: 'paystack',
               providerId: cardDetails.providerId || paymentReference,
-              metadata: cardDetails.metadata || {},
+              metadata:
+                typeof cardDetails.metadata === 'string'
+                  ? cardDetails.metadata
+                  : JSON.stringify(cardDetails.metadata || {}),
             })
           }
         } catch (paymentMethodError) {

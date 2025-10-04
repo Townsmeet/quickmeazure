@@ -58,7 +58,9 @@ export default defineEventHandler(async event => {
         })
         .from(orders)
         .innerJoin(clients, eq(orders.clientId, clients.id))
-        .where(sql`CAST((${orders.details}->>'styleId') AS INTEGER) = ${parseInt(styleId)}`)
+        .where(sql`CAST(json_extract(${orders.details}, '$.styleId') AS INTEGER) = ${
+          parseInt(styleId)
+        }`)
 
       console.log(`API: Found ${relatedOrders.length} related orders`)
       console.log('API: Style data:', styleExists[0])

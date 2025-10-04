@@ -1,5 +1,5 @@
-import { drizzle } from 'drizzle-orm/node-postgres'
-import pkg from 'pg'
+import { drizzle } from 'drizzle-orm/libsql'
+
 import {
   eq,
   and,
@@ -21,8 +21,6 @@ import {
 } from 'drizzle-orm'
 
 import * as schema from '../database/schema'
-
-const { Pool } = pkg
 
 // Export tables and query helpers
 export const tables = schema
@@ -50,34 +48,22 @@ export {
 let _db: ReturnType<typeof createDrizzleClient> | null = null
 
 function createDrizzleClient() {
-  // Use the DATABASE_URL directly from environment variables
-  const connectionString = process.env.DATABASE_URL || ''
+  const url = process.env.NUXT_TURSO_DATABASE_URL
+  const authToken = process.env.NUXT_TURSO_AUTH_TOKEN
 
-  if (!connectionString) {
-    console.error('DATABASE_URL is not provided in environment variables')
-    throw new Error('DATABASE_URL is required')
+  if (!url) {
+    console.error('NUXT_TURSO_DATABASE_URL is not provided in environment variables')
+    throw new Error('NUXT_TURSO_DATABASE_URL is required')
   }
 
-  console.log('Creating database connection with provided DATABASE_URL')
-
-  // Create a PostgreSQL connection pool
-  const pool = new Pool({
-    connectionString,
-    ssl:
-      process.env.NODE_ENV === 'production'
-        ? {
-            rejectUnauthorized: false, // Allow self-signed certificates in production
-          }
-        : false,
+  // Create and return the Drizzle client for libsql/Turso
+  return drizzle({
+    connection: {
+      url,
+      authToken,
+    },
+    schema,
   })
-
-  // Set up error handling for the pool
-  pool.on('error', err => {
-    console.error('Unexpected error on idle client', err)
-  })
-
-  // Create and return the Drizzle client
-  return drizzle(pool, { schema })
 }
 
 /**

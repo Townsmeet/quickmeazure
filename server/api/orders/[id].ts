@@ -62,7 +62,7 @@ export default defineEventHandler(async event => {
     })
     .from(orders)
     .innerJoin(clients, eq(orders.clientId, clients.id))
-    .leftJoin(styles, eq(sql`CAST((${orders.details}->>'styleId') AS INTEGER)`, styles.id))
+    .leftJoin(styles, eq(sql`CAST(json_extract(${orders.details}, '$.styleId') AS INTEGER)`, styles.id))
     .where(and(eq(orders.id, parseInt(orderId)), eq(clients.userId, auth.userId)))
 
   if (orderWithClient.length === 0) {
@@ -74,8 +74,9 @@ export default defineEventHandler(async event => {
 
   // Handle GET request to fetch a single order
   if (method === 'GET') {
-    // Extract values from details JSON
-    const details = (orderWithClient[0].details || {}) as OrderDetails
+    // Extract values from details JSON (stored as text)
+    const detailsText = orderWithClient[0].details as unknown as string | null
+    const details = (detailsText ? JSON.parse(detailsText) : {}) as OrderDetails
     return {
       ...orderWithClient[0],
       measurementId: details.measurementId,
@@ -93,7 +94,8 @@ export default defineEventHandler(async event => {
       console.log('Received update data:', JSON.stringify(body, null, 2))
 
       // Get existing order details
-      const currentDetails = (orderWithClient[0].details || {}) as OrderDetails
+      const currentDetailsText = orderWithClient[0].details as unknown as string | null
+      const currentDetails = (currentDetailsText ? JSON.parse(currentDetailsText) : {}) as OrderDetails
 
       // Create updated details object
       const updatedDetails: OrderDetails = {
@@ -121,7 +123,7 @@ export default defineEventHandler(async event => {
 
       // If details were updated, include them
       if (JSON.stringify(currentDetails) !== JSON.stringify(updatedDetails)) {
-        finalUpdateData.details = updatedDetails
+        finalUpdateData.details = JSON.stringify(updatedDetails) as unknown as any
       }
 
       // Handle measurementId separately due to validation requirement
@@ -171,7 +173,7 @@ export default defineEventHandler(async event => {
 
         // Update the details object with new balance
         if (!finalUpdateData.details) {
-          finalUpdateData.details = updatedDetails
+          finalUpdateData.details = JSON.stringify(updatedDetails) as unknown as any
         }
       }
 
@@ -180,7 +182,8 @@ export default defineEventHandler(async event => {
       // If no fields to update, return existing order
       if (Object.keys(finalUpdateData).length === 0) {
         // Extract values from details JSON
-        const details = (orderWithClient[0].details || {}) as OrderDetails
+        const detailsText2 = orderWithClient[0].details as unknown as string | null
+        const details = (detailsText2 ? JSON.parse(detailsText2) : {}) as OrderDetails
         return {
           ...orderWithClient[0],
           measurementId: details.measurementId,
