@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useDashboardApi } from '../../composables/useDashboardApi'
+import { useDashboardApi } from '../../app/composables/useDashboardApi'
 import type {
   DashboardStats,
   ActivityItem,

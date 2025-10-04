@@ -5,7 +5,7 @@ import {
   navigateToRoute,
   type RouteName,
   type NavigationOptions,
-} from '../constants/routes'
+} from '../../constants/routes'
 
 export function useAppRoutes() {
   // Helper to get route path

@@ -1,11 +1,11 @@
-import { API_ENDPOINTS } from '../constants/api'
+import { API_ENDPOINTS } from '../../constants/api'
 import type {
   DashboardStats,
   ActivityItem,
   ClientGrowthData,
   ChartPeriod,
-} from '../types/dashboard'
-import type { Order } from '../types/order'
+} from '../../types/dashboard'
+import type { Order } from '../../types/order'
 
 export function useDashboardApi() {
   const toast = useToast()

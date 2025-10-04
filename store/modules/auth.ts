@@ -15,8 +15,8 @@ import {
   removeFromStorage,
   getStringFromStorage,
   setStringToStorage,
-} from '../../utils/storage'
-import { migrateTokenStorage } from '../../utils/storage-migration'
+} from '../../app/utils/storage'
+import { migrateTokenStorage } from '../../app/utils/storage-migration'
 
 // Composables
 // Note: useAuthApi removed - using direct API calls

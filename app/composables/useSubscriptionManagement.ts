@@ -1,4 +1,4 @@
-import { useAuthStore } from '../store/modules/auth'
+import { useAuthStore } from '../../store/modules/auth'
 import { useToast } from '#imports'
 
 interface SubscriptionData {

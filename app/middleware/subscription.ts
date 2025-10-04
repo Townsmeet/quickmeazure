@@ -17,7 +17,9 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
   }
 
   const authStore = useAuthStore()
-  const { data: subscription, error } = await useFetch('/api/subscriptions/current')
+  const { data: subscription, error } = await useFetch('/api/subscriptions/current', {
+    deep: true
+  })
 
   // Skip middleware if not logged in (auth middleware will handle that)
   if (!authStore.isLoggedIn) {

@@ -13,7 +13,9 @@ export const useMeasurementSettings = () => {
     error.value = null
 
     try {
-      const { data, error: fetchError } = await useFetch('/api/user/measurement-settings')
+      const { data, error: fetchError } = await useFetch('/api/user/measurement-settings', {
+        deep: true
+      })
 
       if (fetchError.value) {
         throw new Error(fetchError.value.message || 'Failed to fetch settings')
