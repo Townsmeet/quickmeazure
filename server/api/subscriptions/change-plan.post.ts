@@ -1,6 +1,6 @@
 import { defineEventHandler, createError, readBody } from 'h3'
-import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
-import { generateToken } from '../../utils/auth'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -20,9 +20,6 @@ export default defineEventHandler(async event => {
 
     console.log('Authenticated user ID:', auth.userId)
     const userId = auth.userId
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Read request body (plan change details)
     const BodySchema = z.object({
@@ -84,9 +81,10 @@ export default defineEventHandler(async event => {
     }
 
     // Calculate the new price based on the billing interval
-    const price = billingInterval === 'year' || billingInterval === 'annual'
-      ? plan.price * 12 * 0.85 // 15% discount for annual billing
-      : plan.price
+    const price =
+      billingInterval === 'year' || billingInterval === 'annual'
+        ? plan.price * 12 * 0.85 // 15% discount for annual billing
+        : plan.price
 
     // Update the subscription with the new plan
     const updatedSubscription = await db

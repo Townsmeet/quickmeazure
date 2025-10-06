@@ -3,8 +3,5 @@ export default defineAppConfig({
     colors: {
       primary: 'teal',
     },
-    notifications: {
-      position: 'top-0 bottom-[unset]',
-    },
   },
 })

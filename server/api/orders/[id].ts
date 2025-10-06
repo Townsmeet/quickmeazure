@@ -1,4 +1,5 @@
-import { useDrizzle, tables, eq, and, sql } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 // Define interfaces for our data structures
 interface OrderDetails {
@@ -40,7 +41,6 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const db = useDrizzle()
   // Verify order exists and belongs to this user
   const orderWithClient = await db
     .select({
@@ -61,7 +61,13 @@ export default defineEventHandler(async event => {
     })
     .from(tables.orders)
     .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
-    .leftJoin(tables.styles, eq(sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER)`, tables.styles.id))
+    .leftJoin(
+      tables.styles,
+      eq(
+        sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER)`,
+        tables.styles.id
+      )
+    )
     .where(and(eq(tables.orders.id, parseInt(orderId)), eq(tables.clients.userId, auth.userId)))
 
   if (orderWithClient.length === 0) {
@@ -94,7 +100,9 @@ export default defineEventHandler(async event => {
 
       // Get existing order details
       const currentDetailsText = orderWithClient[0].details as unknown as string | null
-      const currentDetails = (currentDetailsText ? JSON.parse(currentDetailsText) : {}) as OrderDetails
+      const currentDetails = (
+        currentDetailsText ? JSON.parse(currentDetailsText) : {}
+      ) as OrderDetails
 
       // Create updated details object
       const updatedDetails: OrderDetails = {

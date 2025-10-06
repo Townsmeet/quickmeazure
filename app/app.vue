@@ -1,7 +1,7 @@
 <template>
-  <UApp :toaster="{ position: 'top-center' }">
+  <UApp :toaster="{ position: 'top-right' }">
     <!-- Removed ClientOnly wrapper to fix navigation double-click issue -->
-    <NuxtLayout :name="layout">
+    <NuxtLayout>
       <template #default>
         <!-- Removed :route prop which was causing reactivity issues -->
         <NuxtPage />

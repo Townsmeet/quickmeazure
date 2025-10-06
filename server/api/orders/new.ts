@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
-import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 // Define a specialized endpoint just for creating tables.orders
 export default defineEventHandler(async event => {
@@ -22,7 +23,6 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const db = useDrizzle()
     // Read request body
     const body = await readBody(event)
     console.log('CREATE ENDPOINT: Received order data:', JSON.stringify(body, null, 2))

@@ -1,7 +1,8 @@
 import type { H3Event, EventHandlerRequest } from 'h3'
 import { defineCachedEventHandler } from '#imports'
 import { createError } from 'h3'
-import { useDrizzle, tables, eq, sql, desc, and } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 interface ActivityItem {
   id: number
@@ -70,8 +71,6 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
 
     const userId = auth.userId
     const limit = parseInt((event.context.query?.limit as string) || '10')
-
-    const db = useDrizzle()
 
     // Combined query using UNION ALL for better performance
     const activitiesQuery = db.$with('combined_activities').as(

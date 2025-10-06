@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok, validateBody } from '../../validators'
 import { BusinessUpdateSchema, type BusinessUpdateInput } from '../../validators/business'
 
@@ -8,13 +10,12 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const db = useDrizzle()
   const input: BusinessUpdateInput = await validateBody(event, BusinessUpdateSchema)
 
   const existing = await db
     .select()
-    .from(tables.businessProfiles)
-    .where(eq(tables.businessProfiles.userId, auth.userId as string))
+    .from(tables.businesses)
+    .where(eq(tables.businesses.userId, auth.userId as string))
     .limit(1)
     .then(r => r[0])
 
@@ -36,13 +37,13 @@ export default defineEventHandler(async event => {
 
   const saved = existing
     ? await db
-        .update(tables.businessProfiles)
+        .update(tables.businesses)
         .set(updateData)
-        .where(eq(tables.businessProfiles.userId, auth.userId as string))
+        .where(eq(tables.businesses.userId, auth.userId as string))
         .returning()
         .then(res => res[0])
     : await db
-        .insert(tables.businessProfiles)
+        .insert(tables.businesses)
         .values({ userId: String(auth.userId), ...updateData, createdAt: new Date() })
         .returning()
         .then(res => res[0])

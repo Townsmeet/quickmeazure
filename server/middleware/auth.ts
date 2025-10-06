@@ -1,7 +1,10 @@
 import { defineEventHandler, createError, getRequestHeaders } from 'h3'
 import * as jwt from 'jsonwebtoken'
 import { auth } from '../utils/auth'
-import { useDrizzle, tables, eq } from '../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../utils/drizzle'
+import * as tables from '../database/schema'
+import { randomUUID } from 'crypto'
 
 // Define the token payload type
 interface TokenPayload {
@@ -46,24 +49,25 @@ export default defineEventHandler(async event => {
     const name: string | undefined = sessionUser?.name
 
     if (email) {
-      const db = useDrizzle()
+      // db is already imported
       // Resolve or create a local user mapped by email
       const existing = await db
         .select()
-        .from(tables.users)
-        .where(eq(tables.users.email, email))
+        .from(tables.user)
+        .where(eq(tables.user.email, email))
         .limit(1)
         .then(r => r[0])
 
       let localUser = existing
       if (!localUser) {
-        // Create a minimal local user; empty password since Better Auth manages auth
+        // Create a minimal local user; Better Auth manages auth separately
         const inserted = await db
-          .insert(tables.users)
+          .insert(tables.user)
           .values({
+            id: randomUUID(),
             name: name || email.split('@')[0],
             email,
-            password: '',
+            emailVerified: true, // Since they're coming from Better Auth session
           })
           .returning()
         localUser = inserted[0]

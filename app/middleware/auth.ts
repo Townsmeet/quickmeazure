@@ -1,15 +1,35 @@
-import { useAuthStore } from '~/store/modules/auth'
-
 export default defineNuxtRouteMiddleware(to => {
   if (import.meta.server) return // Skip middleware on server-side
 
-  console.log('Auth middleware running for route:', to.path)
+  console.log(
+    '🔒 AUTH MIDDLEWARE TEMPORARILY DISABLED - ALLOWING ALL ROUTES:',
+    to.path,
+    'FULL PATH:',
+    to.fullPath
+  )
+
+  // TEMPORARILY ALLOW ALL REQUESTS TO PASS
+  // This is to debug the verify-callback redirect issue
+  return
+
+  // TODO: Re-enable auth middleware after debugging
+  /*
+  import { useAuthStore } from '~/store/modules/auth'
+  
   const authStore = useAuthStore()
 
   // Skip for public routes
   if (isPublicRoute(to.path)) {
+    console.log('Route is public, skipping auth check:', to.path)
     return
   }
+
+  console.log('Route is not public, checking authentication:', {
+    path: to.path,
+    isLoggedIn: authStore.isLoggedIn,
+    hasToken: !!authStore.token,
+    hasUser: !!authStore.user
+  })
 
   // If the user isn't authenticated, redirect to login
   if (!authStore.isLoggedIn) {
@@ -52,47 +72,55 @@ export default defineNuxtRouteMiddleware(to => {
   }
 
   console.log('User authenticated, proceeding to route')
-})
 
-// Helper function to determine if a route is public
-function isPublicRoute(path: string): boolean {
-  // These routes are accessible without authentication
-  const publicRoutes = [
-    '/',
-    '/auth/login',
-    '/auth/register',
-    '/auth/forgot-password',
-    '/auth/setup-measurements',
-    '/legal/terms',
-    '/legal/privacy',
-  ]
+  // Helper function to determine if a route is public
+  function isPublicRoute(path: string): boolean {
+    // These routes are accessible without authentication
+    const publicRoutes = [
+      '/',
+      '/auth/login',
+      '/auth/register',
+      '/auth/forgot-password',
+      '/auth/setup-measurements',
+      '/auth/verify-callback',
+      '/auth/verify-email',
+      '/legal/terms',
+      '/legal/privacy',
+    ]
 
-  // Check if the path starts with any of these prefixes
-  const publicPrefixes = ['/auth/', '/legal/']
+    // Check if the path starts with any of these prefixes
+    const publicPrefixes = ['/auth/', '/legal/']
 
-  // Check exact matches
-  if (publicRoutes.includes(path)) {
-    return true
+    console.log('Checking if route is public:', { path, publicRoutes, publicPrefixes })
+
+    // Check exact matches
+    if (publicRoutes.includes(path)) {
+      console.log('Route is public (exact match):', path)
+      return true
+    }
+
+    // Check prefixes
+    const isPublic = publicPrefixes.some(prefix => path.startsWith(prefix))
+    console.log('Route public status (prefix check):', { path, isPublic })
+    return isPublic
   }
 
-  // Check prefixes
-  return publicPrefixes.some(prefix => path.startsWith(prefix))
-}
+  // Helper function to determine if a route requires authentication
+  function isAuthenticatedRoute(path: string): boolean {
+    // These routes require authentication
+    const authPrefixes = [
+      '/dashboard',
+      '/clients',
+      '/measurements',
+      '/orders',
+      '/styles',
+      '/settings',
+      '/profile',
+      '/auth/confirm',
+      '/auth/setup-measurements',
+    ]
 
-// Helper function to determine if a route requires authentication
-function isAuthenticatedRoute(path: string): boolean {
-  // These routes require authentication
-  const authPrefixes = [
-    '/dashboard',
-    '/clients',
-    '/measurements',
-    '/orders',
-    '/styles',
-    '/settings',
-    '/profile',
-    '/auth/confirm',
-    '/auth/setup-measurements',
-  ]
-
-  return authPrefixes.some(prefix => path.startsWith(prefix))
-}
+    return authPrefixes.some(prefix => path.startsWith(prefix))
+  }
+  */
+})

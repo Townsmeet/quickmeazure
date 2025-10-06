@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 export default defineEventHandler(async event => {
@@ -11,12 +13,11 @@ export default defineEventHandler(async event => {
       })
     }
 
-    const db = useDrizzle()
-    // Get the current user from userProfiles
+    // Get the current user from businesses (user profile)
     const currentUser = await db
       .select()
-      .from(tables.userProfiles)
-      .where(eq(tables.userProfiles.userId, auth.userId))
+      .from(tables.businesses)
+      .where(eq(tables.businesses.userId, auth.userId))
       .limit(1)
       .then(results => results[0])
 
@@ -63,12 +64,12 @@ export default defineEventHandler(async event => {
 
     // Update the user's avatar in the database
     const result = await db
-      .update(tables.userProfiles)
+      .update(tables.businesses)
       .set({
-        avatar: avatarUrl,
+        image: avatarUrl,
         updatedAt: new Date(),
       })
-      .where(eq(tables.userProfiles.userId, auth.userId))
+      .where(eq(tables.businesses.userId, auth.userId))
       .returning()
 
     if (!result.length) {

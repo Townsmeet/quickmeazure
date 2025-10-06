@@ -1,5 +1,6 @@
 import { defineEventHandler, createError } from 'h3'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 
 /**
@@ -18,9 +19,6 @@ export default defineEventHandler(async event => {
 
     console.log('Authenticated user ID:', auth.userId)
     const userId = auth.userId
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Find the user's payment methods
     console.log('Querying for payment methods for user ID:', userId)

@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
+import { eq } from 'drizzle-orm'
 
 // Define event handler
 export default defineEventHandler(async event => {
@@ -22,9 +24,12 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const db = useDrizzle()
   // Verify client belongs to authenticated user
-  const clientData = await db.select().from(tables.tables.clients).where(eq(tables.tables.clients.id, id)).limit(1)
+  const clientData = await db
+    .select()
+    .from(tables.clients)
+    .where(eq(tables.clients.id, id))
+    .limit(1)
 
   if (clientData.length === 0) {
     throw createError({
@@ -123,7 +128,11 @@ export default defineEventHandler(async event => {
       }
 
       // Return updated client with tables.measurements
-      const updatedClient = await db.select().from(tables.clients).where(eq(tables.clients.id, id)).limit(1)
+      const updatedClient = await db
+        .select()
+        .from(tables.clients)
+        .where(eq(tables.clients.id, id))
+        .limit(1)
 
       const updatedMeasurement = await db
         .select()

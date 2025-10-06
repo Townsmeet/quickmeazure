@@ -1,5 +1,6 @@
 import { eq, and, desc, isNull, or, gt } from 'drizzle-orm'
-import { useDrizzle, tables } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 export default defineEventHandler(async event => {
   try {
@@ -10,8 +11,6 @@ export default defineEventHandler(async event => {
         statusMessage: 'Unauthorized',
       })
     }
-
-    const db = useDrizzle()
 
     // Get user data from Better Auth user table
     const userData = await db
@@ -36,11 +35,11 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Get user profile data
+    // Get user profile data from businesses table
     const profileData = await db
       .select()
-      .from(tables.userProfiles)
-      .where(eq(tables.userProfiles.userId, auth.userId))
+      .from(tables.businesses)
+      .where(eq(tables.businesses.userId, auth.userId))
       .limit(1)
       .then(results => results[0] || null)
 

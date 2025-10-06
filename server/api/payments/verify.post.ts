@@ -1,6 +1,5 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
-import { generateToken } from '../../utils/auth'
+import { db } from '../../utils/drizzle'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -33,7 +32,8 @@ export default defineEventHandler(async event => {
     }
 
     // Get Paystack secret key from server environment
-    const paystackSecretKey = process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
+    const paystackSecretKey =
+      process.env.NUXT_PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET_KEY
 
     if (!paystackSecretKey) {
       console.error('Paystack secret key not found in environment variables')
@@ -68,13 +68,11 @@ export default defineEventHandler(async event => {
         const userId = String(auth.userId)
         console.log('Verified user ID from context:', userId)
 
-        // Get database instance
-        const db = useDrizzle()
-
         // Ensure plan_id is a number
-        const planIdNum = typeof planIdRaw === 'string' && !isNaN(Number(planIdRaw))
-          ? Number(planIdRaw)
-          : (planIdRaw as number | undefined)
+        const planIdNum =
+          typeof planIdRaw === 'string' && !isNaN(Number(planIdRaw))
+            ? Number(planIdRaw)
+            : (planIdRaw as number | undefined)
         if (!planIdNum) {
           console.warn('No planId provided in verify payload; skipping subscription update')
         }
@@ -96,9 +94,7 @@ export default defineEventHandler(async event => {
         const endDate = new Date(startDate)
 
         const normalizedBilling =
-          billingPeriodRaw === 'month' || billingPeriodRaw === 'monthly'
-            ? 'monthly'
-            : 'annual'
+          billingPeriodRaw === 'month' || billingPeriodRaw === 'monthly' ? 'monthly' : 'annual'
         if (normalizedBilling === 'monthly') {
           endDate.setMonth(endDate.getMonth() + 1)
         } else {
@@ -175,7 +171,10 @@ export default defineEventHandler(async event => {
         })
       } catch (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError)
-        throw createError({ statusCode: 500, statusMessage: 'Payment verified, but subscription creation failed' })
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Payment verified, but subscription creation failed',
+        })
       }
 
       return ok({
@@ -188,6 +187,9 @@ export default defineEventHandler(async event => {
     }
   } catch (error) {
     console.error('Error verifying payment:', error)
-    throw createError({ statusCode: 500, statusMessage: 'An error occurred while verifying payment' })
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'An error occurred while verifying payment',
+    })
   }
 })

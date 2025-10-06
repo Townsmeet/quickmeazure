@@ -1,4 +1,5 @@
-import { useDrizzle, tables, and, eq, sql } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
@@ -26,7 +27,6 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const db = useDrizzle()
   // Check if style exists and belongs to the user
   const styleExists = await db
     .select()
@@ -56,9 +56,11 @@ export default defineEventHandler(async event => {
         })
         .from(tables.orders)
         .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
-        .where(sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER) = ${
-          parseInt(styleId)
-        }`)
+        .where(
+          sql`CAST(json_extract(${tables.orders.details}, '$.styleId') AS INTEGER) = ${parseInt(
+            styleId
+          )}`
+        )
 
       console.log(`API: Found ${relatedOrders.length} related tables.orders`)
       console.log('API: Style data:', styleExists[0])

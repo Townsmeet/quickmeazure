@@ -2,7 +2,8 @@ import type { H3Event, EventHandlerRequest } from 'h3'
 import { defineCachedEventHandler } from '#imports'
 import { createError } from 'h3'
 import { count, sql } from 'drizzle-orm'
-import { useDrizzle, tables, eq, and, desc } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 // Helper function to safely extract count from query result
 const getCount = (result: { count: number }[]): number => result[0]?.count || 0
@@ -31,7 +32,6 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
     }
 
     const userId = auth.userId
-    const db = useDrizzle()
     const now = new Date()
 
     // Calculate date ranges

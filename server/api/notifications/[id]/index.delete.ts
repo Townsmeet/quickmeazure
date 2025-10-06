@@ -1,5 +1,4 @@
-import { useDrizzle, tables, eq, and } from '../../../utils/drizzle'
-import { verifyToken } from '../../../utils/auth'
+import { db } from '../../../utils/drizzle'
 
 /**
  * Delete a notification
@@ -46,9 +45,6 @@ export default defineEventHandler(async event => {
     }
 
     const userId = decoded.id
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Delete notification
     const deletedNotification = await db

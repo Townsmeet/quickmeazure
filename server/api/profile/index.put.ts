@@ -1,4 +1,5 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok, validateBody } from '../../validators'
 import { ProfileUpdateSchema, type ProfileUpdateInput } from '../../validators/profile'
 
@@ -8,33 +9,30 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const db = useDrizzle()
   const input: ProfileUpdateInput = await validateBody(event, ProfileUpdateSchema)
 
-  // Upsert into userProfiles keyed by Better Auth user.id (text)
+  // Upsert into businesses table (user profile)
   const existing = await db
     .select()
-    .from(tables.userProfiles)
-    .where(eq(tables.userProfiles.userId, auth.userId as string))
+    .from(tables.businesses)
+    .where(eq(tables.businesses.userId, auth.userId as string))
     .limit(1)
     .then(r => r[0])
 
   const updateData: any = {
-    ...('name' in input ? { name: input.name ?? null } : {}),
-    ...('email' in input ? { email: input.email ?? null } : {}),
     ...('businessName' in input ? { businessName: input.businessName ?? null } : {}),
     ...('phone' in input ? { phone: input.phone ?? null } : {}),
     ...('location' in input ? { location: input.location ?? null } : {}),
     ...('bio' in input ? { bio: input.bio ?? null } : {}),
-    ...('avatar' in input ? { avatar: input.avatar ?? null } : {}),
+    ...('avatar' in input ? { image: input.avatar ?? null } : {}),
     ...('specializations' in input
       ? {
           specializations:
             typeof input.specializations === 'string'
               ? input.specializations
               : input.specializations
-              ? JSON.stringify(input.specializations)
-              : null,
+                ? JSON.stringify(input.specializations)
+                : null,
         }
       : {}),
     ...('services' in input
@@ -43,8 +41,8 @@ export default defineEventHandler(async event => {
             typeof input.services === 'string'
               ? input.services
               : input.services
-              ? JSON.stringify(input.services)
-              : null,
+                ? JSON.stringify(input.services)
+                : null,
         }
       : {}),
     updatedAt: new Date(),
@@ -52,13 +50,13 @@ export default defineEventHandler(async event => {
 
   const saved = existing
     ? await db
-        .update(tables.userProfiles)
+        .update(tables.businesses)
         .set(updateData)
-        .where(eq(tables.userProfiles.userId, auth.userId as string))
+        .where(eq(tables.businesses.userId, auth.userId as string))
         .returning()
         .then(res => res[0])
     : await db
-        .insert(tables.userProfiles)
+        .insert(tables.businesses)
         .values({ userId: String(auth.userId), ...updateData, createdAt: new Date() })
         .returning()
         .then(res => res[0])

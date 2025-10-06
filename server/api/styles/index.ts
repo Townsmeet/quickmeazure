@@ -1,5 +1,6 @@
 // uuid import removed as it's not being used
-import { useDrizzle, tables, and, eq, desc, asc, sql } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
@@ -21,7 +22,6 @@ export default defineEventHandler(async event => {
   // Handle GET request to get all styles
   if (method === 'GET') {
     try {
-      const db = useDrizzle()
       // Get the query parameters
       const query = getQuery(event)
       const page = parseInt((query.page as string) || '1')
@@ -111,7 +111,6 @@ export default defineEventHandler(async event => {
   // Handle POST request to create a new style
   if (method === 'POST') {
     try {
-      const db = useDrizzle()
       // Check if content type is multipart/form-data
       const contentType = event.node.req.headers['content-type'] || ''
       const isMultipart = contentType.includes('multipart/form-data')
@@ -268,7 +267,10 @@ export default defineEventHandler(async event => {
       }
 
       // Insert and get the generated id
-      const result = await db.insert(tables.styles).values(newStyle).returning({ id: tables.styles.id })
+      const result = await db
+        .insert(tables.styles)
+        .values(newStyle)
+        .returning({ id: tables.styles.id })
       const styleId = result[0]?.id
 
       console.log('Style created successfully with ID:', styleId)

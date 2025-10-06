@@ -1,5 +1,6 @@
 import { userMeasurementSettings } from '../database/schema'
-import { useDrizzle, eq } from './drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from './drizzle'
 
 /**
  * Get user's measurement settings
@@ -8,8 +9,7 @@ import { useDrizzle, eq } from './drizzle'
  */
 export async function getUserMeasurementSettings(userId: number) {
   try {
-    // Get database connection
-    const db = useDrizzle()
+    // db is already imported
 
     // Query the user's measurement settings
     const settings = await db
@@ -39,8 +39,7 @@ export async function updateUserMeasurementSettings(
   }
 ) {
   try {
-    // Get database connection
-    const db = useDrizzle()
+    // db is already imported
 
     // Check if settings exist for this user
     const existingSettings = await getUserMeasurementSettings(userId)

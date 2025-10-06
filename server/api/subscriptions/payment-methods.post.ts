@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -28,7 +29,6 @@ export default defineEventHandler(async event => {
   const { reference, cardDetails } = BodySchema.parse(await readBody(event))
 
   const userId = String(auth.userId)
-  const db = useDrizzle()
 
   // Check if the user already has a payment method
   const existingPaymentMethod = await db.query.paymentMethods.findFirst({

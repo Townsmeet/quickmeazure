@@ -1,7 +1,8 @@
 import type { H3Event, EventHandlerRequest } from 'h3'
 import { createError } from 'h3'
 import { count } from 'drizzle-orm'
-import { useDrizzle, tables, eq, and, sql } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 interface GrowthItem {
   date: string
@@ -35,9 +36,6 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
     const queryParams = getQuery(event)
     const period = (queryParams.period as string) || '30days'
     console.log('Period requested:', period)
-
-    // Get database connection
-    const db = useDrizzle()
 
     // Calculate date ranges based on period
     const now = new Date()

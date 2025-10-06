@@ -1,4 +1,5 @@
-import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 
 /**
@@ -17,9 +18,6 @@ export default defineEventHandler(async event => {
 
     console.log('Authenticated user ID:', auth.userId)
     const userId = auth.userId
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Read request body (optional cancellation reason)
     const { reason } = await readBody(event)

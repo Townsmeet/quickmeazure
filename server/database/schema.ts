@@ -4,6 +4,7 @@ export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
   name: text('name'),
   email: text('email').notNull().unique(),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
@@ -357,30 +358,25 @@ export const notifications = sqliteTable('notifications', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })
 
-// Export types
-export type User = typeof user.$inferSelect
-export type Plan = typeof plans.$inferSelect
-export type Subscription = typeof subscriptions.$inferSelect
-export type Business = typeof businesses.$inferSelect
-export type Client = typeof clients.$inferSelect
-export type Order = typeof orders.$inferSelect
-export type Style = typeof styles.$inferSelect
-export type Measurement = typeof measurements.$inferSelect
-export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect
-export type OrderPayment = typeof orderPayments.$inferSelect
-export type Notification = typeof notifications.$inferSelect
-export type PaymentMethod = typeof paymentMethods.$inferSelect
-export type MeasurementTemplate = typeof measurementTemplates.$inferSelect
-export type NewMeasurementTemplate = typeof measurementTemplates.$inferInsert
-export type MeasurementField = typeof measurementFields.$inferSelect
-export type NewMeasurementField = typeof measurementFields.$inferInsert
-// Client measurement types now reference the consolidated measurements table
-export type ClientMeasurement = typeof measurements.$inferSelect & {
-  template?: MeasurementTemplate
+// Export all tables as a single object for wildcard imports
+export const tables = {
+  user,
+  session,
+  account,
+  verification,
+  businesses,
+  plans,
+  subscriptions,
+  clients,
+  orders,
+  styles,
+  measurements,
+  payments,
+  measurementTemplates,
+  measurementFields,
+  userMeasurementSettings,
+  paymentMethods,
+  subscriptionPayments,
+  orderPayments,
+  notifications,
 }
-export type NewClientMeasurement = Omit<
-  typeof measurements.$inferInsert,
-  'id' | 'createdAt' | 'updatedAt'
->
-export type UserMeasurementSettings = typeof userMeasurementSettings.$inferSelect
-export type NewUserMeasurementSettings = typeof userMeasurementSettings.$inferInsert

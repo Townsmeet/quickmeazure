@@ -1,8 +1,9 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { useDrizzle, tables, eq, and } from '../../utils/drizzle'
-import { generateToken } from '../../utils/auth'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
+import { eq, and  } from 'drizzle-orm'
 // Subscription type import removed as it's not being used
 
 /**
@@ -49,8 +50,14 @@ export default defineEventHandler(async event => {
         })
         .optional(),
     })
-    const { planId, planName = '', paymentReference, billingPeriod, amount, cardDetails } =
-      BodySchema.parse(await readBody(event))
+    const {
+      planId,
+      planName = '',
+      paymentReference,
+      billingPeriod,
+      amount,
+      cardDetails,
+    } = BodySchema.parse(await readBody(event))
 
     // Validate required fields - planId and billingPeriod are always required
     if (!planId || !billingPeriod) {
@@ -71,9 +78,6 @@ export default defineEventHandler(async event => {
         message: 'Payment reference and amount are required for paid plans',
       })
     }
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Find the plan - ensure planId is converted to a number if it's a string
     const planIdNum = typeof planId === 'string' && !isNaN(Number(planId)) ? Number(planId) : planId
@@ -166,15 +170,15 @@ export default defineEventHandler(async event => {
         })
         .returning()
 
-      // Update userProfiles.hasCompletedSetup to false to ensure setup completeness
+      // Update businesses.hasCompletedSetup to false to ensure setup completeness
       const updatedProfile = await db
-        .update(tables.userProfiles)
+        .update(tables.businesses)
         .set({ hasCompletedSetup: false, updatedAt: new Date() })
-        .where(eq(tables.userProfiles.userId, String(userId)))
+        .where(eq(tables.businesses.userId, String(userId)))
         .returning()
       if (!updatedProfile.length) {
         await db
-          .insert(tables.userProfiles)
+          .insert(tables.businesses)
           .values({ userId: String(userId), hasCompletedSetup: false, createdAt: new Date() })
       }
 

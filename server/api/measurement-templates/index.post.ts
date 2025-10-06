@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import { createTemplate } from '../../utils/templates'
-import { useDrizzle, eq, and } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { measurementTemplates, measurementFields, user as userTable } from '../../database/schema'
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -24,9 +25,6 @@ export default defineEventHandler(async (event: H3Event) => {
         statusMessage: 'Template name is required',
       })
     }
-
-    // Get database connection
-    const db = useDrizzle()
 
     // Check if a template with this name already exists for this user
     const existingTemplate = await db
@@ -99,7 +97,11 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // If this is part of the setup process, mark the user's setup as completed
     if (isSetupProcess) {
-      await db.update(userTable).set({ hasCompletedSetup: true }).where(eq(userTable.id, user.id)).execute()
+      await db
+        .update(userTable)
+        .set({ hasCompletedSetup: true })
+        .where(eq(userTable.id, user.id))
+        .execute()
 
       console.log(`User ${user.id} has completed setup`)
     }

@@ -1,7 +1,7 @@
-import { useDrizzle } from '../utils/drizzle'
+import { db } from '../utils/drizzle'
 
-// Export the database connection
-export const db = useDrizzle()
+// Re-export the database connection
+export { db }
 
 // Re-export schema for convenience
 export * from './schema'

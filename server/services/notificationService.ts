@@ -1,5 +1,5 @@
 import { eq, and, sql } from 'drizzle-orm'
-import { useDrizzle } from '../utils/drizzle'
+import { db } from '../utils/drizzle'
 import * as tables from '../database/schema'
 import { addDays, isBefore, differenceInDays } from 'date-fns'
 
@@ -43,7 +43,7 @@ export async function createNotification({
   metadata?: Record<string, unknown>
 }) {
   try {
-    const db = useDrizzle()
+    // db is already imported
 
     // Check if a similar notification already exists and is not expired
     const existingNotifications = await db
@@ -94,7 +94,7 @@ export async function createNotification({
  */
 export async function generatePaymentReminders() {
   try {
-    const db = useDrizzle()
+    // db is already imported
 
     // Find active subscriptions that will renew in the next 7 days
     const now = new Date()
@@ -163,7 +163,7 @@ export async function generatePaymentReminders() {
  */
 export async function generateSubscriptionExpirationAlerts() {
   try {
-    const db = useDrizzle()
+    // db is already imported
 
     // Find subscriptions that will expire in the next 14 days
     const now = new Date()
@@ -230,7 +230,7 @@ export async function generateSubscriptionExpirationAlerts() {
  */
 export async function generateUsageLimitWarnings() {
   try {
-    const db = useDrizzle()
+    // db is already imported
 
     // Get active subscriptions with their associated plans and usage data
     const subscriptionsWithUsage = await db
@@ -349,7 +349,7 @@ export async function generateUsageLimitWarnings() {
  */
 export async function cleanupExpiredNotifications() {
   try {
-    const db = useDrizzle()
+    // db is already imported
 
     // Delete notifications that have expired
     await db

@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 export default defineEventHandler(async event => {
   // Skip authentication check for this endpoint
@@ -21,7 +23,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const db = useDrizzle()
+    // db is already imported
     const query = getQuery(event)
 
     // Validate required fields

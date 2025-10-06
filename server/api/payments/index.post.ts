@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { eq } from 'drizzle-orm'
-import { useDrizzle, tables } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -27,8 +28,6 @@ export default defineEventHandler(async event => {
       await readBody(event)
     )
 
-    const db = useDrizzle()
-
     // Verify order exists
     const order = await db.query.orders.findFirst({ where: eq(tables.orders.id, orderId) })
     if (!order) {
@@ -53,6 +52,9 @@ export default defineEventHandler(async event => {
     return ok({ paymentId, amount, orderId })
   } catch (error: any) {
     console.error('Error recording payment:', error)
-    throw createError({ statusCode: error.statusCode || 500, statusMessage: error.message || 'An error occurred while recording payment' })
+    throw createError({
+      statusCode: error.statusCode || 500,
+      statusMessage: error.message || 'An error occurred while recording payment',
+    })
   }
 })

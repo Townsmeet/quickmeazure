@@ -4,7 +4,8 @@ import {
   type NewMeasurementTemplate,
   type NewMeasurementField,
 } from '../database/schema'
-import { useDrizzle, eq, and } from './drizzle'
+import { eq, and } from 'drizzle-orm'
+import { db } from './drizzle'
 
 /**
  * Get all measurement templates for a user
@@ -14,8 +15,7 @@ import { useDrizzle, eq, and } from './drizzle'
  */
 export async function getUserTemplates(userId: number, includeArchived: boolean = false) {
   try {
-    // Get database connection
-    const db = useDrizzle()
+    // db is already imported
 
     // Log the request parameters
     console.log(`Getting templates for user ${userId}, includeArchived: ${includeArchived}`)
@@ -94,8 +94,7 @@ export async function createTemplate(
   }>
 ) {
   try {
-    // Get database connection
-    const db = useDrizzle()
+    // db is already imported
 
     // Create template
     const newTemplate: NewMeasurementTemplate = {

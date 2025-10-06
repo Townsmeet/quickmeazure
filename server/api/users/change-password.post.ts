@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import type { H3Event } from 'h3'
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -48,23 +50,27 @@ export default defineEventHandler(async (event: H3Event) => {
       })
     }
 
-    // Get database connection
-    const db = await useDrizzle()
+    // Get user account from database (password is stored in account table)
+    const accounts = await db.select().from(tables.account).where(eq(tables.account.userId, userId))
 
-    // Get user from database
-    const users = await db.select().from(tables.users).where(eq(tables.users.id, userId))
-
-    if (users.length === 0) {
+    if (accounts.length === 0) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'User not found',
+        statusMessage: 'User account not found',
       })
     }
 
-    const userRecord = users[0]
+    const userAccount = accounts[0]
+
+    if (!userAccount.password) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'No password set for this account',
+      })
+    }
 
     // Verify current password
-    const isPasswordValid = await bcrypt.compare(currentPassword, userRecord.password)
+    const isPasswordValid = await bcrypt.compare(currentPassword, userAccount.password)
     if (!isPasswordValid) {
       throw createError({
         statusCode: 400,
@@ -78,12 +84,12 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Update password in database
     await db
-      .update(tables.users)
+      .update(tables.account)
       .set({
         password: hashedPassword,
         updatedAt: new Date(),
       })
-      .where(eq(tables.users.id, userId))
+      .where(eq(tables.account.userId, userId))
 
     return {
       success: true,

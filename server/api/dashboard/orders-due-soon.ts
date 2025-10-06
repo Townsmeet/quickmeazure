@@ -1,6 +1,7 @@
 import type { H3Event, EventHandlerRequest } from 'h3'
 import { createError } from 'h3'
-import { useDrizzle, tables, eq, and, sql } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 interface Order {
   id: number
@@ -27,9 +28,6 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
     const today = new Date()
     const sevenDaysLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
     const formattedDate = sevenDaysLater.toISOString().split('T')[0] // Format as YYYY-MM-DD
-
-    // Get database connection
-    const db = useDrizzle()
 
     // Get orders due within the next 7 days with active statuses (Pending or In Progress)
     const dueOrders = await db

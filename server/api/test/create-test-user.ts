@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { v4 as uuidv4 } from 'uuid'
 
 export default defineEventHandler(async event => {
@@ -22,7 +24,7 @@ export default defineEventHandler(async event => {
   }
 
   try {
-    const db = useDrizzle()
+    // db is already imported
     const body = await readBody(event)
 
     // Validate required fields

@@ -1,8 +1,9 @@
-import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
+import { eq, desc } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 export default defineEventHandler(async _event => {
   try {
-    const db = useDrizzle()
     // Fetch all active plans from the database
     const availablePlans = await db
       .select()

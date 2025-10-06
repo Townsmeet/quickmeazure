@@ -1,13 +1,13 @@
 import * as path from 'path'
 import { migrate } from 'drizzle-orm/libsql/migrator'
-import { useDrizzle } from './drizzle'
+import { db } from './drizzle'
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), 'server/database/migrations')
 
 export async function applyMigrations() {
   try {
     console.log('🔄 Applying database migrations (libsql)...')
-    const db = useDrizzle()
+    // db is already imported
     await migrate(db, { migrationsFolder: MIGRATIONS_DIR })
     console.log('✅ Migrations completed successfully')
     return true

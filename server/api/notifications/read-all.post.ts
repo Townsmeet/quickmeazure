@@ -1,5 +1,5 @@
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
-import { verifyToken } from '../../utils/auth'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 /**
  * Mark all notifications as read for the authenticated user
@@ -37,9 +37,6 @@ export default defineEventHandler(async event => {
     }
 
     const userId = decoded.id
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Update all unread notifications for the user
     await db

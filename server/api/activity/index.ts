@@ -1,4 +1,6 @@
-import { useDrizzle, tables, eq, sql, desc, or, between } from '../../utils/drizzle'
+import { eq, sql, desc, or, between } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 interface ActivityResponse {
   activities: ActivityItem[]
@@ -86,8 +88,7 @@ export default defineEventHandler(async (event: H3Event<EventHandlerRequest>) =>
     // Calculate offset for pagination
     const offset = (page - 1) * perPage
 
-    // Get database connection
-    const db = useDrizzle()
+    // db is already imported
 
     // User ID for filtering
     // We'll use this in each individual query

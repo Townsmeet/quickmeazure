@@ -32,91 +32,88 @@
         </div>
       </div>
 
-      <ClientOnly>
-        <UForm
+      <UForm
 :schema="loginSchema"
 :state="state"
 class="space-y-6"
 @submit="onSubmit">
-          <div class="space-y-4 flex flex-col">
-            <UFormField label="Email" name="email">
-              <UInput
-                v-model="state.email"
-                type="email"
-                placeholder="you@example.com"
-                icon="i-heroicons-envelope"
-                class="w-full"
-                required
-              />
-            </UFormField>
+        <div class="space-y-4 flex flex-col">
+          <UFormField label="Email" name="email">
+            <UInput
+              v-model="state.email"
+              type="email"
+              placeholder="you@example.com"
+              icon="i-heroicons-envelope"
+              class="w-full"
+              required
+            />
+          </UFormField>
 
-            <UFormField label="Password" name="password">
-              <UInput
-                v-model="state.password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="••••••••"
-                icon="i-heroicons-lock-closed"
-                class="w-full"
-                required
-              >
-                <template #trailing>
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    :padded="false"
-                    @click="showPassword = !showPassword"
-                  >
-                    <UIcon
-                      :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
-                      class="h-5 w-5 text-gray-500 hover:text-gray-700"
-                    />
-                  </UButton>
-                </template>
-              </UInput>
-            </UFormField>
+          <UFormField label="Password" name="password">
+            <UInput
+              v-model="state.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              icon="i-heroicons-lock-closed"
+              class="w-full"
+              required
+            >
+              <template #trailing>
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  :padded="false"
+                  @click="showPassword = !showPassword"
+                >
+                  <UIcon
+                    :name="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    class="h-5 w-5 text-gray-500 hover:text-gray-700"
+                  />
+                </UButton>
+              </template>
+            </UInput>
+          </UFormField>
 
-            <div class="flex items-center justify-between">
-              <UCheckbox v-model="state.remember" name="remember" label="Remember me" />
-              <NuxtLink
-                to="/auth/forgot-password"
-                class="text-sm font-medium text-primary-600 hover:text-primary-500"
-              >
-                Forgot password?
-              </NuxtLink>
-            </div>
+          <div class="flex items-center justify-between">
+            <UCheckbox v-model="state.remember" name="remember" label="Remember me" />
+            <NuxtLink
+              to="/auth/forgot-password"
+              class="text-sm font-medium text-primary-600 hover:text-primary-500"
+            >
+              Forgot password?
+            </NuxtLink>
           </div>
+        </div>
 
-          <UButton
-            type="submit"
-            block
-            color="primary"
-            size="lg"
-            :loading="isLoading"
-            :disabled="isLoading"
-          >
-            Sign in with Email
-          </UButton>
+        <UButton
+          type="submit"
+          block
+          color="primary"
+          size="lg"
+          :loading="isLoading"
+          :disabled="isLoading"
+        >
+          Sign in with Email
+        </UButton>
 
-          <div class="text-center my-4">
-            <p class="mt-4 text-center text-sm text-gray-600">
-              Don't have an account?
-              <NuxtLink
-                to="/auth/register"
-                class="font-medium text-primary-600 hover:text-primary-500"
-              >
-                Sign up
-              </NuxtLink>
-            </p>
-          </div>
-        </UForm>
-      </ClientOnly>
+        <div class="text-center my-4">
+          <p class="mt-4 text-center text-sm text-gray-600">
+            Don't have an account?
+            <NuxtLink
+              to="/auth/register"
+              class="font-medium text-primary-600 hover:text-primary-500"
+            >
+              Sign up
+            </NuxtLink>
+          </p>
+        </div>
+      </UForm>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { FormSubmitEvent } from '#ui/types'
-import { ref, reactive } from 'vue'
 import { loginSchema, type LoginData } from '~/schemas/auth'
 
 definePageMeta({
@@ -143,7 +140,7 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
     if (error) {
       toast.add({
         title: 'Login failed',
-        description: error.message || 'An unexpected error occurred',
+        description: error.message,
         icon: 'i-heroicons-exclamation-circle',
         color: 'error',
       })
@@ -161,7 +158,7 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
   } catch (error: any) {
     toast.add({
       title: 'Error',
-      description: error.message || 'An unexpected error occurred',
+      description: error.message,
       icon: 'i-heroicons-exclamation-circle',
       color: 'error',
     })

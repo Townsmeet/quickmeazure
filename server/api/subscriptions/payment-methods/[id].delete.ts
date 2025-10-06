@@ -1,5 +1,5 @@
 import { defineEventHandler, createError } from 'h3'
-import { useDrizzle, tables, eq, and } from '../../../utils/drizzle'
+import { db } from '../../../utils/drizzle'
 import { ok } from '../../../validators'
 import { z } from 'zod'
 
@@ -15,7 +15,6 @@ export default defineEventHandler(async event => {
   }
 
   const userId = String(auth.userId)
-  const db = useDrizzle()
 
   // Check ownership
   const paymentMethod = await db

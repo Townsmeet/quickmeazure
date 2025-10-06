@@ -1,5 +1,6 @@
 import { defineEventHandler, createError } from 'h3'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 
 /**
@@ -15,13 +16,6 @@ export default defineEventHandler(async event => {
         statusMessage: 'Unauthorized',
       })
     }
-
-    console.log('Authenticated user ID:', auth.userId)
-
-    console.log('Fetching subscription plans from database')
-
-    // Get database instance
-    const db = useDrizzle()
 
     // Query active plans from the database
     const dbPlans = await db

@@ -1,6 +1,7 @@
 import { eq, count, exists, desc, asc, sql, and } from 'drizzle-orm'
 import { defineEventHandler, createError } from 'h3'
-import { useDrizzle, tables } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -19,7 +20,7 @@ export default defineEventHandler(async event => {
   }
   console.log('Authenticated user ID:', auth.userId)
 
-  const db = useDrizzle()
+  // db is already imported
 
   // Handle GET request to fetch all clients
   if (method === 'GET') {

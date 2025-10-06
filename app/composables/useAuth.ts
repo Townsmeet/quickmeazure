@@ -6,6 +6,7 @@ export const useAuth = () => {
   const isAuthenticated = computed(() => !!user.value)
   const isLoading = useState<boolean>('auth_loading', () => false)
   const initialized = useState<boolean>('auth_initialized', () => false)
+  const { isOnline, getNetworkError } = useOnline()
 
   // Initialize auth state once
   const init = async () => {
@@ -29,111 +30,169 @@ export const useAuth = () => {
 
   // Login with email/password
   const login = async (email: string, password: string, rememberMe = false) => {
-    try {
-      isLoading.value = true
-      const { data, error } = await authClient.signIn.email({
-        email,
-        password,
-        rememberMe,
-      })
-      if (error) throw new Error(extractMessage(error) ?? 'Try again later or contact support')
+    isLoading.value = true
 
-      if (!data?.user) {
-        throw new Error('No user data returned from authentication')
-      }
-
-      // Update user state
-      user.value = data.user
-      return { error: null }
-    } catch (error: unknown) {
-      user.value = null
-      // Preserve backend error message if present
-      const normalized =
-        error instanceof Error ? error : new Error('An unknown error occurred during login')
-      return { error: normalized }
-    } finally {
+    // Check if browser is offline first
+    if (!isOnline.value) {
       isLoading.value = false
+      return { error: getNetworkError() }
     }
+
+    const { data, error } = await authClient.signIn.email({
+      email,
+      password,
+      rememberMe,
+    })
+
+    // Handle Better Auth API errors
+    if (error) {
+      isLoading.value = false
+      return { error: new Error(error.message) }
+    }
+
+    // Update user state
+    user.value = data.user
+
+    isLoading.value = false
+    return { error: null }
   }
 
   // Register with email/password
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      isLoading.value = true
-      const { data, error } = await authClient.signUp.email({
-        email,
-        password,
-        name,
-      })
-      if (error) throw new Error(extractMessage(error) ?? 'Try again later or contact support')
+  const register = async (name: string, email: string, password: string) => {
+    isLoading.value = true
 
-      if (!data?.user) {
-        throw new Error('No user data returned from registration')
-      }
-
-      // Update user state
-      user.value = data.user
-      return { error: null }
-    } catch (error: unknown) {
-      user.value = null
-      const normalized =
-        error instanceof Error ? error : new Error('An unknown error occurred during registration')
-      return { error: normalized }
-    } finally {
+    // Check if browser is offline first
+    if (!isOnline.value) {
       isLoading.value = false
+      return { error: getNetworkError() }
+    }
+
+    const { error } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+    })
+
+    // Handle Better Auth API errors
+    if (error) {
+      isLoading.value = false
+      return { error: new Error(error.message) }
+    }
+
+    // Since we disabled automatic email sending, manually send verification email
+    try {
+      const { error: emailError } = await authClient.sendVerificationEmail({
+        email,
+        callbackURL: '/auth/verify-callback',
+      })
+      if (emailError) {
+        console.warn('Failed to send verification email:', emailError)
+        // Don't fail registration if email sending fails
+      }
+    } catch (emailError) {
+      console.warn('Failed to send verification email:', emailError)
+      // Don't fail registration if email sending fails
+    }
+
+    // With email verification enabled, user won't be automatically logged in
+    // Instead, they need to verify their email first
+    isLoading.value = false
+    return {
+      error: null,
+      requiresVerification: true,
+      email: email,
     }
   }
 
   // Request password reset
   const requestPasswordReset = async (email: string) => {
-    try {
-      isLoading.value = true
-      const res = await authClient.forgetPassword({
-        email,
-        redirectTo: '/auth/reset-password',
-      })
-      if (res?.error)
-        throw new Error(extractMessage(res.error) ?? 'Try again later or contact support')
+    isLoading.value = true
 
-      return { error: null }
-    } catch (error: unknown) {
-      const normalized = error instanceof Error ? error : new Error('Failed to send reset email')
-      return { error: normalized }
-    } finally {
+    // Check if browser is offline first
+    if (!isOnline.value) {
       isLoading.value = false
+      return { error: getNetworkError() }
     }
+
+    const { error } = await authClient.forgetPassword({
+      email,
+      redirectTo: '/auth/reset-password',
+    })
+
+    // Handle Better Auth API errors
+    if (error) {
+      isLoading.value = false
+      return { error: new Error(error.message) }
+    }
+
+    isLoading.value = false
+    return { error: null }
   }
 
   // Reset password with token
   const resetPassword = async (token: string, password: string) => {
-    try {
-      isLoading.value = true
-      const res = await authClient.resetPassword({
-        token,
-        newPassword: password,
-      })
-      if (res?.error)
-        throw new Error(extractMessage(res.error) ?? 'Try again later or contact support')
+    isLoading.value = true
 
-      return { error: null }
-    } catch (error: unknown) {
-      const normalized = error instanceof Error ? error : new Error('Failed to reset password')
-      return { error: normalized }
-    } finally {
+    // Check if browser is offline first
+    if (!isOnline.value) {
       isLoading.value = false
+      return { error: getNetworkError() }
     }
+
+    const { error } = await authClient.resetPassword({
+      token,
+      newPassword: password,
+    })
+
+    // Handle Better Auth API errors
+    if (error) {
+      isLoading.value = false
+      return { error: new Error(error.message) }
+    }
+
+    isLoading.value = false
+    return { error: null }
+  }
+
+  // Send verification email
+  const sendVerificationEmail = async (email: string) => {
+    isLoading.value = true
+
+    // Check if browser is offline first
+    if (!isOnline.value) {
+      isLoading.value = false
+      return { error: getNetworkError() }
+    }
+
+    const { error } = await authClient.sendVerificationEmail({
+      email,
+      callbackURL: '/auth/verify-callback',
+    })
+
+    // Handle Better Auth API errors
+    if (error) {
+      isLoading.value = false
+      return { error: new Error(error.message) }
+    }
+
+    isLoading.value = false
+    return { error: null }
   }
 
   // Logout
   const logout = async () => {
-    try {
-      await authClient.signOut()
-      user.value = null
-      return navigateTo('/auth/login')
-    } catch (error: unknown) {
-      const normalized = error instanceof Error ? error : new Error('Logout failed')
-      return { error: normalized }
+    const { error } = await authClient.signOut()
+
+    // Clear user state regardless of server response
+    user.value = null
+
+    // Handle Better Auth API errors (but still navigate to login)
+    if (error) {
+      await navigateTo('/auth/login')
+      return { error: new Error(error.message) }
     }
+
+    return navigateTo('/auth/login')
   }
 
   return {
@@ -146,18 +205,6 @@ export const useAuth = () => {
     logout,
     requestPasswordReset,
     resetPassword,
+    sendVerificationEmail,
   }
-}
-
-// Helpers
-function extractMessage(val: unknown): string | null {
-  if (!val) return null
-  if (val instanceof Error) return val.message
-  if (typeof val === 'string') return val
-  if (typeof val === 'object') {
-    // common shapes: { message: string }
-    const obj = val as { message?: unknown }
-    if (typeof obj.message === 'string') return obj.message
-  }
-  return null
 }

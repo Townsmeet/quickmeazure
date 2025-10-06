@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
 import { createError } from 'h3'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { eq } from 'drizzle-orm'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -16,7 +18,6 @@ export default defineEventHandler(async (event: H3Event) => {
     const userId = auth.userId
 
     // Get database connection
-    const db = useDrizzle()
 
     // Get business info for user
     const business = await db

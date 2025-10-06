@@ -222,37 +222,50 @@ const showConfirmPassword = ref(false)
 
 // Password strength and validation
 const passwordStrength = computed(() => getPasswordStrength(state.password))
-const _isPasswordValid = computed(() => validatePassword(state.password).length === 0)
 
 // Submit handler (schema is enforced by UForm)
 const onSubmit = async (_event: FormSubmitEvent<RegisterData>) => {
   try {
-    const { error } = await register(state.name, state.email, state.password)
-    if (error) {
+    const result = await register(state.name, state.email, state.password)
+
+    if (result.error) {
       toast.add({
         title: 'Registration failed',
-        description: error.message || 'An error occurred during registration',
+        description: result.error.message,
         color: 'error',
         icon: 'i-heroicons-exclamation-circle',
       })
       return
     }
 
-    toast.add({
-      title: 'Registration successful!',
-      description: 'Please check your email to confirm your account.',
-      icon: 'i-heroicons-check-circle',
-      color: 'success',
-    })
+    // Check if email verification is required
+    if (result.requiresVerification) {
+      toast.add({
+        title: 'Registration successful!',
+        description: 'Please check your email to verify your account.',
+        icon: 'i-heroicons-check-circle',
+        color: 'success',
+      })
 
-    await navigateTo({
-      path: '/auth/confirm',
-      query: { email: state.email },
-    })
+      await navigateTo({
+        path: '/auth/verify-email',
+        query: { email: result.email },
+      })
+    } else {
+      // Direct login (fallback if verification is disabled)
+      toast.add({
+        title: 'Registration successful!',
+        description: 'Welcome to QuickMeazure!',
+        icon: 'i-heroicons-check-circle',
+        color: 'success',
+      })
+
+      await navigateTo('/auth/confirm')
+    }
   } catch (error: any) {
     toast.add({
       title: 'Error',
-      description: error.message || 'An unexpected error occurred',
+      description: error.message,
       icon: 'i-heroicons-exclamation-circle',
       color: 'error',
     })

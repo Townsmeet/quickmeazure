@@ -1,6 +1,7 @@
 import { eq, and, desc, asc, sql, count } from 'drizzle-orm'
 import { defineEventHandler, createError, getMethod, getQuery, readBody } from 'h3'
-import { useDrizzle, tables } from '../../utils/drizzle'
+import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -17,8 +18,6 @@ export default defineEventHandler(async event => {
     })
   }
 
-  const db = useDrizzle()
-
   // Handle GET request to fetch all orders
   if (method === 'GET') {
     try {
@@ -27,15 +26,26 @@ export default defineEventHandler(async event => {
         clientId: z.coerce.number().int().optional(),
         page: z.coerce.number().int().min(1).default(1),
         limit: z.coerce.number().int().min(1).max(100).default(10),
-        sortField: z.enum(['createdAt', 'updatedAt', 'dueDate', 'status', 'totalAmount', 'client']).default('createdAt'),
+        sortField: z
+          .enum(['createdAt', 'updatedAt', 'dueDate', 'status', 'totalAmount', 'client'])
+          .default('createdAt'),
         sortOrder: z.enum(['asc', 'desc']).default('desc'),
         search: z.string().trim().optional(),
         status: z.string().trim().optional(),
         dueDateStart: z.string().optional(),
         dueDateEnd: z.string().optional(),
       })
-      const { clientId, page, limit, sortField, sortOrder, search, status, dueDateStart, dueDateEnd } =
-        QuerySchema.parse(getQuery(event))
+      const {
+        clientId,
+        page,
+        limit,
+        sortField,
+        sortOrder,
+        search,
+        status,
+        dueDateStart,
+        dueDateEnd,
+      } = QuerySchema.parse(getQuery(event))
 
       // Validate pagination parameters
       if (isNaN(page) || page < 1) {
@@ -220,7 +230,9 @@ export default defineEventHandler(async event => {
       const clientExists = await db
         .select()
         .from(tables.clients)
-        .where(and(eq(tables.clients.id, body.clientId), eq(tables.clients.userId, String(auth.userId))))
+        .where(
+          and(eq(tables.clients.id, body.clientId), eq(tables.clients.userId, String(auth.userId)))
+        )
 
       if (clientExists.length === 0) {
         throw createError({ statusCode: 404, statusMessage: 'Client not found' })
