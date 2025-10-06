@@ -1,106 +1,117 @@
-// Import the Plan type from subscription types
-import type { Plan } from '../types/subscription'
-
-// Define plan type that extends the Plan interface
-type LocalPlan = Omit<Plan, 'interval'> & {
-  interval: 'month' | 'year' // Local interval format
+// Plan interface for our application
+export interface Plan {
+  id: string
+  name: string
+  description: string
+  price: number
+  interval: 'monthly' | 'annually'
+  features: string[]
+  maxClients: number
+  isFeatured?: boolean
+  isPopular?: boolean
 }
 
-// Define the base monthly plans
-export const monthlyPlans: LocalPlan[] = [
+// Base monthly plans
+const basePlans = [
   {
-    id: 1,
-    name: 'Growth',
-    description: 'Basic plan for solo tailors just getting started',
+    id: 'free',
+    name: 'Free',
+    description: 'Perfect for getting started',
     price: 0,
-    interval: 'month',
+    features: ['Up to 5 clients', 'Basic measurements', 'Order tracking', 'Email support'],
+    maxClients: 5,
+    isFeatured: false,
+    isPopular: false,
+  },
+  {
+    id: 'standard',
+    name: 'Standard',
+    description: 'For growing businesses',
+    price: 2500,
+    features: [
+      'Up to 50 clients',
+      'Advanced measurements',
+      'Custom templates',
+      'Payment tracking',
+      'Priority support',
+    ],
     maxClients: 50,
-    isActive: true,
-    isFeatured: false,
-    features: {
-      clients: true,
-      styles: true,
-      orders: true,
-    },
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    name: 'Professional',
-    description: 'Perfect for growing tailor businesses',
-    price: 3000,
-    interval: 'month',
-    maxClients: 200,
-    isActive: true,
     isFeatured: true,
-    features: {
-      clients: true,
-      styles: true,
-      orders: true,
-    },
-    createdAt: new Date().toISOString(),
+    isPopular: true,
   },
   {
-    id: 3,
-    name: 'Enterprise',
-    description: 'For established tailor businesses with multiple staff',
+    id: 'premium',
+    name: 'Premium',
+    description: 'For established businesses',
     price: 5000,
-    interval: 'month',
+    features: [
+      'Unlimited clients',
+      'All measurement features',
+      'Analytics & reports',
+      'API access',
+      '24/7 phone support',
+    ],
     maxClients: -1, // Unlimited
-    isActive: true,
     isFeatured: false,
-    features: {
-      clients: true,
-      styles: true,
-      orders: true,
-      team: true,
-    },
-    createdAt: new Date().toISOString(),
+    isPopular: false,
   },
 ]
 
-// Create annual plans (with separate fixed DB IDs)
-export const annualPlans: LocalPlan[] = [
-  {
-    ...monthlyPlans[0],
-    id: 1, // Use ID 1 for annual Growth plan
-    price: Math.round(monthlyPlans[0].price * 10), // Annual price = 10 months (2 months free)
-    interval: 'year',
-  },
-  {
-    ...monthlyPlans[1],
-    id: 4, // Use ID 4 for annual Professional plan (from DB)
-    price: Math.round(monthlyPlans[1].price * 10), // Annual price = 10 months (2 months free)
-    interval: 'year',
-  },
-  {
-    ...monthlyPlans[2],
-    id: 5, // Use ID 5 for annual Enterprise plan (from DB)
-    price: Math.round(monthlyPlans[2].price * 10), // Annual price = 10 months (2 months free)
-    interval: 'year',
-  },
-]
+// Monthly plans
+export const monthlyPlans: Plan[] = basePlans.map(plan => ({
+  ...plan,
+  interval: 'monthly' as const,
+}))
 
-// Format price for display
-export const formatPrice = (price: number | undefined | null, _isAnnual = false): string => {
-  if (price === undefined || price === null) return '₦0'
+// Annual plans (15% discount - equivalent to 2 months free)
+export const annualPlans: Plan[] = basePlans.map(plan => ({
+  ...plan,
+  interval: 'annually' as const,
+  price: plan.price === 0 ? 0 : Math.round(plan.price * 10.2), // 10.2 months instead of 12 (15% discount)
+}))
 
+// All plans combined
+export const allPlans = [...monthlyPlans, ...annualPlans]
+
+// Helper functions
+export const formatPrice = (price: number): string => {
+  if (price === 0) return '₦0'
   return `₦${price.toLocaleString()}`
 }
 
-/**
- * Convert local plan format to the Plan format used in the application
- */
-export const convertToAppPlan = (localPlan: LocalPlan): Plan => {
-  return {
-    ...localPlan,
-    // Convert interval from 'month'/'year' to 'monthly'/'annual'
-    interval: localPlan.interval === 'month' ? 'monthly' : 'annual',
-    // Ensure all required fields are present
-    limits: {
-      clients: localPlan.maxClients || 0,
-      styles: 100, // Default value
-      storage: 100, // Default value in MB
-    },
-  }
+export const formatBillingCycle = (interval: 'monthly' | 'annually'): string => {
+  return interval === 'monthly' ? '/month' : '/year'
+}
+
+export const formatBillingPeriod = (interval: 'monthly' | 'annually'): string => {
+  return interval === 'monthly' ? 'billed monthly' : 'billed annually'
+}
+
+export const getPlanById = (
+  id: string,
+  interval: 'monthly' | 'annually' = 'monthly'
+): Plan | undefined => {
+  const plans = interval === 'monthly' ? monthlyPlans : annualPlans
+  return plans.find(plan => plan.id === id)
+}
+
+export const getPlans = (interval: 'monthly' | 'annually' = 'monthly'): Plan[] => {
+  return interval === 'monthly' ? monthlyPlans : annualPlans
+}
+
+// Calculate savings for annual plans
+export const getAnnualSavings = (planId: string): number => {
+  const monthlyPlan = getPlanById(planId, 'monthly')
+  const annualPlan = getPlanById(planId, 'annually')
+
+  if (!monthlyPlan || !annualPlan || monthlyPlan.price === 0) return 0
+
+  const monthlyYearlyTotal = monthlyPlan.price * 12
+  const annualTotal = annualPlan.price
+
+  return monthlyYearlyTotal - annualTotal
+}
+
+export const getSavingsPercentage = (): number => {
+  return 15 // 15% savings on annual plans
 }
