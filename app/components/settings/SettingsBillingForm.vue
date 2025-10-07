@@ -250,12 +250,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useSubscriptionStore } from '~/store/modules/subscription'
-import { useAuthStore } from '~/store/modules/auth'
 
-// Initialize stores and composables
-const subscriptionStore = useSubscriptionStore()
-const authStore = useAuthStore()
+// Initialize composables
+const { currentSubscription, changeSubscriptionPlan } = useSubscriptions()
+const { user } = useAuth()
 
 // Define loading state for plan changes
 const changePlanLoading = ref(false)
@@ -266,17 +264,19 @@ const toast = useToast()
 // Track initial loading to avoid showing success toast on first load
 const initialLoad = ref(true)
 
-// Access store properties reactively
-const currentPlan = computed(() => subscriptionStore.currentPlan)
-const status = computed(() => subscriptionStore.status)
-const loading = computed(() => subscriptionStore.isLoading)
-const error = computed(() => subscriptionStore.error)
-const isSubscribed = computed(() => subscriptionStore.isSubscribed)
-const isTrialing = computed(() => subscriptionStore.isTrialing)
-const isCanceled = computed(() => subscriptionStore.isCanceled)
-const isPastDue = computed(() => subscriptionStore.isPastDue)
-// Add plans computed property
-const plans = computed(() => subscriptionStore.plans)
+// Access subscription properties reactively
+const currentPlan = computed(() => currentSubscription.value)
+const { isLoading: loading, error } = useSubscriptions()
+
+// Computed properties for subscription status
+const status = computed(() => currentSubscription.value?.status || 'inactive')
+const isSubscribed = computed(() => currentSubscription.value?.status === 'active')
+const isTrialing = computed(() => currentSubscription.value?.status === 'trialing')
+const isCanceled = computed(() => currentSubscription.value?.status === 'cancelled')
+const isPastDue = computed(() => currentSubscription.value?.status === 'past_due')
+
+// Plans data (simplified for now - can be moved to a separate composable later)
+const plans = ref([])
 
 // Computed properties
 const statusClass = computed(() => {
@@ -600,11 +600,11 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// Access billing history and payment methods from the store
-const billingHistory = computed(() => subscriptionStore.billingHistory)
-const paymentMethods = computed(() => subscriptionStore.paymentMethods)
-const loadingBillingHistory = computed(() => subscriptionStore.isLoading)
-const loadingPaymentMethods = computed(() => subscriptionStore.isLoading)
+// Simplified billing data (TODO: Create useBilling composable)
+const billingHistory = ref([])
+const paymentMethods = ref([])
+const loadingBillingHistory = ref(false)
+const loadingPaymentMethods = ref(false)
 
 // Removed billingColumns as we're using a standard HTML table now
 

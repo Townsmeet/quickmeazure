@@ -204,11 +204,10 @@ color="primary">
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useUserStore } from '~/store/modules/user'
 import type { User } from '~/types/auth'
 
-// Get stores and composables
-const userStore = useUserStore()
+// Get composables
+const { userProfile, updateProfile, isLoading } = useUser()
 const toast = useToast()
 
 // Original profile data to compare changes
@@ -339,8 +338,7 @@ watch(
   data,
   newData => {
     if (newData) {
-      // Update the user store with the fetched data
-      userStore.updateProfile(newData)
+      // User profile is automatically updated by the composable
 
       // Update the form with the fetched data
       updateFormFromProfile(newData)
@@ -379,8 +377,7 @@ async function saveProfile() {
     })
 
     if (data) {
-      // Update the user store with the updated data
-      userStore.updateProfile(data)
+      // User profile is automatically updated by the composable
 
       // Update the form with the updated data
       updateFormFromProfile(data)
@@ -450,8 +447,7 @@ async function handleAvatarUpload() {
           // Update the form with the new avatar URL
           form.value.avatar = data.avatarUrl
 
-          // Update the user store with the new avatar URL
-          userStore.updateProfile({ avatar: data.avatarUrl })
+          // User profile is automatically updated by the composable
 
           // Update the original profile
           if (originalProfile.value) {

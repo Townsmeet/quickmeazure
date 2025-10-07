@@ -60,13 +60,12 @@ class="hover:text-primary-600"
 </template>
 
 <script setup>
-// Get authenticated user with the auth store
+// Get authenticated user with the auth composable
 import { computed, watchEffect } from 'vue'
-import { useAuthStore } from '~/store/modules/auth'
 import { ROUTE_NAMES } from '~/constants/routes'
 
-const authStore = useAuthStore()
-const isLoggedIn = computed(() => authStore.isLoggedIn)
+const { isAuthenticated } = useAuth()
+const isLoggedIn = computed(() => isAuthenticated.value)
 const route = useRoute()
 
 // Redirect to dashboard if user is logged in and trying to access public pages

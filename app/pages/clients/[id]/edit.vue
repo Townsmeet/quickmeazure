@@ -275,13 +275,14 @@ class="text-primary-600 hover:underline"
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import type { Client } from '~/types/client'
-import { useMeasurementTemplatesStore } from '~/store'
-import { useClientStore } from '~/store/modules/client'
 
-// Composable
+// Composables
 const routes = useAppRoutes()
+const { getClient, updateClient } = useClients()
+const { templates, isLoading: templatesLoading, fetchTemplates } = useMeasurementTemplates()
+const { user } = useAuth()
+const toast = useToast()
 
 // Get route params
 const route = useRoute()
@@ -316,22 +317,12 @@ const measurements = ref({
   notes: null,
 })
 
-// Use client store and auth store
-const toast = useToast()
-const clientStore = useClientStore()
-const _authStore = useAuthStore()
-const { currentClient: client, error: _clientError } = storeToRefs(clientStore) // Prefix with underscore to indicate intentionally unused
+// Component state
+const client = ref<Client | null>(null)
 const isLoading = ref(false)
-
-// UI state
 const isUpdating = ref(false)
 const isDeleting = ref(false)
 const isFormValid = computed(() => form.value.name && form.value.name.trim() !== '')
-
-// Use the measurement templates composable
-const measurementTemplatesStore = useMeasurementTemplatesStore()
-const { templates, loading: templatesLoading } = storeToRefs(measurementTemplatesStore)
-const { fetchTemplates } = measurementTemplatesStore
 const hasLoadedTemplates = ref(false)
 const selectedTemplateId = ref(null)
 const templateOptions = computed(() => {
@@ -549,7 +540,6 @@ const fetchClient = async () => {
       $fetch(`/api/clients/${clientId}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${useAuthStore().token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -661,14 +651,10 @@ const updateClient = async () => {
       body: JSON.stringify(updateData),
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${useAuthStore().token}`,
       },
     })
 
     if (response && response.data) {
-      // Update the store with the updated client data
-      clientStore.updateClientInStore(response.data)
-
       // Show success message
       toast.add({
         title: 'Success',
@@ -719,9 +705,6 @@ const deleteClient = async () => {
     // Delete client directly using $fetch
     await $fetch(`/api/clients/${clientId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${useAuthStore().token}`,
-      },
     })
 
     // Remove client from store

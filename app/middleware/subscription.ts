@@ -1,5 +1,3 @@
-import { useAuthStore } from '~/store/modules/auth'
-
 /**
  * Middleware to check if user has an active subscription
  * Redirects to subscription page if no active subscription is found
@@ -16,13 +14,13 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
     return
   }
 
-  const authStore = useAuthStore()
+  const { isAuthenticated } = useAuth()
   const { data: subscription, error } = await useFetch('/api/subscriptions/current', {
-    deep: true
+    deep: true,
   })
 
   // Skip middleware if not logged in (auth middleware will handle that)
-  if (!authStore.isLoggedIn) {
+  if (!isAuthenticated.value) {
     return
   }
 

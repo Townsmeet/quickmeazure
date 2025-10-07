@@ -205,11 +205,6 @@ size="sm">
 // Router and utilities
 import { useRouter, useRoute } from 'vue-router'
 
-// Stores and composables
-import { useAuthStore } from '~/store/modules/auth'
-import { useStyleStore } from '~/store/modules/style'
-// No need to import useStyleApi anymore
-
 // Types
 import type { Style } from '~/types/style'
 
@@ -217,10 +212,10 @@ import type { Style } from '~/types/style'
 const router = useRouter()
 const route = useRoute()
 
-// Composable, stores, and API
+// Composables and API
 const routes = useAppRoutes()
-const authStore = useAuthStore()
-const styleStore = useStyleStore()
+const { getStyle, deleteStyle } = useStyles()
+const { user } = useAuth()
 const toast = useToast()
 
 // Constants

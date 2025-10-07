@@ -146,7 +146,6 @@ class="mt-4"
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { format, parseISO } from 'date-fns'
-import { useAuthStore } from '~/store/modules/auth'
 
 definePageMeta({
   middleware: 'setup-required',
@@ -178,8 +177,8 @@ useHead({
   title: 'Activity Log',
 })
 
-// Get auth store for API calls
-const authStore = useAuthStore()
+// Get auth composable for API calls
+const { user } = useAuth()
 
 // Activity data
 const activities = ref<ActivityItem[]>([])
@@ -343,7 +342,6 @@ const fetchActivity = async () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${authStore.token}`,
           },
         })
     )

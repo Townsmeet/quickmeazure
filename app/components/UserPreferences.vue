@@ -76,10 +76,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '~/store'
 
-// Get user store
-const userStore = useUserStore()
+// Get user composable
+const { userProfile } = useUser()
 
 // Create a local copy of preferences to track changes
 const preferences = ref({
@@ -96,7 +95,9 @@ const preferences = ref({
 
 // Initialize with current preferences
 onMounted(() => {
-  preferences.value = { ...userStore.preferences }
+  if (userProfile.value?.preferences) {
+    preferences.value = { ...userProfile.value.preferences }
+  }
 })
 
 // Track saving state

@@ -62,16 +62,20 @@ export const useClients = () => {
     return clients.value
   }
 
-  // Get client by ID (using $fetch for individual client)
+  // Get client by ID (using useFetch for individual client)
   const getClient = async (id: number): Promise<Client | null> => {
     error.value = null
 
     try {
-      const response = await $fetch<ClientResponse>(`/api/clients/${id}`)
+      const { data } = await useFetch<ClientResponse>(`/api/clients/${id}`, {
+        server: false,
+        default: () => ({ success: false, data: null }) as ClientResponse,
+      })
 
-      if (response.success && response.data) {
-        currentClient.value = response.data
-        return response.data
+      const responseData = data.value as ClientResponse
+      if (responseData?.success && responseData?.data) {
+        currentClient.value = responseData.data
+        return responseData.data
       }
 
       return null
@@ -170,17 +174,20 @@ export const useClients = () => {
     }
   }
 
-  // Search clients (using $fetch)
+  // Search clients (using useFetch)
   const searchClients = async (query: string): Promise<Client[]> => {
     error.value = null
 
     try {
-      const response = await $fetch<ClientsResponse>('/api/clients/search', {
+      const { data } = await useFetch<ClientsResponse>('/api/clients/search', {
         query: { q: query },
+        server: false,
+        default: () => ({ success: false, data: [] }) as ClientsResponse,
       })
 
-      if (response.success && response.data) {
-        return response.data
+      const responseData = data.value as ClientsResponse
+      if (responseData?.success && responseData?.data) {
+        return responseData.data
       }
 
       return []

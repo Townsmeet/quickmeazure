@@ -251,10 +251,9 @@ required>
 
 <script setup lang="ts">
 // Get the order ID from the route
-// Import stores and utilities
+// Import utilities
 import { ref, onMounted } from 'vue'
 import { useOrderApi } from '~/composables/useOrderApi'
-import { useStyleStore } from '~/store'
 import type { Order, OrderItem } from '~/types/order'
 
 // Using _ prefix to indicate it's used in template
@@ -262,6 +261,7 @@ const _UpdateOrderInput = {} as any // Type used in saveOrder function
 
 // Initialize composables
 const orderApi = useOrderApi()
+const { styles, fetchStyles } = useStyles()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
@@ -287,12 +287,11 @@ const form = ref<Partial<Order>>({
   measurements: {},
 })
 
-// Initialize style store with _ prefix since it's used in template
-const _styleStore = useStyleStore()
-
 // Style options for dropdown
 const styleOptions = computed(() => {
-  return _styleStore.styles.map(style => ({
+  if (!styles.value || !Array.isArray(styles.value)) return []
+
+  return styles.value.map(style => ({
     label: style.name || 'Unnamed Style',
     value: style.id,
     icon: 'i-heroicons-swatch',
@@ -413,22 +412,8 @@ const fetchOrder = async () => {
   }
 }
 
-// Fetch order data on component mount
-onMounted(() => {
-  fetchOrder()
+// Fetch order data and styles on component mount
+onMounted(async () => {
+  await Promise.all([fetchOrder(), fetchStyles()])
 })
-
-// Watch for style loading state
-watch(
-  () => _styleStore.isLoading,
-  loading => {
-    if (!loading && _styleStore.error) {
-      toast.add({
-        title: 'Error',
-        description: _styleStore.error,
-        color: 'red',
-      })
-    }
-  }
-)
 </script>

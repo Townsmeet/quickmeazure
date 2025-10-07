@@ -304,8 +304,6 @@
 <script setup lang="ts">
 import { useToast } from '#imports'
 import { ref, onMounted } from 'vue'
-import { API_ENDPOINTS } from '~/constants/api'
-import { useAuthStore } from '~/store/modules/auth'
 import type { Order } from '~/types/order'
 
 // Get the order ID from the route
@@ -313,7 +311,8 @@ const route = useRoute()
 const orderId = route.params.id as string
 
 // Initialize composables
-const authStore = useAuthStore()
+const { getOrder, updateOrderStatus } = useOrders()
+const { user } = useAuth()
 const toast = useToast()
 
 // State

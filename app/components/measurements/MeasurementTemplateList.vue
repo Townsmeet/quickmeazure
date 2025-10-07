@@ -133,7 +133,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useMeasurementTemplatesStore } from '~/store'
 
 const props = defineProps({
   initialTemplates: {
@@ -146,13 +145,13 @@ const emit = defineEmits(['refresh'])
 
 const {
   templates,
-  _loading,
-  _error,
+  isLoading: _loading,
+  error: _error,
   fetchTemplates,
   archiveTemplate,
   unarchiveTemplate,
   deleteTemplate,
-} = useMeasurementTemplatesStore()
+} = useMeasurementTemplates()
 
 // Tabs
 const activeTab = ref('active')

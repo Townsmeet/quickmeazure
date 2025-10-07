@@ -73,7 +73,7 @@
               {{ editingTemplate ? 'Edit Template' : 'New Measurement Template' }}
             </h3>
             <UButton
-              color="gray"
+              color="neutral"
               variant="ghost"
               icon="i-heroicons-x-mark"
               @click="closeTemplateModal"
@@ -106,7 +106,7 @@
           </p>
           <UAlert
             icon="i-heroicons-exclamation-triangle"
-            color="red"
+            color="error"
             variant="soft"
             title="This action cannot be undone"
             class="mt-2"
@@ -117,11 +117,11 @@
 
         <template #footer>
           <div class="flex justify-end gap-3">
-            <UButton color="gray" variant="ghost" @click="isDeleteConfirmOpen = false">
+            <UButton color="neutral" variant="ghost" @click="isDeleteConfirmOpen = false">
               Cancel
             </UButton>
             <UButton
-              color="red"
+              color="error"
               icon="i-heroicons-trash"
               :loading="isDeleting"
               @click="handleDeleteTemplate"
@@ -158,12 +158,12 @@ const {
 const toast = useToast()
 
 // Fetch templates on mount
-const fetchTemplates = async () => {
+const loadTemplates = async () => {
   await fetchTemplatesFromAPI()
 }
 
 // Initial fetch
-onMounted(fetchTemplates)
+onMounted(loadTemplates)
 
 // UI state
 const activeTemplateTab = ref('active')
@@ -215,7 +215,7 @@ const closeTemplateModal = () => {
 
 const handleTemplateSaved = async () => {
   closeTemplateModal()
-  await fetchTemplates()
+  await loadTemplates()
 }
 
 const handleArchiveTemplate = async (id: number) => {
@@ -293,5 +293,5 @@ const handleDeleteTemplate = async () => {
 }
 
 // Watch for changes in the active tab to refresh data
-watch(activeTemplateTab, fetchTemplates)
+watch(activeTemplateTab, loadTemplates)
 </script>

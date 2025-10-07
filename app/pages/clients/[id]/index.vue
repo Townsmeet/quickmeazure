@@ -327,13 +327,11 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/store/modules/auth'
-import { useClientStore } from '~/store/modules/client'
-import { storeToRefs } from 'pinia'
-
-// Composable
+// Composables
 const routes = useAppRoutes()
 const route = useRoute()
+const { getClient } = useClients()
+const { user } = useAuth()
 
 // Get client ID from route
 const clientId = route.params.id as string
@@ -347,12 +345,9 @@ const _getEditClientPath = (id: string): string =>
     }) => string
   )({ id })
 
-// Use client store
-const clientStore = useClientStore()
-const authStore = useAuthStore()
-const { currentClient: client, isLoading } = storeToRefs(clientStore)
-
-// Orders data
+// Component state
+const client = ref(null)
+const isLoading = ref(true)
 const orders = ref([])
 const isLoadingOrders = ref(true)
 
@@ -561,32 +556,22 @@ const debugMeasurements = data => {
 }
 
 // Fetch client details
-const fetchClient = async () => {
+const fetchClientData = async () => {
   try {
     isLoading.value = true
 
-    // Use useAsyncData for GET request
-    const { data: response, error } = await useAsyncData(`client-${clientId}`, () =>
-      $fetch(`/api/clients/${clientId}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${authStore.token}`,
-        },
-      })
-    )
+    // Use the composable to get client
+    const result = await getClient(clientId)
 
-    if (error.value) {
-      throw new Error(error.value?.data?.message || 'Failed to load client details')
-    }
-
-    if (response.value) {
-      // Update the store with the fetched client
-      clientStore.setCurrentClient(response.value.data)
+    if (result.success && result.data) {
+      client.value = result.data
 
       // Run debug analysis on the measurement data
       if (client.value) {
         debugMeasurements(client.value)
       }
+    } else {
+      throw new Error(result.message || 'Failed to load client details')
     }
   } catch (error) {
     console.error('Error fetching client:', error)
@@ -607,22 +592,11 @@ const fetchOrders = async () => {
   isLoadingOrders.value = true
 
   try {
-    if (!authStore.isLoggedIn) {
-      useToast().add({
-        title: 'Authentication required',
-        description: 'Please log in to view orders',
-        color: 'warning',
-      })
-      navigateTo('/auth/login')
-      return
-    }
-
     // Use useAsyncData for GET request
     const { data: response, error } = await useAsyncData(`orders-client-${clientId}`, () =>
       $fetch(`/api/orders?clientId=${clientId}`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${authStore.token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -730,7 +704,7 @@ const getStatusColor = status => {
 
 // Fetch data on component mount
 onMounted(() => {
-  fetchClient()
+  fetchClientData()
   fetchOrders()
 })
 </script>

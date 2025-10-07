@@ -41,7 +41,6 @@ export const useStyles = () => {
   // State
   const styles = useState<Style[]>('styles', () => [])
   const currentStyle = useState<Style | null>('current_style', () => null)
-  const isLoading = useState<boolean>('styles_loading', () => false)
   const error = useState<string | null>('styles_error', () => null)
   const filters = useState<StyleFilter>('styles_filters', () => ({
     search: '',
@@ -49,6 +48,25 @@ export const useStyles = () => {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   }))
+
+  // Data fetching with useFetch
+  const {
+    data: stylesData,
+    pending: isLoading,
+    refresh: refreshStyles,
+  } = useFetch<StylesResponse>('/api/styles', {
+    server: false,
+    default: () => ({ success: false, data: [] }) as StylesResponse,
+    onResponse({ response }) {
+      const responseData = response._data as StylesResponse
+      if (responseData?.success && responseData?.data) {
+        styles.value = responseData.data
+      }
+    },
+    onResponseError({ error: fetchError }) {
+      error.value = fetchError?.message || 'Failed to fetch styles'
+    },
+  })
 
   // Computed
   const filteredStyles = computed(() => {
@@ -64,51 +82,32 @@ export const useStyles = () => {
     })
   })
 
-  // Fetch all styles
+  // Fetch all styles (for compatibility)
   const fetchStyles = async (): Promise<Style[]> => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await $fetch<StylesResponse>('/api/styles', {
-        method: 'GET',
-      })
-
-      if (response.success && response.data) {
-        styles.value = response.data
-        return response.data
-      }
-
-      return []
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch styles'
-      return []
-    } finally {
-      isLoading.value = false
-    }
+    await refreshStyles()
+    return styles.value
   }
 
-  // Get style by ID
+  // Get style by ID (using useFetch)
   const getStyle = async (id: number): Promise<Style | null> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<StyleResponse>(`/api/styles/${id}`, {
-        method: 'GET',
+      const { data } = await useFetch<StyleResponse>(`/api/styles/${id}`, {
+        server: false,
+        default: () => ({ success: false, data: null }) as StyleResponse,
       })
 
-      if (response.success && response.data) {
-        currentStyle.value = response.data
-        return response.data
+      const responseData = data.value as StyleResponse
+      if (responseData?.success && responseData?.data) {
+        currentStyle.value = responseData.data
+        return responseData.data
       }
 
       return null
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch style'
       return null
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -237,27 +236,26 @@ export const useStyles = () => {
     }
   }
 
-  // Search styles
+  // Search styles (using useFetch)
   const searchStyles = async (query: string): Promise<Style[]> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<StylesResponse>('/api/styles/search', {
-        method: 'GET',
+      const { data } = await useFetch<StylesResponse>('/api/styles/search', {
         query: { q: query },
+        server: false,
+        default: () => ({ success: false, data: [] }) as StylesResponse,
       })
 
-      if (response.success && response.data) {
-        return response.data
+      const responseData = data.value as StylesResponse
+      if (responseData?.success && responseData?.data) {
+        return responseData.data
       }
 
       return []
     } catch (err: any) {
       error.value = err.message || 'Failed to search styles'
       return []
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -293,6 +291,9 @@ export const useStyles = () => {
     deleteStyle,
     updateStyleStatus,
     searchStyles,
+
+    // Refresh Actions
+    refreshStyles,
 
     // Local State Actions
     setCurrentStyle,

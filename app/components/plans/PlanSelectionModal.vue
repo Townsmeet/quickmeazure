@@ -176,7 +176,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useSubscriptionStore } from '~/store/modules/subscription'
 
 const props = defineProps({
   modelValue: {
@@ -209,8 +208,8 @@ const isAnnualBilling = ref(props.defaultBillingPeriod === 'annual')
 const isLoading = ref(false)
 const modalRefreshKey = ref(0)
 
-// Store
-const subscriptionStore = useSubscriptionStore()
+// Composables
+const { currentSubscription } = useSubscriptions()
 
 // Computed
 const selectedPlanValue = computed({
@@ -218,9 +217,10 @@ const selectedPlanValue = computed({
   set: value => emit('update:selectedPlan', value),
 })
 
-// Get plans from the store
+// Get plans (simplified for now - can be moved to a separate composable)
 const plans = computed(() => {
-  return subscriptionStore.plans
+  // TODO: Create a usePlans composable or add to useSubscriptions
+  return []
 })
 
 // Filter and format plans for display

@@ -135,15 +135,13 @@ import { useHead, useToast } from '#imports'
 // Composable
 import { useAppRoutes } from '~/composables/useRoutes'
 
-// Stores
-import { useAuthStore } from '~/store/modules/auth'
-import { useStyleStore } from '~/store/modules/style'
-
 // Types
 import type { Style } from '~/types/style'
 
-// Composable
+// Composables
 const routes = useAppRoutes()
+const { getStyle, updateStyle } = useStyles()
+const { user } = useAuth()
 
 // Constants
 const _getStyleDetailPath = (id: string): string =>
@@ -191,9 +189,9 @@ const isFormValid = computed(() => {
   return !!style.value.name
 })
 
-// Stores and composables
-const authStore = useAuthStore()
-const styleStore = useStyleStore()
+// Composables
+const { getStyle, updateStyle } = useStyles()
+const { user } = useAuth()
 const styleApi = useStyleApi()
 
 // Fetch style data
@@ -208,19 +206,12 @@ const fetchStyleData = async () => {
     isLoading.value = true
     error.value = null
 
-    // Check if user is authenticated
-    if (!authStore.isLoggedIn) {
-      error.value = 'Authentication required. Please log in.'
-      navigateTo('/auth/login')
-      return
-    }
+    // Fetch style data using the composable
+    const result = await getStyle(styleId)
 
-    // Fetch style data using the API
-    const response = await styleApi.getStyleById(styleId)
-
-    if (response.success && response.data) {
+    if (result.success && result.data) {
       style.value = {
-        ...response.data,
+        ...result.data,
         imageFile: null,
       }
 
@@ -228,11 +219,8 @@ const fetchStyleData = async () => {
       if (style.value.imageUrl) {
         imagePreview.value = style.value.imageUrl
       }
-
-      // Update the style in the store for consistency
-      styleStore.currentStyle = response.data
     } else {
-      error.value = response.error || 'Style not found'
+      error.value = result.message || 'Style not found'
       toast.add({
         title: 'Error',
         description: error.value,

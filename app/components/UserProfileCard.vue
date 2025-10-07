@@ -66,14 +66,17 @@ class="mt-2"> Upgrade Now </UButton>
 
 <script setup>
 import { computed } from 'vue'
-import { useUserStore } from '~/store'
 
-// Get user store
-const userStore = useUserStore()
+// Get user and subscription composables
+const { user } = useAuth()
+const { currentSubscription } = useSubscriptions()
 
 // Computed properties for subscription display
 const subscriptionLabel = computed(() => {
-  const { status, plan } = userStore.subscriptionDetails
+  if (!currentSubscription.value) return 'Free Plan'
+
+  const status = currentSubscription.value.status
+  const plan = currentSubscription.value.plan || 'free'
 
   switch (status) {
     case 'active':
@@ -88,7 +91,9 @@ const subscriptionLabel = computed(() => {
 })
 
 const subscriptionColor = computed(() => {
-  const { status } = userStore.subscriptionDetails
+  if (!currentSubscription.value) return 'gray'
+
+  const status = currentSubscription.value.status
 
   switch (status) {
     case 'active':

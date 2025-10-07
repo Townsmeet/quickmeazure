@@ -78,14 +78,12 @@ variant="outline"
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useStyleStore } from '~/store/modules/style'
-import { useAuthStore } from '~/store/modules/auth'
 
-// Composable, stores, and API
+// Composables and API
 const routes = useAppRoutes()
 const router = useRouter()
-const styleStore = useStyleStore()
-const authStore = useAuthStore()
+const { createStyle } = useStyles()
+const { user } = useAuth()
 const toast = useToast()
 const STYLES_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.STYLES.INDEX] as string
 
@@ -217,13 +215,12 @@ const saveStyle = async () => {
       method: 'POST',
       body: formData,
       headers: {
-        ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
+        'Content-Type': 'application/json',
       },
     })
 
     if (newStyle) {
-      // Update the store with the new style
-      styleStore.currentStyle = newStyle
+      // Style is automatically updated by the composable
 
       // Show success notification
       toast.add({
@@ -263,8 +260,5 @@ const saveStyle = async () => {
   }
 }
 
-// Clean up the style store when the component is unmounted
-onUnmounted(() => {
-  styleStore.$reset()
-})
+// No cleanup needed with composables
 </script>

@@ -38,60 +38,58 @@ export const useOrders = () => {
   // State
   const orders = useState<Order[]>('orders', () => [])
   const currentOrder = useState<Order | null>('current_order', () => null)
-  const isLoading = useState<boolean>('orders_loading', () => false)
   const error = useState<string | null>('orders_error', () => null)
 
-  // Fetch all orders
-  const fetchOrders = async (): Promise<Order[]> => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await $fetch<OrdersResponse>('/api/orders', {
-        method: 'GET',
-      })
-
-      if (response.success && response.data) {
-        orders.value = response.data
-        return response.data
+  // Data fetching with useFetch
+  const {
+    data: ordersData,
+    pending: isLoading,
+    refresh: refreshOrders,
+  } = useFetch<OrdersResponse>('/api/orders', {
+    server: false,
+    default: () => ({ success: false, data: [] }) as OrdersResponse,
+    onResponse({ response }) {
+      const responseData = response._data as OrdersResponse
+      if (responseData?.success && responseData?.data) {
+        orders.value = responseData.data
       }
+    },
+    onResponseError({ error: fetchError }) {
+      error.value = fetchError?.message || 'Failed to fetch orders'
+    },
+  })
 
-      return []
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch orders'
-      return []
-    } finally {
-      isLoading.value = false
-    }
+  // Fetch all orders (for compatibility)
+  const fetchOrders = async (): Promise<Order[]> => {
+    await refreshOrders()
+    return orders.value
   }
 
-  // Get order by ID
+  // Get order by ID (using useFetch)
   const getOrder = async (id: number): Promise<Order | null> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<OrderResponse>(`/api/orders/${id}`, {
-        method: 'GET',
+      const { data } = await useFetch<OrderResponse>(`/api/orders/${id}`, {
+        server: false,
+        default: () => ({ success: false, data: null }) as OrderResponse,
       })
 
-      if (response.success && response.data) {
-        currentOrder.value = response.data
-        return response.data
+      const responseData = data.value as OrderResponse
+      if (responseData?.success && responseData?.data) {
+        currentOrder.value = responseData.data
+        return responseData.data
       }
 
       return null
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch order'
       return null
-    } finally {
-      isLoading.value = false
     }
   }
 
-  // Create order
+  // Create order (mutation with $fetch)
   const createOrder = async (data: CreateOrderData): Promise<OrderResponse> => {
-    isLoading.value = true
     error.value = null
 
     try {
@@ -102,6 +100,7 @@ export const useOrders = () => {
 
       if (response.success && response.data) {
         orders.value.push(response.data)
+        await refreshOrders()
       }
 
       return response
@@ -109,10 +108,8 @@ export const useOrders = () => {
       error.value = err.message || 'Failed to create order'
       return {
         success: false,
-        message: error.value,
+        message: error.value || undefined,
       }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -214,26 +211,25 @@ export const useOrders = () => {
     }
   }
 
-  // Get orders by client
+  // Get orders by client (using useFetch)
   const getOrdersByClient = async (clientId: number): Promise<Order[]> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<OrdersResponse>(`/api/orders/client/${clientId}`, {
-        method: 'GET',
+      const { data } = await useFetch<OrdersResponse>(`/api/orders/client/${clientId}`, {
+        server: false,
+        default: () => ({ success: false, data: [] }) as OrdersResponse,
       })
 
-      if (response.success && response.data) {
-        return response.data
+      const responseData = data.value as OrdersResponse
+      if (responseData?.success && responseData?.data) {
+        return responseData.data
       }
 
       return []
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch client orders'
       return []
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -261,6 +257,9 @@ export const useOrders = () => {
     updateOrderStatus,
     deleteOrder,
     getOrdersByClient,
+
+    // Refresh Actions
+    refreshOrders,
 
     // Local State Actions
     setCurrentOrder,

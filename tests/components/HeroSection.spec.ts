@@ -3,25 +3,24 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import HeroSection from '~/components/HeroSection.vue'
 
-// Mock the auth store
-const mockAuthStore = {
-  isLoggedIn: false,
-  user: null,
+// Mock the auth composable
+const mockAuth = {
+  isAuthenticated: ref(false),
+  user: ref(null),
   login: vi.fn(),
   logout: vi.fn(),
   init: vi.fn(),
-  $reset: vi.fn(),
 }
 
-vi.mock('~/store/modules/auth', () => ({
-  useAuthStore: vi.fn(() => mockAuthStore),
+vi.mock('~/composables/useAuth', () => ({
+  useAuth: vi.fn(() => mockAuth),
 }))
 
 describe('HeroSection', () => {
   const mountComponent = (isAuthenticated = false) => {
     // Set auth state
-    mockAuthStore.isLoggedIn = isAuthenticated
-    mockAuthStore.user = isAuthenticated
+    mockAuth.isAuthenticated.value = isAuthenticated
+    mockAuth.user.value = isAuthenticated
       ? {
           id: '1',
           email: 'test@example.com',

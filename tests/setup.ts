@@ -138,15 +138,14 @@ vi.mock('#build/components', () => ({
   },
 }))
 
-// Mock the auth store
-vi.mock('~/store/modules/auth', () => ({
-  useAuthStore: vi.fn(() => ({
-    isLoggedIn: false,
-    user: null,
+// Mock the auth composable
+vi.mock('~/composables/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    isAuthenticated: ref(false),
+    user: ref(null),
     login: vi.fn(),
     logout: vi.fn(),
     init: vi.fn(),
-    $reset: vi.fn(),
   })),
 }))
 

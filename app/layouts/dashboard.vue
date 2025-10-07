@@ -98,8 +98,8 @@
                 <UIcon name="i-heroicons-bell" class="size-5 shrink-0" />
                 <span class="truncate">Notifications</span>
                 <UChip
-                  v-if="notificationStore.unreadCount > 0"
-                  :text="notificationStore.unreadCount.toString()"
+                  v-if="unreadCount > 0"
+                  :text="unreadCount.toString()"
                   size="xs"
                   color="primary"
                   class="ml-auto"
@@ -133,12 +133,12 @@
                   </div>
                 </div>
                 <div class="text-sm">
-                  <template v-if="authStore.user?.name">
+                  <template v-if="user?.name">
                     <div class="font-medium text-gray-900">
-                      {{ authStore.user.name.split(' ')[0] || 'User' }}
+                      {{ user.name.split(' ')[0] || 'User' }}
                     </div>
                     <div class="text-gray-900">
-                      {{ authStore.user.name.split(' ').slice(1).join(' ') || '' }}
+                      {{ user.name.split(' ').slice(1).join(' ') || '' }}
                     </div>
                   </template>
                   <div v-else class="font-medium text-gray-900">User</div>
@@ -241,12 +241,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { API_ENDPOINTS } from '~/constants/api'
 import { ROUTE_NAMES } from '~/constants/routes'
-import { useSubscriptionStore } from '~/store/modules/subscription'
-import { useAuthStore } from '~/store/modules/auth'
-import { useNotificationStore } from '~/store/modules/notification'
 import { useRouter, useRoute } from 'vue-router'
+import { API_ENDPOINTS } from '~/constants/api'
 
 // Get current route and router
 const route = useRoute()
@@ -260,11 +257,17 @@ const navigateToMeasure = (e: Event) => {
   return false
 }
 
-// Get stores and composables
-const authStore = useAuthStore()
-const notificationStore = useNotificationStore()
+// Get composables
+const { user, isAuthenticated } = useAuth()
+const { currentSubscription } = useSubscriptions()
 
 const toast = useToast()
+
+// Notification state (since we don't have a notification composable yet)
+const notifications = ref([])
+const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+const notificationsLoading = ref(false)
+const notificationsError = ref(null)
 
 // Destructure route names for easy access
 const { DASHBOARD } = ROUTE_NAMES
@@ -273,45 +276,9 @@ const { DASHBOARD } = ROUTE_NAMES
 const isDropdownOpen = ref(false)
 const isNotificationsOpen = ref(false)
 
-// Fetch notifications directly using useAsyncData
-const {
-  pending: notificationsLoading,
-  error: notificationsError,
-  refresh: refreshNotifications,
-} = await useAsyncData(
-  'notifications',
-  async () => {
-    try {
-      const response = await $fetch('/api/notifications', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authStore.token}`,
-        },
-      })
-
-      return response?.notifications || []
-    } catch (error: any) {
-      console.error('Error fetching notifications:', error)
-      throw error
-    }
-  },
-  {
-    server: true,
-    lazy: true,
-  }
-)
-
-// Watch for changes in loading and error states
-watch(notificationsLoading, loading => {
-  notificationStore.setLoading(loading)
-})
-
-watch(notificationsError, error => {
-  if (error) {
-    notificationStore.setError(error.message)
-  }
-})
+// Simplified notifications (TODO: Create useNotifications composable)
+const notificationsLoading = ref(false)
+const notificationsError = ref(null)
 
 // Get icon based on notification type and severity
 const _getNotificationIcon = (notification: { type: string; severity: string }): string => {
@@ -444,10 +411,6 @@ const handleLogout = async () => {
     if (import.meta.client) {
       localStorage.setItem('intentionalLogout', 'true')
     }
-
-    // Clear cached data from stores
-    const subscriptionStore = useSubscriptionStore()
-    subscriptionStore.clearCache()
 
     // Logout using direct $fetch call
     await $fetch('/api/auth/logout', {

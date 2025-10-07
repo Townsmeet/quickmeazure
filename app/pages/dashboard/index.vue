@@ -6,7 +6,7 @@
       :primary-action="{
         label: 'Add Client',
         icon: 'i-heroicons-plus',
-        to: NEW_CLIENT_PATH,
+        to: '/clients/new',
       }"
     />
 
@@ -210,7 +210,7 @@ size="xs"> View all </UButton>
                         color="neutral"
                         variant="ghost"
                         size="xs"
-                        :to="`${ORDERS_PATH}/${order.id}`"
+                        :to="`${/orders/}/${order.id}`"
                       />
                     </td>
                   </tr>
@@ -262,9 +262,7 @@ size="xs"> View all </UButton>
 </template>
 
 <script setup lang="ts">
-// Import composables and UI components
-import { computed, watch } from 'vue'
-import { ROUTE_NAMES } from '~/constants/routes'
+import type { ChartPeriod } from '~/types/dashboard'
 
 definePageMeta({
   middleware: 'setup-required',
@@ -290,10 +288,6 @@ const chartPeriodOptions = [
   { label: 'Last 90 days', value: '90days' },
   { label: 'Last year', value: 'year' },
 ]
-
-// Routes
-const NEW_CLIENT_PATH = ROUTE_NAMES.DASHBOARD.CLIENTS.NEW
-const ORDERS_PATH = ROUTE_NAMES.DASHBOARD.ORDERS.INDEX
 
 // Set page metadata
 useHead({
@@ -413,7 +407,7 @@ const getStatusColor = (status: string) => {
 // Client growth data - using store action instead
 
 // Function to fetch dashboard data with proper error handling
-const fetchDashboardData = async () => {
+const loadDashboardData = async () => {
   console.log('Fetching dashboard data...')
 
   // Check if we're on client side
@@ -482,7 +476,7 @@ const fetchDashboardData = async () => {
       console.log('Dashboard data fetched successfully:', result)
       return result
     } catch (error) {
-      console.error('Error in fetchDashboardData:', error)
+      console.error('Error in loadDashboardData:', error)
       return getDefaultDashboardData()
     }
   }
@@ -540,7 +534,7 @@ const getValidArray = (result: any, type: string) => {
 }
 
 // Fetch all dashboard data in a single request
-const { data: dashboardData, status } = useAsyncData('dashboard-data', fetchDashboardData, {
+const { data: dashboardData, status } = useAsyncData('dashboard-data', loadDashboardData, {
   default: () => ({
     stats: null,
     activities: [],

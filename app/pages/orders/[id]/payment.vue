@@ -154,11 +154,14 @@
 
 <script setup>
 // Get the order ID from the route
-// Import auth store
-import { useAuthStore } from '~/store/modules/auth'
+// Import composables
 
 const route = useRoute()
 const orderId = route.params.id
+
+// Initialize composables
+const { getOrder, updateOrder } = useOrders()
+const { user } = useAuth()
 
 // State management
 const order = ref(null)
@@ -241,20 +244,6 @@ const fetchOrderDetails = async () => {
   isLoading.value = true
 
   try {
-    // Get auth store instance
-    const authStore = useAuthStore()
-
-    // Check if user is authenticated
-    if (!authStore.isLoggedIn) {
-      useToast().add({
-        title: 'Authentication required',
-        description: 'Please log in to record a payment',
-        color: 'orange',
-      })
-      navigateTo('/auth/login')
-      return
-    }
-
     // Fetch the order by ID with auth headers
     const data = await $fetch(`/api/orders/${orderId}`, {
       headers: {
@@ -337,24 +326,10 @@ const savePayment = async () => {
   isSubmitting.value = true
 
   try {
-    // Get auth store instance
-    const authStore = useAuthStore()
-
-    // Check if user is authenticated
-    if (!authStore.isLoggedIn) {
-      useToast().add({
-        title: 'Authentication required',
-        description: 'Please log in to record a payment',
-        color: 'orange',
-      })
-      navigateTo('/auth/login')
-      return
-    }
-
     // Format payment date
     const paymentDate = new Date(form.value.paymentDate).getTime()
 
-    // Call the payment API with auth headers
+    // Call the payment API
     await $fetch(`/api/payments`, {
       method: 'POST',
       headers: {

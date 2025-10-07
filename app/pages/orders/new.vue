@@ -221,14 +221,16 @@ required>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { CreateOrderInput, OrderItem } from '~/types/order'
 import { API_ENDPOINTS } from '~/constants/api'
-import { useAuthStore } from '~/store/modules/auth'
+import type { CreateOrderInput, OrderItem } from '~/types/order'
 
-// Composable
+// Composables
 const routes = useAppRoutes()
 const router = useRouter()
-const authStore = useAuthStore()
+const { createOrder } = useOrders()
+const { clients, fetchClients } = useClients()
+const { styles, fetchStyles } = useStyles()
+const { user } = useAuth()
 const toast = useToast()
 
 // Constants
@@ -283,10 +285,6 @@ const statusOptions = [
   { label: 'Completed', value: 'Completed' },
   { label: 'Cancelled', value: 'Cancelled' },
 ]
-
-// Initialize store
-const orderStore = useOrderStore()
-const { clients, styles } = storeToRefs(orderStore)
 
 // Generate options for clients dropdown
 const clientOptions = computed(() => {
@@ -343,23 +341,10 @@ const saveOrder = async () => {
       measurements: form.value.measurements || {},
     }
 
-    // Create the order using $fetch directly
-    const { data: response, error } = await useAsyncData('create-order', () =>
-      $fetch(API_ENDPOINTS.ORDERS.BASE, {
-        method: 'POST',
-        body: orderData,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authStore.token}`,
-        },
-      })
-    )
+    // Create the order using the composable
+    const result = await createOrder(orderData)
 
-    if (error.value) {
-      throw new Error(error.value?.data?.message || 'Failed to create order')
-    }
-
-    if (response.value) {
+    if (result.success && result.data) {
       // Show success message
       toast.add({
         title: 'Success',
@@ -368,9 +353,9 @@ const saveOrder = async () => {
       })
 
       // Redirect to the new order's detail page
-      await router.push(`/orders/${response.value.id}/detail`)
+      await router.push(`/orders/${result.data.id}/detail`)
     } else {
-      throw new Error('Failed to create order')
+      throw new Error(result.message || 'Failed to create order')
     }
   } catch (err: any) {
     console.error('Error creating order:', err)
@@ -390,10 +375,8 @@ const fetchInitialData = async () => {
   isLoading.value = true
 
   try {
-    // You might want to fetch clients and styles here if needed
-    // For example:
-    // await clientStore.fetchClients()
-    // await styleStore.fetchStyles()
+    // Fetch clients and styles
+    await Promise.all([fetchClients(), fetchStyles()])
   } catch (err) {
     console.error('Error fetching initial data:', err)
     error.value = 'Failed to load required data. Please refresh the page.'
