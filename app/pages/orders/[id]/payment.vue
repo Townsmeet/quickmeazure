@@ -244,16 +244,16 @@ const fetchOrderDetails = async () => {
   isLoading.value = true
 
   try {
-    // Fetch the order by ID with auth headers
-    const data = await $fetch(`/api/orders/${orderId}`, {
-      headers: {
-        ...authStore.getAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
-    })
+    // Fetch the order using the composable
+    const result = await getOrder(orderId)
 
-    // Set order data
-    order.value = data
+    if (result.success && result.data) {
+      order.value = result.data
+    } else {
+      throw new Error(result.message || 'Failed to fetch order')
+    }
+
+    const data = order.value
 
     // If order is paid in full or cancelled, redirect
     if (data.balanceAmount <= 0) {
@@ -333,7 +333,6 @@ const savePayment = async () => {
     await $fetch(`/api/payments`, {
       method: 'POST',
       headers: {
-        ...authStore.getAuthHeaders(),
         'Content-Type': 'application/json',
       },
       body: {

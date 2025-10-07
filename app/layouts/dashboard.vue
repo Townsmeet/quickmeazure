@@ -304,19 +304,16 @@ const _getNotificationIcon = (notification: { type: string; severity: string }):
 // Mark notification as read
 const _markNotificationAsRead = async (id: string) => {
   try {
-    notificationStore.setLoading(true)
     const response = await $fetch(`/api/notifications/${id}/read`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
       },
       credentials: 'include',
     })
 
     if (response.success) {
-      // Update local state
-      notificationStore.updateNotification(id, { read: true })
+      // Notification will be updated via the composable
 
       // Show success message
       toast.add({
@@ -332,8 +329,6 @@ const _markNotificationAsRead = async (id: string) => {
       description: error.message || 'Failed to mark notification as read',
       color: 'error',
     })
-  } finally {
-    notificationStore.setLoading(false)
   }
 }
 
@@ -342,29 +337,21 @@ const _markNotificationAsRead = async (id: string) => {
  */
 const _markAllNotificationsAsRead = async () => {
   try {
-    notificationStore.setLoading(true)
     const response = await $fetch(`${API_ENDPOINTS.USERS}/notifications/mark-all-read`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
       },
       credentials: 'include',
     })
 
     if ((response as { success: boolean }).success) {
-      // Update local state
-      notificationStore.markAllRead()
-
       // Show success message
       toast.add({
         title: 'Success',
         description: 'All notifications marked as read',
         color: 'primary',
       })
-
-      // Refresh notifications
-      await refreshNotifications()
     } else {
       throw new Error(
         (response as { error?: string }).error || 'Failed to mark all notifications as read'
@@ -372,7 +359,6 @@ const _markAllNotificationsAsRead = async () => {
     }
   } catch (error: any) {
     console.error('Error marking all notifications as read:', error)
-    notificationStore.setError(error.message || 'Failed to mark all notifications as read')
 
     // Show error toast
     toast.add({
@@ -380,20 +366,15 @@ const _markAllNotificationsAsRead = async () => {
       description: error.message || 'Failed to mark all notifications as read',
       color: 'error',
     })
-  } finally {
-    notificationStore.setLoading(false)
   }
 }
 
 // Refresh notifications when auth state changes
 watch(
-  () => authStore.isLoggedIn,
+  () => isAuthenticated.value,
   isLoggedIn => {
     if (isLoggedIn) {
-      refreshNotifications()
-    } else {
-      // Clear notifications when logging out
-      notificationStore.setNotifications([])
+      // Notifications will be fetched automatically by the composable
     }
   }
 )

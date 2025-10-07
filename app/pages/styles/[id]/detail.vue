@@ -214,7 +214,7 @@ const route = useRoute()
 
 // Composables and API
 const routes = useAppRoutes()
-const { getStyle, deleteStyle } = useStyles()
+const { getStyle, deleteStyle: deleteStyleApi } = useStyles()
 const { user } = useAuth()
 const toast = useToast()
 
@@ -261,38 +261,16 @@ const fetchStyleData = async () => {
     isLoading.value = true
     error.value = null
 
-    // Check if user is authenticated
-    if (!authStore.isLoggedIn) {
-      error.value = 'Authentication required. Please log in.'
-      navigateTo('/auth/login')
-      return
-    }
+    // Fetch style data using the composable
+    const result = await getStyle(styleId)
 
-    // Fetch style data using direct fetch
-    const { data, error: fetchError } = await useAsyncData(`style-${styleId}`, () =>
-      $fetch(`/api/styles/${styleId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
-        },
-      })
-    )
+    if (result.success && result.data) {
+      style.value = result.data
 
-    if (fetchError.value) {
-      throw new Error(fetchError.value?.data?.message || 'Failed to fetch style')
-    }
-
-    if (data.value) {
-      style.value = data.value
-
-      // Update the style in the store for consistency
-      styleStore.currentStyle = data.value
-
-      // Fetch related orders (still using direct API call for now)
+      // Fetch related orders
       try {
         const relatedOrdersData = await $fetch(`/api/orders?styleId=${styleId}`, {
           headers: {
-            ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
             'Content-Type': 'application/json',
           },
           credentials: 'include',
@@ -377,29 +355,20 @@ const deleteStyle = async () => {
   try {
     isDeleting.value = true
 
-    // Delete the style using direct fetch
-    await $fetch(`/api/styles/${style.value.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authStore.token && { Authorization: `Bearer ${authStore.token}` }),
-      },
-    })
+    // Delete the style using the composable
+    const result = await deleteStyleApi(style.value.id)
 
-    {
+    if (result.success) {
       toast.add({
         title: 'Success',
         description: 'Style deleted successfully',
         color: 'green',
       })
 
-      // Clear the current style from the store
-      if (styleStore.currentStyle?.id === style.value.id) {
-        styleStore.currentStyle = null
-      }
-
       // Navigate back to styles list
       router.push(STYLES_PATH)
+    } else {
+      throw new Error(result.message || 'Failed to delete style')
     }
   } catch (err: any) {
     console.error('Error deleting style:', err)

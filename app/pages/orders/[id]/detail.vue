@@ -311,7 +311,7 @@ const route = useRoute()
 const orderId = route.params.id as string
 
 // Initialize composables
-const { getOrder, updateOrderStatus } = useOrders()
+const { getOrder, updateOrderStatus: updateOrderStatusApi } = useOrders()
 const { user } = useAuth()
 const toast = useToast()
 
@@ -326,22 +326,10 @@ const fetchOrder = async () => {
   error.value = null
 
   try {
-    const { data, error: fetchError } = await useAsyncData(`order-${orderId}`, () =>
-      $fetch(`${API_ENDPOINTS.ORDERS.BASE}/${orderId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authStore.token}`,
-        },
-      })
-    )
+    const result = await getOrder(orderId)
 
-    if (fetchError.value) {
-      throw new Error(fetchError.value?.data?.message || 'Failed to fetch order')
-    }
-
-    if (data.value) {
-      order.value = data.value
+    if (result.success && result.data) {
+      order.value = result.data
     } else {
       throw new Error('Failed to fetch order')
     }
@@ -415,10 +403,10 @@ const updateOrderStatus = async (newStatus: string) => {
   if (!order.value) return
 
   try {
-    const response = await orderApi.updateOrderStatus(order.value.id, newStatus as any)
+    const result = await updateOrderStatusApi(order.value.id, newStatus as any)
 
-    if (response.success && response.order) {
-      order.value = response.order
+    if (result.success && result.data) {
+      order.value = result.data
 
       toast.add({
         title: 'Success',
@@ -426,7 +414,7 @@ const updateOrderStatus = async (newStatus: string) => {
         color: 'green',
       })
     } else {
-      throw new Error(response.error || 'Failed to update order status')
+      throw new Error(result.message || 'Failed to update order status')
     }
   } catch (err) {
     console.error('Error updating order status:', err)

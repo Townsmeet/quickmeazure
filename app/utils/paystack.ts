@@ -83,9 +83,7 @@ const openPaystackPopup = (config: PaystackConfig): void => {
     config.currency = 'NGN'
   }
 
-  // Convert amount to kobo (Paystack requires amount in the smallest currency unit)
-  config.amount = config.amount * 100
-
+  // Amount should already be in kobo from usePaystack composable
   const handler = paystack.setup({
     key: config.key,
     email: config.email,

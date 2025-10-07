@@ -80,7 +80,7 @@ class="ml-2">
 
         <PaystackButton
           v-else-if="selectedPlan && selectedPlanData"
-          :amount="selectedPlanData.price * 100"
+          :amount="selectedPlanData.price"
           :plan-id="selectedPlanData.id"
           :plan-name="selectedPlanData.name"
           :billing-period="billingInterval"

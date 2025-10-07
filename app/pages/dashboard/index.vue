@@ -412,16 +412,8 @@ const loadDashboardData = async () => {
 
   // Check if we're on client side
   if (import.meta.client) {
-    const token = authStore.token || localStorage.getItem('auth_token')
-
-    if (!token) {
-      console.error('No authentication token found')
-      return getDefaultDashboardData()
-    }
-
     const headers = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     }
 
     try {

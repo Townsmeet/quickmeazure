@@ -7,6 +7,7 @@ interface PaymentOptions {
   billingPeriod: string
   onSuccess?: () => void
   onError?: (error: unknown) => void
+  onClose?: () => void
 }
 
 export const usePaystack = () => {
@@ -69,6 +70,9 @@ export const usePaystack = () => {
         onClose: () => {
           // Payment window was closed
           console.log('Payment window closed')
+          if (options.onClose) {
+            options.onClose()
+          }
         },
       })
     } catch (error) {

@@ -99,6 +99,9 @@ const initiatePayment = async () => {
 
       emit('error', error)
     },
+    onClose: () => {
+      loading.value = false
+    },
   })
 }
 </script>

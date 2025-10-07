@@ -1,5 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
+import { eq, and } from 'drizzle-orm'
 import { db } from '../../utils/drizzle'
+import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
 
@@ -68,26 +70,22 @@ export default defineEventHandler(async event => {
         const userId = String(auth.userId)
         console.log('Verified user ID from context:', userId)
 
-        // Ensure plan_id is a number
-        const planIdNum =
-          typeof planIdRaw === 'string' && !isNaN(Number(planIdRaw))
-            ? Number(planIdRaw)
-            : (planIdRaw as number | undefined)
-        if (!planIdNum) {
+        // planIdRaw can be either a slug (string) or numeric ID
+        const planSlug = typeof planIdRaw === 'string' ? planIdRaw : String(planIdRaw)
+
+        if (!planSlug) {
           console.warn('No planId provided in verify payload; skipping subscription update')
         }
 
-        // Find the plan
-        const plan = planIdNum
-          ? await db.query.plans.findFirst({ where: eq(tables.plans.id, planIdNum) })
+        // Find the plan by slug
+        const plan = planSlug
+          ? await db.query.plans.findFirst({ where: eq(tables.plans.slug, planSlug) })
           : null
 
-        if (planIdNum && !plan) {
-          console.error('Plan not found:', planIdNum)
+        if (planSlug && !plan) {
+          console.error('Plan not found:', planSlug)
           return { success: false, message: 'Selected plan not found' }
         }
-
-        console.log('Found plan:', plan.name, 'with ID:', plan.id)
 
         // Calculate subscription end date based on billing period
         const startDate = new Date()
@@ -150,24 +148,14 @@ export default defineEventHandler(async event => {
           console.log('Created new subscription:', subscriptionResult[0]?.id)
         }
 
-        // Generate a new token with updated subscription information
-        const newToken = plan
-          ? generateToken({
-              id: userId,
-              subscriptionPlan: plan.id.toString(),
-              subscriptionExpiry: Math.floor(endDate.getTime() / 1000),
-            })
-          : null
+        console.log('Subscription created/updated successfully')
 
-        console.log('Generated new token with subscription data')
-
-        // Return success with the new token
+        // Return success with subscription data
         return ok({
           amount: data.data.amount / 100,
           reference: data.data.reference,
           plan_id: plan?.id,
           subscription: subscriptionResult?.[0] || null,
-          token: newToken || undefined,
         })
       } catch (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError)

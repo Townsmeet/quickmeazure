@@ -279,7 +279,7 @@ import type { Client } from '~/types/client'
 
 // Composables
 const routes = useAppRoutes()
-const { getClient, updateClient } = useClients()
+const { getClient, updateClient: updateClientApi } = useClients()
 const { templates, isLoading: templatesLoading, fetchTemplates } = useMeasurementTemplates()
 const { user } = useAuth()
 const toast = useToast()
@@ -550,27 +550,27 @@ const fetchClient = async () => {
     }
 
     if (response.value && response.value.data) {
-      const client = response.value.data
+      const clientData = response.value.data
 
-      // Update store with the fetched client
-      clientStore.setCurrentClient(client)
+      // Update local state with the fetched client
+      client.value = clientData
 
       // Update form with client data
       form.value = {
-        name: client.name || '',
-        email: client.email || null,
-        phone: client.phone || null,
-        address: client.address || null,
+        name: clientData.name || '',
+        email: clientData.email || null,
+        phone: clientData.phone || null,
+        address: clientData.address || null,
       }
 
       // Process measurement data if available
-      if (client.measurement) {
+      if (client.value.measurement) {
         // If using the new schema with values field
-        if (client.measurement.values) {
-          const measurementValues = client.measurement.values as Record<string, any>
+        if (client.value.measurement.values) {
+          const measurementValues = client.value.measurement.values as Record<string, any>
 
           // Set notes
-          measurements.value.notes = client.measurement.notes || null
+          measurements.value.notes = client.value.measurement.notes || null
 
           // Store all measurement values in a temporary object for later use
           const tempValues: Record<string, any> = {}
@@ -601,12 +601,12 @@ const fetchClient = async () => {
               }
             })
           }
-        } else if (client.measurement.measurements) {
+        } else if (client.value.measurement.measurements) {
           // Handle old schema with direct measurements
-          selectedTemplateId.value = client.measurement.templateId || null
+          selectedTemplateId.value = client.value.measurement.templateId || null
           measurements.value = {
             ...measurements.value,
-            ...client.measurement.measurements,
+            ...client.value.measurement.measurements,
           }
         }
       }
@@ -645,16 +645,10 @@ const updateClient = async () => {
       measurement: measurementData as any, // Cast to any to avoid type issues
     }
 
-    // Update client directly using $fetch
-    const response = await $fetch(`/api/clients/${clientId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updateData),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    // Update client using the composable
+    const result = await updateClientApi(clientId, updateData)
 
-    if (response && response.data) {
+    if (result.success && result.data) {
       // Show success message
       toast.add({
         title: 'Success',
@@ -665,7 +659,7 @@ const updateClient = async () => {
       // Redirect to client detail page
       navigateTo(`/clients/${clientId}`)
     } else {
-      throw new Error('Failed to update client')
+      throw new Error(result.message || 'Failed to update client')
     }
   } catch (error) {
     console.error('Error updating client:', error)
@@ -706,9 +700,6 @@ const deleteClient = async () => {
     await $fetch(`/api/clients/${clientId}`, {
       method: 'DELETE',
     })
-
-    // Remove client from store
-    clientStore.removeClient(clientId)
 
     // Show success message
     toast.add({

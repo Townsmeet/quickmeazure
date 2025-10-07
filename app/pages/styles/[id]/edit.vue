@@ -16,10 +16,10 @@
     </div>
 
     <!-- Error state -->
-    <UAlert v-else-if="error" color="red" icon="i-heroicons-exclamation-triangle">
+    <UAlert v-else-if="error" color="error" icon="i-heroicons-exclamation-triangle">
       <p>{{ error }}</p>
       <UButton
-color="red"
+color="error"
 variant="link"
 to="/styles"
 class="mt-2"> Return to Styles </UButton>
@@ -76,10 +76,11 @@ class="block text-sm font-medium text-gray-700"
 
                 <div class="text-center">
                   <UButton
-type="button"
-color="gray"
-variant="outline"
-@click="triggerFileInput">
+                    type="button"
+                    color="neutral"
+                    variant="outline"
+                    @click="triggerFileInput"
+                  >
                     <template #leading>
                       <UIcon name="i-heroicons-photo" />
                     </template>
@@ -132,24 +133,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useHead, useToast } from '#imports'
 
-// Composable
-import { useAppRoutes } from '~/composables/useRoutes'
-
 // Types
 import type { Style } from '~/types/style'
 
-// Composables
-const routes = useAppRoutes()
-const { getStyle, updateStyle } = useStyles()
+const { getStyle, updateStyle: updateStyleApi } = useStyles()
 const { user } = useAuth()
-
-// Constants
-const _getStyleDetailPath = (id: string): string =>
-  (
-    routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.STYLES.VIEW] as (params: {
-      id: string
-    }) => string
-  )({ id })
 
 // Set page metadata
 useHead({
@@ -188,11 +176,6 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isFormValid = computed(() => {
   return !!style.value.name
 })
-
-// Composables
-const { getStyle, updateStyle } = useStyles()
-const { user } = useAuth()
-const styleApi = useStyleApi()
 
 // Fetch style data
 const fetchStyleData = async () => {
@@ -270,7 +253,7 @@ const handleImageUpload = (event: Event) => {
     toast.add({
       title: 'File Too Large',
       description: 'File is too large. Maximum size is 5MB.',
-      color: 'red',
+      color: 'error',
     })
     return
   }
@@ -293,7 +276,7 @@ const updateStyle = async () => {
     toast.add({
       title: 'Validation Error',
       description: 'Style name is required',
-      color: 'red',
+      color: 'error',
     })
     return
   }
@@ -302,7 +285,7 @@ const updateStyle = async () => {
     toast.add({
       title: 'Error',
       description: 'Invalid style ID',
-      color: 'red',
+      color: 'error',
     })
     return
   }
@@ -319,24 +302,21 @@ const updateStyle = async () => {
       styleData.imageFile = style.value.imageFile
     }
 
-    // Update the style using the API
-    const response = await styleApi.updateStyle(style.value.id, styleData)
+    // Update the style using the composable
+    const result = await updateStyleApi(style.value.id, styleData)
 
-    if (response.success && response.data) {
-      // Update the style in the store for consistency
-      styleStore.currentStyle = response.data
-
+    if (result.success && result.data) {
       // Show success notification
       toast.add({
         title: 'Style Updated',
         description: 'Your style has been updated successfully',
-        color: 'green',
+        color: 'success',
       })
 
       // Navigate to the style detail page
       router.push(`/styles/${style.value.id}/detail`)
     } else {
-      throw new Error(response.error || 'Failed to update style')
+      throw new Error(result.message || 'Failed to update style')
     }
   } catch (err: any) {
     console.error('Error updating style:', err)

@@ -82,6 +82,7 @@ export const businesses = sqliteTable('businesses', {
 // Plans table
 export const plans = sqliteTable('plans', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  slug: text('slug').notNull().unique(), // Unique identifier like 'free', 'standard', 'premium'
   name: text('name').notNull(),
   description: text('description').notNull(),
   price: real('price').notNull(),

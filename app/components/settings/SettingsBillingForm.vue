@@ -253,7 +253,7 @@ import { computed, onMounted, ref } from 'vue'
 
 // Initialize composables
 const { currentSubscription, changeSubscriptionPlan } = useSubscriptions()
-const { user } = useAuth()
+const { user, isAuthenticated } = useAuth()
 
 // Define loading state for plan changes
 const changePlanLoading = ref(false)
@@ -426,7 +426,9 @@ const addPaymentMethod = async () => {
         // Pass payment method details from your form
         // Example: token, card details, etc.
       },
-      headers: authStore.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
     await refreshSubscription()
@@ -496,7 +498,9 @@ const confirmPlanChange = async (planId: string) => {
         planId,
         // Add any additional parameters required by your API
       },
-      headers: authStore.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
     await refreshSubscription()
@@ -543,7 +547,9 @@ const confirmCancelSubscription = async () => {
         // Add any parameters required by your API
         // For example: immediate: false to cancel at the end of the billing period
       },
-      headers: authStore.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
     await refreshSubscription()
@@ -571,7 +577,9 @@ const reactivateSubscription = async () => {
     await $fetch('/api/subscriptions/resume', {
       method: 'POST',
       body: {},
-      headers: authStore.getAuthHeaders(),
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
     await refreshSubscription()
@@ -613,7 +621,7 @@ onMounted(async () => {
   try {
     console.log('SettingsBillingForm mounted')
     // Check if user is authenticated first
-    if (!authStore.isLoggedIn) {
+    if (!isAuthenticated.value) {
       console.warn('User not authenticated, cannot load subscription data')
       toast.add({
         title: 'Authentication Required',
