@@ -293,9 +293,6 @@ class="block text-sm font-medium text-gray-700"
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useAuthStore } from '~/store/modules/auth'
-import { storeToRefs } from 'pinia'
-import { useMeasurementTemplateStore } from '~/store'
 
 // Composable
 const routes = useAppRoutes()
@@ -309,21 +306,19 @@ useHead({
   title: 'Add New Client',
 })
 
-// Initialize measurement templates
-const measurementTemplateStore = useMeasurementTemplateStore()
-const { templates, loading: templatesLoading } = storeToRefs(measurementTemplateStore)
-const { fetchTemplates } = measurementTemplateStore
+// Initialize composables
+const { user, isAuthenticated } = useAuth()
+const { templates, isLoading: templatesLoading, fetchTemplates } = useMeasurementTemplates()
+const { createClient } = useClients()
 
-// Fetch templates on component mount and when auth changes
-const authStore = useAuthStore()
 const hasLoadedTemplates = ref(false)
 
-// Watch for auth token changes to reload templates if needed
+// Watch for auth changes to reload templates if needed
 watch(
-  () => authStore.token,
-  async newToken => {
-    if (newToken && !hasLoadedTemplates.value) {
-      console.log('Auth token available, fetching templates...')
+  () => isAuthenticated.value,
+  async isAuth => {
+    if (isAuth && !hasLoadedTemplates.value) {
+      console.log('User authenticated, fetching templates...')
       await loadTemplates()
     }
   },
@@ -604,11 +599,8 @@ const validateClient = () => {
 // Save client to API
 const saveClientToApi = async () => {
   try {
-    // Get auth store instance
-    const authStore = useAuthStore()
-
     // Check if user is authenticated
-    if (!authStore.isLoggedIn) {
+    if (!isAuthenticated.value) {
       useToast().add({
         title: 'Authentication required',
         description: 'Please log in to add clients',
@@ -620,26 +612,23 @@ const saveClientToApi = async () => {
 
     const processedMeasurements = processMeasurements()
 
-    // Call API to save client
-    const newClient = await $fetch('/api/clients', {
-      method: 'POST',
-      body: {
-        ...client.value,
-        measurements: processedMeasurements,
-      },
-      headers: {
-        ...authStore.getAuthHeaders(),
-        'Content-Type': 'application/json',
-      },
+    // Use the createClient composable
+    const result = await createClient({
+      ...client.value,
+      measurements: processedMeasurements,
     })
 
-    useToast().add({
-      title: 'Success',
-      description: 'Client added successfully',
-      color: 'green',
-    })
+    if (result.success && result.data) {
+      useToast().add({
+        title: 'Success',
+        description: 'Client added successfully',
+        color: 'green',
+      })
 
-    return newClient
+      return result.data
+    } else {
+      throw new Error(result.message || 'Failed to create client')
+    }
   } catch (error) {
     console.error('Error saving client:', error)
 

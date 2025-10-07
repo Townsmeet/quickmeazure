@@ -76,7 +76,7 @@ icon="i-heroicons-x-mark"
                   </UFormField>
 
                   <UFormField label="Required" :name="`field-${index}-required`" class="pt-6">
-                    <UToggle v-model="field.isRequired" />
+                    <USwitch v-model="field.isRequired" />
                   </UFormField>
                 </div>
               </div>
@@ -129,8 +129,6 @@ variant="ghost"
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { MeasurementField, MeasurementTemplate } from '~/types/measurement'
-import { useMeasurementTemplateStore } from '~/store/modules/measurementTemplate'
-import { API_ENDPOINTS } from '~/constants/api'
 
 const props = defineProps({
   modelValue: {
@@ -148,7 +146,7 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
-const templateStore = useMeasurementTemplateStore()
+const { createTemplate, updateTemplate } = useMeasurementTemplates()
 const toast = useToast()
 
 const isOpen = computed({
@@ -331,10 +329,7 @@ const onSubmit = async () => {
           }
         )
 
-        templateStore.updateTemplateInStore(
-          Number(props.template.id),
-          template as MeasurementTemplate
-        )
+        await updateTemplate(Number(props.template.id), template as MeasurementTemplate)
 
         toast.add({
           title: 'Template updated',
@@ -357,7 +352,16 @@ const onSubmit = async () => {
           body: templateData,
         })
 
-        templateStore.addTemplate(template)
+        await createTemplate({
+          name: template.name,
+          description: template.description,
+          gender: template.gender || 'male',
+          fields: template.fields.map(f => ({
+            name: f.name,
+            category: f.category || 'upperBody',
+            order: f.order,
+          })),
+        })
 
         toast.add({
           title: 'Template created',
@@ -376,7 +380,7 @@ const onSubmit = async () => {
     }
   } catch (error: any) {
     console.error('Error saving template:', error)
-    templateStore.setError(error.message || 'Failed to save template')
+    // Error handling is now done in the composable
 
     toast.add({
       title: 'Error saving template',

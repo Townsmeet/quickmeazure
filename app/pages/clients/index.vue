@@ -359,6 +359,10 @@ import { ROUTE_NAMES } from '../../constants/routes'
 import type { Client } from '../../types/client'
 import { useListData } from '../../composables/useListData'
 
+definePageMeta({
+  middleware: 'setup-required',
+})
+
 // Resolve UI components
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UButton = resolveComponent('UButton')

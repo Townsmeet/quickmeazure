@@ -202,9 +202,10 @@ import { registerSchema, type RegisterData } from '~/schemas/auth'
 
 definePageMeta({
   layout: 'auth',
+  middleware: 'guest-only',
 })
 
-const { register, isLoading } = useAuth()
+const { register, signUpWithGoogle, isLoading } = useAuth()
 const toast = useToast()
 
 // Form state
@@ -260,7 +261,9 @@ const onSubmit = async (_event: FormSubmitEvent<RegisterData>) => {
         color: 'success',
       })
 
-      await navigateTo('/auth/confirm')
+      // Use onboarding system to determine next step
+      const { goToNextStep } = useOnboarding()
+      goToNextStep()
     }
   } catch (error: any) {
     toast.add({
@@ -272,17 +275,31 @@ const onSubmit = async (_event: FormSubmitEvent<RegisterData>) => {
   }
 }
 
-// Handle Google registration (same as login)
+// Handle Google registration
 const handleGoogleRegister = async () => {
+  isGoogleLoading.value = true
+
   try {
+    const { error } = await signUpWithGoogle()
+
+    if (error) {
+      toast.add({
+        title: 'Google Sign-up Failed',
+        description: error.message,
+        color: 'error',
+        icon: 'i-heroicons-exclamation-circle',
+      })
+    }
+    // If successful, Better Auth will redirect to Google OAuth
+  } catch (error: any) {
     toast.add({
-      title: 'Google Sign-up',
-      description: 'Google sign-up is currently not available. Please use email and password.',
-      color: 'warning',
-      icon: 'i-heroicons-information-circle',
+      title: 'Google Sign-up Failed',
+      description: 'Something went wrong. Please try again.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle',
     })
-  } catch (error) {
-    console.error('Google registration error:', error)
+  } finally {
+    isGoogleLoading.value = false
   }
 }
 </script>

@@ -148,6 +148,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { format, parseISO } from 'date-fns'
 import { useAuthStore } from '~/store/modules/auth'
 
+definePageMeta({
+  middleware: 'setup-required',
+})
+
 // Define types for type safety
 type ActivityItem = {
   id: number | string

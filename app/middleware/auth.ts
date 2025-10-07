@@ -1,112 +1,44 @@
-export default defineNuxtRouteMiddleware(to => {
-  if (import.meta.server) return // Skip middleware on server-side
+export default defineNuxtRouteMiddleware(async to => {
+  // Skip middleware on server-side
+  if (import.meta.server) return
 
-  console.log(
-    '🔒 AUTH MIDDLEWARE TEMPORARILY DISABLED - ALLOWING ALL ROUTES:',
-    to.path,
-    'FULL PATH:',
-    to.fullPath
-  )
+  const { isAuthenticated, init, requiredOnboardingPath, canUserAccessPath, isFullyOnboarded } =
+    useAuth()
 
-  // TEMPORARILY ALLOW ALL REQUESTS TO PASS
-  // This is to debug the verify-callback redirect issue
-  return
-
-  // TODO: Re-enable auth middleware after debugging
-  /*
-  import { useAuthStore } from '~/store/modules/auth'
-  
-  const authStore = useAuthStore()
-
-  // Skip for public routes
-  if (isPublicRoute(to.path)) {
-    console.log('Route is public, skipping auth check:', to.path)
-    return
-  }
-
-  console.log('Route is not public, checking authentication:', {
-    path: to.path,
-    isLoggedIn: authStore.isLoggedIn,
-    hasToken: !!authStore.token,
-    hasUser: !!authStore.user
-  })
-
-  // If the user isn't authenticated, redirect to login
-  if (!authStore.isLoggedIn) {
-    console.log('No auth token found, redirecting to login')
-
-    // Preserve the original requested URL for redirection after login
-    const redirectTo = encodeURIComponent(to.fullPath)
-    return navigateTo(`/auth/login?redirect=${redirectTo}`)
-  }
-
-  // Check if user needs to complete setup
-  const user = authStore.user
-
-  // Add detailed logging for debugging
-  console.log('Auth middleware - User state:', {
-    path: to.path,
-    userId: user?.id,
-    hasCompletedSetup: user?.hasCompletedSetup,
-    isSetupPage: to.path === '/auth/setup-measurements',
-    isDashboard: to.path === '/dashboard',
-  })
-
-  // Special case: If we're coming from setup-measurements and going to dashboard,
-  // allow it regardless of hasCompletedSetup status (which might not be updated yet)
-  const fromSetup = document.referrer.includes('/auth/setup-measurements')
-  if (fromSetup && to.path === '/dashboard') {
-    console.log('Coming from setup page to dashboard, allowing navigation')
-    return
-  }
-
-  // Regular check for setup completion
-  if (user && user.hasCompletedSetup === false && to.path !== '/auth/setup-measurements') {
-    console.log('User needs to complete setup, redirecting to setup page')
-    return navigateTo('/auth/setup-measurements')
-  }
-
-  // If we're on a dashboard or other authenticated route, ensure we use the dashboard layout
-  if (!to.meta.layout && isAuthenticatedRoute(to.path)) {
-    to.meta.layout = 'dashboard'
-  }
-
-  console.log('User authenticated, proceeding to route')
+  // Initialize auth state if not already done
+  await init()
 
   // Helper function to determine if a route is public
-  function isPublicRoute(path: string): boolean {
+  const isPublicRoute = (path: string): boolean => {
     // These routes are accessible without authentication
     const publicRoutes = [
       '/',
       '/auth/login',
       '/auth/register',
       '/auth/forgot-password',
-      '/auth/setup-measurements',
-      '/auth/verify-callback',
+      '/auth/reset-password',
       '/auth/verify-email',
+      '/auth/verify-callback',
+      '/auth/verify-error',
+      '/auth/resend-verification',
       '/legal/terms',
       '/legal/privacy',
     ]
 
     // Check if the path starts with any of these prefixes
-    const publicPrefixes = ['/auth/', '/legal/']
-
-    console.log('Checking if route is public:', { path, publicRoutes, publicPrefixes })
+    const publicPrefixes = ['/legal/', '/api/']
 
     // Check exact matches
     if (publicRoutes.includes(path)) {
-      console.log('Route is public (exact match):', path)
       return true
     }
 
     // Check prefixes
-    const isPublic = publicPrefixes.some(prefix => path.startsWith(prefix))
-    console.log('Route public status (prefix check):', { path, isPublic })
-    return isPublic
+    return publicPrefixes.some(prefix => path.startsWith(prefix))
   }
 
   // Helper function to determine if a route requires authentication
-  function isAuthenticatedRoute(path: string): boolean {
+  const isAuthenticatedRoute = (path: string): boolean => {
     // These routes require authentication
     const authPrefixes = [
       '/dashboard',
@@ -122,5 +54,51 @@ export default defineNuxtRouteMiddleware(to => {
 
     return authPrefixes.some(prefix => path.startsWith(prefix))
   }
-  */
+
+  // Skip for public routes
+  if (isPublicRoute(to.path)) {
+    // If user is authenticated and trying to access auth pages, handle smart redirects
+    if (isAuthenticated.value && to.path.startsWith('/auth/')) {
+      // Allow access to onboarding pages if user needs them
+      if (canUserAccessPath(to.path)) {
+        return
+      }
+
+      // Redirect to appropriate onboarding step or dashboard
+      const nextPath = requiredOnboardingPath.value || '/dashboard'
+      return navigateTo(nextPath)
+    }
+    return
+  }
+
+  // If the user isn't authenticated, redirect to login
+  if (!isAuthenticated.value) {
+    // Preserve the original requested URL for redirection after login
+    const redirectTo = encodeURIComponent(to.fullPath)
+    return navigateTo(`/auth/login?redirect=${redirectTo}`)
+  }
+
+  // Check if user needs to complete onboarding steps
+  const nextOnboardingPath = requiredOnboardingPath.value
+  if (nextOnboardingPath && to.path !== nextOnboardingPath) {
+    // Allow access to current and previous onboarding steps
+    if (!canUserAccessPath(to.path)) {
+      return navigateTo(nextOnboardingPath)
+    }
+  }
+
+  // If user is fully onboarded but trying to access onboarding pages
+  if (
+    isFullyOnboarded.value &&
+    (to.path === '/auth/confirm' ||
+      to.path === '/auth/setup-measurements' ||
+      to.path === '/auth/verify-email')
+  ) {
+    return navigateTo('/dashboard')
+  }
+
+  // Set dashboard layout for authenticated routes
+  if (isAuthenticatedRoute(to.path) && !to.meta.layout) {
+    to.meta.layout = 'dashboard' as any
+  }
 })

@@ -15,6 +15,13 @@
       "when": 1759632729846,
       "tag": "0001_absent_barracuda",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1759764892024,
+      "tag": "0002_green_karen_page",
+      "breakpoints": true
     }
   ]
 }

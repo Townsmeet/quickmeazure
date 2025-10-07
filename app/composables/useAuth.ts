@@ -1,12 +1,35 @@
 import { authClient } from '~/utils/auth-client'
 import type { User } from 'better-auth'
+import {
+  getCurrentOnboardingStep,
+  getRequiredOnboardingPath,
+  canAccessPath,
+  getOnboardingProgress,
+  getOnboardingStatusMessage,
+} from '~/utils/onboarding'
+
+// Extended user type with onboarding fields
+type ExtendedUser = User & {
+  hasActiveSubscription?: boolean
+  hasCompletedSetup?: boolean
+  subscriptionStatus?: 'none' | 'pending' | 'active' | 'cancelled' | 'expired'
+  onboardingStep?: 'verification' | 'subscription' | 'setup' | 'complete'
+  onboardingCompletedAt?: Date | null
+}
 
 export const useAuth = () => {
-  const user = useState<User | null>('auth_user', () => null)
+  const user = useState<ExtendedUser | null>('auth_user', () => null)
   const isAuthenticated = computed(() => !!user.value)
   const isLoading = useState<boolean>('auth_loading', () => false)
   const initialized = useState<boolean>('auth_initialized', () => false)
   const { isOnline, getNetworkError } = useOnline()
+
+  // Onboarding computed properties
+  const currentOnboardingStep = computed(() => getCurrentOnboardingStep(user.value))
+  const requiredOnboardingPath = computed(() => getRequiredOnboardingPath(user.value))
+  const onboardingProgress = computed(() => getOnboardingProgress(user.value))
+  const onboardingStatusMessage = computed(() => getOnboardingStatusMessage(user.value))
+  const isFullyOnboarded = computed(() => currentOnboardingStep.value === 'complete')
 
   // Initialize auth state once
   const init = async () => {
@@ -179,6 +202,52 @@ export const useAuth = () => {
     return { error: null }
   }
 
+  // Google Sign In (for existing users)
+  const signInWithGoogle = async () => {
+    // Check if browser is offline first
+    if (!isOnline.value) {
+      return { error: getNetworkError() }
+    }
+
+    try {
+      const { error } = await authClient.linkSocial({
+        provider: 'google',
+        callbackURL: '/dashboard', // Direct redirect to dashboard for existing users
+      })
+
+      if (error) {
+        return { error: new Error(error.message) }
+      }
+
+      return { error: null }
+    } catch (error: any) {
+      return { error: new Error(error.message || 'Google sign-in failed') }
+    }
+  }
+
+  // Google Sign Up (for new users)
+  const signUpWithGoogle = async () => {
+    // Check if browser is offline first
+    if (!isOnline.value) {
+      return { error: getNetworkError() }
+    }
+
+    try {
+      const { error } = await authClient.linkSocial({
+        provider: 'google',
+        callbackURL: '/auth/confirm', // Direct redirect to plan selection for new users
+      })
+
+      if (error) {
+        return { error: new Error(error.message) }
+      }
+
+      return { error: null }
+    } catch (error: any) {
+      return { error: new Error(error.message || 'Google sign-up failed') }
+    }
+  }
+
   // Logout
   const logout = async () => {
     const { error } = await authClient.signOut()
@@ -195,6 +264,9 @@ export const useAuth = () => {
     return navigateTo('/auth/login')
   }
 
+  // Helper function to check if user can access a path
+  const canUserAccessPath = (path: string) => canAccessPath(user.value, path)
+
   return {
     user,
     isAuthenticated,
@@ -206,5 +278,14 @@ export const useAuth = () => {
     requestPasswordReset,
     resetPassword,
     sendVerificationEmail,
+    signInWithGoogle,
+    signUpWithGoogle,
+    // Onboarding utilities
+    currentOnboardingStep,
+    requiredOnboardingPath,
+    onboardingProgress,
+    onboardingStatusMessage,
+    isFullyOnboarded,
+    canUserAccessPath,
   }
 }

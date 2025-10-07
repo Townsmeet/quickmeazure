@@ -264,19 +264,24 @@ size="xs"> View all </UButton>
 <script setup lang="ts">
 // Import composables and UI components
 import { computed, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { API_ENDPOINTS } from '~/constants/api'
-import { useDashboardStore } from '~/store/modules/dashboard'
-import { useAuthStore } from '~/store/modules/auth'
-import type { ChartPeriod } from '~/types/dashboard'
 import { ROUTE_NAMES } from '~/constants/routes'
 
-// Initialize auth store
-const authStore = useAuthStore()
+definePageMeta({
+  middleware: 'setup-required',
+})
 
-// Initialize stores
-const dashboardStore = useDashboardStore()
-const { chartPeriod, clientGrowth } = storeToRefs(dashboardStore)
+// Initialize composables
+const { user } = useAuth()
+const {
+  chartPeriod,
+  clientGrowth,
+  stats,
+  recentActivity,
+  dueOrders,
+  isLoading,
+  fetchDashboardData,
+  setChartPeriod,
+} = useDashboard()
 
 // Chart period options
 const chartPeriodOptions = [

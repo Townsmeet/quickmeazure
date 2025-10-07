@@ -442,11 +442,8 @@ class="block text-sm font-medium text-gray-700"
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useAuthStore, useMeasurementTemplateStore } from '../../store'
 import type { MeasurementTemplate, MeasurementField } from '../../types/measurement'
 import { ROUTE_NAMES } from '../../constants/routes'
-import { API_ENDPOINTS } from '../../constants/api'
 
 useHead({
   title: 'Setup Measurements',
@@ -461,11 +458,10 @@ onMounted(() => {
 // Use imported types from ~/types/measurement
 // Remove local interface definitions to avoid conflicts
 
-// Initialize stores
-const authStore = useAuthStore()
-const { user } = storeToRefs(authStore)
+// Initialize composables
+const { user } = useAuth()
 const toast = useToast()
-const measurementTemplateStore = useMeasurementTemplateStore()
+const { createTemplate, fetchTemplates, setTemplates } = useMeasurementTemplates()
 
 // Initialize loading state and templates
 const loading = ref(true)
@@ -636,7 +632,7 @@ const getDefaultTemplate = (gender: 'male' | 'female'): MeasurementTemplate => {
 
   return {
     id: 0, // Will be set by the server
-    userId: user.value?.id || 0,
+    userId: user.value?.id ?? 0,
     name: `Standard ${gender.charAt(0).toUpperCase() + gender.slice(1)} Measurements`,
     description: `Standard measurement template for ${gender} clients`,
     fields: defaultFields,
@@ -651,14 +647,14 @@ onMounted(async () => {
   try {
     loading.value = true
 
-    // Load templates from store
-    await measurementTemplateStore.setTemplates([]) // This would normally be an API call
+    // Load templates from API
+    const existingTemplates = await fetchTemplates()
 
     // If no templates exist, create a default one
-    if (measurementTemplateStore.templates.length === 0) {
+    if (existingTemplates.length === 0) {
       currentTemplate.value = getDefaultTemplate('male')
     } else {
-      currentTemplate.value = measurementTemplateStore.templates[0]
+      currentTemplate.value = existingTemplates[0] || null
     }
   } catch (error) {
     console.error('Error loading templates:', error)
@@ -672,8 +668,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-const measurementTemplatesStore = useMeasurementTemplateStore()
 
 // Save templates and complete setup
 async function saveTemplates() {
@@ -737,16 +731,10 @@ async function saveTemplates() {
       setupProcess: true, // Flag to indicate this is part of the setup process
     }
 
-    // Save both templates using direct $fetch calls
+    // Save both templates using the composable
     const [maleResponse, femaleResponse] = await Promise.all([
-      $fetch(API_ENDPOINTS.MEASUREMENTS.TEMPLATES, {
-        method: 'POST',
-        body: maleTemplateData,
-      }),
-      $fetch(API_ENDPOINTS.MEASUREMENTS.TEMPLATES, {
-        method: 'POST',
-        body: femaleTemplateData,
-      }),
+      createTemplate(maleTemplateData),
+      createTemplate(femaleTemplateData),
     ])
 
     console.log('Templates saved:', { maleResponse, femaleResponse })
@@ -758,17 +746,7 @@ async function saveTemplates() {
     } as Record<string, TemplateData>
 
     // Refresh templates from the API
-    const { data } = await useAsyncData('measurement-templates', () =>
-      $fetch<{ success: boolean; data: MeasurementTemplate[] }>(
-        API_ENDPOINTS.MEASUREMENTS.TEMPLATES,
-        { method: 'GET' }
-      )
-    )
-
-    // Update the store with fetched templates
-    if (data.value && data.value.data) {
-      measurementTemplatesStore.setTemplates(data.value.data)
-    }
+    await fetchTemplates()
 
     // Show success message
     toast.add({
@@ -776,6 +754,10 @@ async function saveTemplates() {
       description: 'Your measurement templates have been saved successfully.',
       color: 'primary',
     })
+
+    // Mark setup as completed in onboarding system
+    const { markSetupCompleted } = useOnboardingUpdates()
+    await markSetupCompleted()
 
     // Navigate to dashboard using direct window.location approach
     console.log('Attempting to navigate to dashboard...')

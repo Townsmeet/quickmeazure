@@ -6,6 +6,14 @@ export const user = sqliteTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
+  // Onboarding tracking fields
+  hasActiveSubscription: integer('has_active_subscription', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' }).notNull().default(false),
+  subscriptionStatus: text('subscription_status').notNull().default('none'), // 'none', 'pending', 'active', 'cancelled', 'expired'
+  onboardingStep: text('onboarding_step').notNull().default('verification'), // 'verification', 'subscription', 'setup', 'complete'
+  onboardingCompletedAt: integer('onboarding_completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
 })

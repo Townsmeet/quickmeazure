@@ -56,8 +56,13 @@ onMounted(async () => {
     return
   }
 
-  setTimeout(() => {
+  const { markEmailVerified } = useOnboardingUpdates()
+
+  setTimeout(async () => {
     isVerifying.value = false
+
+    // Mark email as verified in onboarding system
+    await markEmailVerified()
 
     toast.add({
       title: 'Email verified!',
@@ -75,6 +80,7 @@ onMounted(async () => {
 })
 
 const continueToSetup = () => {
-  navigateTo('/auth/confirm')
+  const { goToNextStep } = useOnboarding()
+  goToNextStep()
 }
 </script>

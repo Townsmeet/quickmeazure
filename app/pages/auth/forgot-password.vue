@@ -58,6 +58,7 @@ import { forgotPasswordSchema, type ForgotPasswordData } from '~/schemas/auth'
 
 definePageMeta({
   layout: 'auth',
+  middleware: 'guest-only',
 })
 
 // Set page metadata

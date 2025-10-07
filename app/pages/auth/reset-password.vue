@@ -99,6 +99,7 @@ useHead({
 // Set layout for this page
 definePageMeta({
   layout: 'auth',
+  middleware: 'guest-only',
 })
 
 const route = useRoute()

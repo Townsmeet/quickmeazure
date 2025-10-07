@@ -8,7 +8,7 @@
 
     <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
       <!-- Google Sign In Button -->
-      <div class="mt-8">
+      <div>
         <UButton
           block
           size="lg"
@@ -118,11 +118,13 @@ import { loginSchema, type LoginData } from '~/schemas/auth'
 
 definePageMeta({
   layout: 'auth',
+  middleware: 'guest-only',
 })
 
-const { login, isLoading } = useAuth()
+const { login, signInWithGoogle, isLoading } = useAuth()
 const isGoogleLoading = ref(false)
 const toast = useToast()
+const route = useRoute()
 
 // Form state
 const state = reactive<LoginData>({
@@ -154,7 +156,16 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
       color: 'success',
     })
 
-    await navigateTo('/dashboard')
+    // Handle redirect after successful login using onboarding system
+    const redirectTo = route.query.redirect as string
+    if (redirectTo) {
+      await navigateTo(decodeURIComponent(redirectTo))
+    } else {
+      // Use onboarding system to determine where to redirect
+      const { requiredOnboardingPath } = useAuth()
+      const nextPath = requiredOnboardingPath.value || '/dashboard'
+      await navigateTo(nextPath)
+    }
   } catch (error: any) {
     toast.add({
       title: 'Error',
@@ -167,15 +178,29 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
 
 // Google login handler
 const handleGoogleLogin = async () => {
+  isGoogleLoading.value = true
+
   try {
+    const { error } = await signInWithGoogle()
+
+    if (error) {
+      toast.add({
+        title: 'Google Sign-in Failed',
+        description: error.message,
+        color: 'error',
+        icon: 'i-heroicons-exclamation-circle',
+      })
+    }
+    // If successful, Better Auth will redirect to Google OAuth
+  } catch (error: any) {
     toast.add({
-      title: 'Google Sign-in',
-      description: 'Google sign-in is currently not available. Please use email and password.',
-      color: 'warning',
-      icon: 'i-heroicons-information-circle',
+      title: 'Google Sign-in Failed',
+      description: 'Something went wrong. Please try again.',
+      color: 'error',
+      icon: 'i-heroicons-exclamation-circle',
     })
-  } catch (error) {
-    console.error('Google sign-in error:', error)
+  } finally {
+    isGoogleLoading.value = false
   }
 }
 </script>

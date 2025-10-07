@@ -21,7 +21,7 @@
         <span :class="{ 'font-semibold text-gray-900': !isAnnual, 'text-gray-500': isAnnual }">
           Monthly
         </span>
-        <UToggle v-model="isAnnual" size="lg" />
+        <USwitch v-model="isAnnual" size="lg" />
         <span :class="{ 'font-semibold text-gray-900': isAnnual, 'text-gray-500': !isAnnual }">
           Annual
         </span>

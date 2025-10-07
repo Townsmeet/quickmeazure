@@ -41,6 +41,8 @@ export default defineNuxtConfig({
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
       s3PublicBaseUrl: process.env.NUXT_S3_PUBLIC_BASE_URL,
+      googleClientId: process.env.NUXT_GOOGLE_CLIENT_ID,
+      paystackKey: process.env.NUXT_PAYSTACK_PUBLIC_KEY,
     },
   },
 

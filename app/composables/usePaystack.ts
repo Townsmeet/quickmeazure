@@ -1,4 +1,3 @@
-import { useAuthStore } from '../../store/modules/auth'
 import { initializePaystackPayment } from '../utils/paystack'
 
 interface PaymentOptions {
@@ -11,7 +10,7 @@ interface PaymentOptions {
 }
 
 export const usePaystack = () => {
-  const authStore = useAuthStore()
+  const { user } = useAuth()
   const config = useRuntimeConfig()
 
   /**
@@ -20,40 +19,32 @@ export const usePaystack = () => {
   const processPayment = async (options: PaymentOptions) => {
     try {
       // Check if user is logged in and has email
-      if (!authStore.user?.email) {
+      if (!user.value?.email) {
         throw new Error('User email not available')
       }
 
       // Initialize Paystack payment
       initializePaystackPayment({
-        key: config.public.paystackKey,
-        email: authStore.user.email,
-        amount: options.amount,
+        key: config.public.paystackKey as string,
+        email: user.value.email,
+        amount: options.amount * 100, // Convert naira to kobo for Paystack
         currency: 'NGN',
         metadata: {
           plan_id: options.planId,
           plan_name: options.planName,
           billing_period: options.billingPeriod,
-          user_id: authStore.user.id || '',
+          user_id: user.value.id?.toString() || '',
         },
         callback: async response => {
           if (response.status === 'success') {
             // Verify payment with our server
             try {
-              // Ensure we have a valid token
-              if (!authStore.token) {
-                throw new Error('Authentication token not available')
-              }
-
               const verificationResult = await $fetch('/api/payments/verify', {
                 method: 'POST',
                 body: {
                   reference: response.reference,
                   plan_id: options.planId,
                   billing_period: options.billingPeriod,
-                },
-                headers: {
-                  Authorization: `Bearer ${authStore.token}`,
                 },
               })
 
@@ -98,50 +89,41 @@ export const usePaystack = () => {
     console.log('processPaymentMethodVerification called with options:', options)
     try {
       // Check if user is logged in and has email
-      if (!authStore.user?.email) {
+      if (!user.value?.email) {
         throw new Error('User email not available')
       }
 
       console.log('Initializing Paystack payment for verification')
       // Initialize Paystack payment for 50 naira
       initializePaystackPayment({
-        key: config.public.paystackKey,
-        email: authStore.user.email,
-        amount: 50, // 50 naira for verification
+        key: config.public.paystackKey as string,
+        email: user.value.email,
+        amount: 50 * 100, // 50 naira converted to kobo for verification
         currency: 'NGN',
         metadata: {
           purpose: 'payment_method_verification',
-          user_id: authStore.user.id || '',
+          user_id: user.value.id?.toString() || '',
         },
         callback: async response => {
           if (response.status === 'success') {
             // Verify payment with our server
             try {
-              // Ensure we have a valid token
-              if (!authStore.token) {
-                throw new Error('Authentication token not available')
-              }
-
               const verificationResult = await $fetch('/api/payments/verify-payment-method', {
                 method: 'POST',
                 body: {
                   reference: response.reference,
-                },
-                headers: {
-                  Authorization: `Bearer ${authStore.token}`,
                 },
               })
 
               console.log('Verification result:', verificationResult)
 
               // Check if the verification was successful
-              // The API returns either success: true or statusCode: 200 to indicate success
-              if (verificationResult.success === true || verificationResult.statusCode === 200) {
+              if (verificationResult.success === true) {
                 if (options.onSuccess) {
                   options.onSuccess()
                 }
               } else {
-                throw new Error(verificationResult.message || 'Payment verification failed')
+                throw new Error('Payment verification failed')
               }
             } catch (error) {
               if (options.onError) {

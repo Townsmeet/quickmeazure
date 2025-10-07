@@ -11,6 +11,30 @@ export const auth = betterAuth({
     provider: 'sqlite',
     schema,
   }),
+  user: {
+    additionalFields: {
+      hasActiveSubscription: {
+        type: 'boolean',
+        defaultValue: false,
+      },
+      hasCompletedSetup: {
+        type: 'boolean',
+        defaultValue: false,
+      },
+      subscriptionStatus: {
+        type: 'string',
+        defaultValue: 'none',
+      },
+      onboardingStep: {
+        type: 'string',
+        defaultValue: 'verification',
+      },
+      onboardingCompletedAt: {
+        type: 'date',
+        required: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

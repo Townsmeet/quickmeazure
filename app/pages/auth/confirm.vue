@@ -5,11 +5,48 @@
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
       <p class="text-lg text-gray-600">
         Select the perfect plan to start your tailoring business journey
+        {{
+          billingInterval === 'annually'
+            ? ` Save ${getSavingsPercentage()}% with annual billing.`
+            : ''
+        }}
       </p>
     </div>
 
     <!-- Pricing Plans -->
     <div class="w-full max-w-6xl px-4">
+      <!-- Billing Toggle -->
+      <div class="flex justify-center items-center gap-4 mb-12">
+        <span
+          :class="{
+            'font-semibold text-gray-900': billingInterval === 'monthly',
+            'text-gray-500': billingInterval === 'annually',
+          }"
+        >
+          Monthly
+        </span>
+        <USwitch
+          :model-value="billingInterval === 'annually'"
+          size="lg"
+          @update:model-value="toggleBilling"
+        />
+        <span
+          :class="{
+            'font-semibold text-gray-900': billingInterval === 'annually',
+            'text-gray-500': billingInterval === 'monthly',
+          }"
+        >
+          Annual
+        </span>
+        <UBadge
+v-if="billingInterval === 'annually'"
+color="primary"
+variant="subtle"
+class="ml-2">
+          Save {{ getSavingsPercentage() }}%
+        </UBadge>
+      </div>
+
       <UPricingPlans scale class="mb-12">
         <UPricingPlan
           v-for="plan in displayedPlans"
@@ -31,14 +68,37 @@
       <!-- Continue Button -->
       <div class="text-center">
         <UButton
+          v-if="selectedPlan === 'free'"
           size="xl"
           color="primary"
           :loading="isProcessing"
-          :disabled="!selectedPlan"
           class="px-12 py-4 text-lg font-semibold"
-          @click="confirmPlan"
+          @click="createFreeSubscription"
         >
-          {{ getButtonText() }}
+          Continue with Free Plan
+        </UButton>
+
+        <PaystackButton
+          v-else-if="selectedPlan && selectedPlanData"
+          :amount="selectedPlanData.price * 100"
+          :plan-id="selectedPlanData.id"
+          :plan-name="selectedPlanData.name"
+          :billing-period="billingInterval"
+          size="xl"
+          class="px-12 py-4 text-lg font-semibold"
+          @success="handlePaymentSuccess"
+          @error="handlePaymentError"
+        >
+          Continue & Pay {{ formatPrice(selectedPlanData.price) }}
+        </PaystackButton>
+
+        <UButton
+v-else
+size="xl"
+color="neutral"
+disabled
+class="px-12 py-4 text-lg font-semibold">
+          Select a Plan
         </UButton>
 
         <p class="mt-4 text-sm text-gray-500">
@@ -63,6 +123,7 @@ import {
   formatPrice,
   formatBillingCycle,
   formatBillingPeriod,
+  getSavingsPercentage,
   type Plan,
 } from '~/data/subscription-plans'
 
@@ -83,6 +144,12 @@ const displayedPlans = computed(() => {
   return getPlans(billingInterval.value)
 })
 
+// Get selected plan data
+const selectedPlanData = computed(() => {
+  if (!selectedPlan.value) return null
+  return getPlanById(selectedPlan.value, billingInterval.value)
+})
+
 // Get button props for each plan
 const getButtonProps = (plan: Plan) => {
   const isSelected = selectedPlan.value === plan.id
@@ -95,6 +162,11 @@ const getButtonProps = (plan: Plan) => {
     size: 'lg' as const,
     onClick: () => selectPlan(plan.id),
   }
+}
+
+// Toggle billing interval
+const toggleBilling = (isAnnual: boolean) => {
+  billingInterval.value = isAnnual ? 'annually' : 'monthly'
 }
 
 // Get pre-selected plan from query params (from home page)
@@ -121,24 +193,22 @@ const selectPlan = (planId: string) => {
   selectedPlan.value = planId
 }
 
-// Get button text based on selected plan
-const getButtonText = () => {
-  if (!selectedPlan.value) return 'Select a Plan'
-
-  return selectedPlan.value === 'free' ? 'Continue with Free Plan' : 'Continue & Setup Payment'
-}
-
-// Confirm plan and proceed
-const confirmPlan = async () => {
-  if (!selectedPlan.value) return
+// Create free subscription
+const createFreeSubscription = async () => {
+  if (!selectedPlanData.value) return
 
   isProcessing.value = true
+  const { createSubscription } = useSubscriptions()
 
   try {
-    const selectedPlanData = getPlanById(selectedPlan.value, billingInterval.value)
+    const result = await createSubscription({
+      planId: selectedPlanData.value.id,
+      planName: selectedPlanData.value.name,
+      billingPeriod: billingInterval.value,
+      amount: 0,
+    })
 
-    if (selectedPlan.value === 'free') {
-      // For free plan, go directly to setup measurements
+    if (result.success) {
       toast.add({
         title: 'Welcome to QuickMeazure!',
         description: "Let's set up your measurement templates.",
@@ -147,25 +217,36 @@ const confirmPlan = async () => {
 
       await navigateTo('/auth/setup-measurements')
     } else {
-      // For paid plans, handle payment setup
-      toast.add({
-        title: 'Plan selected',
-        description: `You've selected the ${selectedPlanData?.name} plan. Setting up payment...`,
-        color: 'success',
-      })
-
-      // TODO: Integrate with payment system (Paystack)
-      // For now, redirect to setup measurements
-      await navigateTo('/auth/setup-measurements')
+      throw new Error(result.message || 'Failed to create subscription')
     }
-  } catch (error) {
+  } catch (error: any) {
     toast.add({
       title: 'Error',
-      description: 'Something went wrong. Please try again.',
+      description: error.message || 'Failed to create subscription. Please try again.',
       color: 'error',
     })
   } finally {
     isProcessing.value = false
   }
+}
+
+// Handle successful payment
+const handlePaymentSuccess = async () => {
+  toast.add({
+    title: 'Payment Successful!',
+    description: `Welcome to QuickMeazure ${selectedPlanData.value?.name} plan!`,
+    color: 'success',
+  })
+
+  await navigateTo('/auth/setup-measurements')
+}
+
+// Handle payment error
+const handlePaymentError = (error: any) => {
+  toast.add({
+    title: 'Payment Failed',
+    description: error?.message || 'Payment was not successful. Please try again.',
+    color: 'error',
+  })
 }
 </script>
