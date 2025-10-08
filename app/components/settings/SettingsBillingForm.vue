@@ -252,7 +252,12 @@
 import { computed, onMounted, ref } from 'vue'
 
 // Initialize composables
-const { currentSubscription, changeSubscriptionPlan } = useSubscriptions()
+const {
+  currentSubscription,
+  changeSubscriptionPlan,
+  isLoading: loading,
+  error,
+} = useSubscriptions()
 const { user, isAuthenticated } = useAuth()
 
 // Define loading state for plan changes
@@ -266,7 +271,6 @@ const initialLoad = ref(true)
 
 // Access subscription properties reactively
 const currentPlan = computed(() => currentSubscription.value)
-const { isLoading: loading, error } = useSubscriptions()
 
 // Computed properties for subscription status
 const status = computed(() => currentSubscription.value?.status || 'inactive')

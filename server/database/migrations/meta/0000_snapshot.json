@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1f42fb3b-b1af-40ea-b0d8-7ab708166ff7",
+  "id": "21da2bd6-d870-4c42-8b42-b2f28264f27c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -1304,6 +1304,13 @@
           "notNull": true,
           "autoincrement": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -1393,7 +1400,13 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "plans_slug_unique": {
+          "name": "plans_slug_unique",
+          "columns": ["slug"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -1871,9 +1884,56 @@
           "notNull": true,
           "autoincrement": false
         },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
         "image": {
           "name": "image",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "has_active_subscription": {
+          "name": "has_active_subscription",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_completed_setup": {
+          "name": "has_completed_setup",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "subscription_status": {
+          "name": "subscription_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'none'"
+        },
+        "onboarding_step": {
+          "name": "onboarding_step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'verification'"
+        },
+        "onboarding_completed_at": {
+          "name": "onboarding_completed_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

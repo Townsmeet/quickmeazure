@@ -3,8 +3,9 @@ import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
-import { eq, and  } from 'drizzle-orm'
-// Subscription type import removed as it's not being used
+import { eq, and } from 'drizzle-orm'
+import { sendEmail } from '../../utils/email'
+import { createSubscriptionConfirmationEmail } from '../../email-templates'
 
 /**
  * Create a new subscription after successful payment
@@ -14,22 +15,17 @@ export default defineEventHandler(async event => {
   try {
     // Get authenticated user from event context (set by auth middleware)
     const auth = event.context.auth
-    if (!auth || !auth.userId) {
+    const userId = auth?.userId
+
+    // Require authentication for all subscription creation
+    if (!auth || !userId) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Unauthorized',
+        statusMessage: 'Unauthorized - Please log in to create a subscription',
       })
     }
 
-    console.log('Authenticated user ID:', auth.userId)
-    const userId = auth.userId
-
-    if (!userId) {
-      throw createError({
-        statusCode: 401,
-        message: 'Unauthorized - Invalid user ID',
-      })
-    }
+    console.log('Authenticated user ID:', userId)
 
     // Read and validate request body
     const BodySchema = z.object({
@@ -79,12 +75,12 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Find the plan - ensure planId is converted to a number if it's a string
-    const planIdNum = typeof planId === 'string' && !isNaN(Number(planId)) ? Number(planId) : planId
-    console.log('Looking for plan with ID:', planIdNum, 'Original value:', planId)
+    // Find the plan by slug (since frontend sends string IDs like 'free', 'standard', 'premium')
+    const planSlug = typeof planId === 'string' ? planId : planId.toString()
+    console.log('Looking for plan with slug:', planSlug, 'Original value:', planId)
 
     const plan = await db.query.plans.findFirst({
-      where: eq(tables.plans.id, planIdNum),
+      where: eq(tables.plans.slug, planSlug),
     })
 
     if (!plan) {
@@ -118,7 +114,7 @@ export default defineEventHandler(async event => {
     })
 
     const subscriptionData = {
-      planId,
+      planId: plan.id, // Use the database integer ID
       billingPeriod,
       startDate,
       endDate,
@@ -137,26 +133,42 @@ export default defineEventHandler(async event => {
         .where(eq(tables.subscriptions.id, existingSubscription.id))
         .returning()
 
-      // Get the plan details for the token
-      const planDetails = await db.query.plans.findFirst({
-        where: eq(tables.plans.id, planId),
+      // Get user information for email
+      const user = await db.query.user.findFirst({
+        where: eq(tables.user.id, String(userId)),
       })
 
-      // Generate a new token with subscription information
-      const newToken = generateToken({
-        id: userId,
-        subscriptionPlan: planDetails?.name || '',
-        subscriptionExpiry: Math.floor(endDate.getTime() / 1000),
-      })
+      // Send subscription confirmation email
+      if (user?.email) {
+        try {
+          const { subject, htmlContent } = createSubscriptionConfirmationEmail(
+            planName,
+            billingPeriod,
+            amount || 0,
+            user.name || undefined
+          )
 
-      return ok({ subscription: updatedSubscription[0], token: newToken })
+          await sendEmail({
+            to: user.email,
+            subject,
+            htmlContent,
+          })
+
+          console.log('Subscription confirmation email sent to:', user.email)
+        } catch (emailError) {
+          console.error('Failed to send subscription confirmation email:', emailError)
+          // Don't fail the subscription creation if email fails
+        }
+      }
+
+      return ok({ subscription: updatedSubscription[0] })
     } else {
       // Create new subscription
       const newSubscription = await db
         .insert(tables.subscriptions)
         .values({
           userId: String(userId),
-          planId: planIdNum,
+          planId: plan.id, // Use the database integer ID
           status: 'active',
           startDate: new Date(),
           billingPeriod,
@@ -181,23 +193,6 @@ export default defineEventHandler(async event => {
           .insert(tables.businesses)
           .values({ userId: String(userId), hasCompletedSetup: false, createdAt: new Date() })
       }
-
-      // Get the plan details for the token
-      const planDetails = await db.query.plans.findFirst({
-        where: eq(tables.plans.id, planId),
-      })
-
-      // Generate a new token with subscription information
-      const newToken = generateToken({
-        id: userId,
-        subscriptionPlan: planDetails?.name || '',
-        subscriptionExpiry: Math.floor(
-          (billingPeriod === 'monthly'
-            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          ).getTime() / 1000
-        ),
-      })
 
       // For paid plans, save or update the payment method
       // Using the single payment method approach - each user has only one payment method
@@ -232,9 +227,6 @@ export default defineEventHandler(async event => {
               })
               .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
           } else {
-            // Create a new payment method
-            console.log('Creating new payment method for user ID:', userId)
-
             await db.insert(tables.paymentMethods).values({
               userId: String(userId),
               type: cardDetails.type || 'card',
@@ -257,11 +249,37 @@ export default defineEventHandler(async event => {
         }
       }
 
-      return ok({ subscription: newSubscription[0], token: newToken })
+      // Get user information for email
+      const user = await db.query.user.findFirst({
+        where: eq(tables.user.id, String(userId)),
+      })
+
+      // Send subscription confirmation email
+      if (user?.email) {
+        try {
+          const { subject, htmlContent } = createSubscriptionConfirmationEmail(
+            planName,
+            billingPeriod,
+            amount || 0,
+            user.name || undefined
+          )
+
+          await sendEmail({
+            to: user.email,
+            subject,
+            htmlContent,
+          })
+
+          console.log('Subscription confirmation email sent to:', user.email)
+        } catch (emailError) {
+          console.error('Failed to send subscription confirmation email:', emailError)
+          // Don't fail the subscription creation if email fails
+        }
+      }
+
+      return ok({ subscription: newSubscription[0] })
     }
   } catch (error: any) {
-    console.error('Error creating subscription:', error)
-
     if (error.statusCode) {
       throw error
     }

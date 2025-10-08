@@ -26,24 +26,33 @@ export const useSubscriptions = () => {
   // State
   const currentSubscription = useState<Subscription | null>('subscription_current', () => null)
   const error = useState<string | null>('subscription_error', () => null)
+  const isLoading = ref(false)
 
-  // Data fetching with useFetch (for GET requests)
-  const {
-    data: subscriptionData,
-    pending: isLoading,
-    refresh: refreshSubscription,
-  } = useFetch<{ success: boolean; data: Subscription }>('/api/subscriptions/current', {
-    server: false,
-    default: () => ({ success: false, data: null }),
-    onResponse({ response }) {
-      if (response._data?.success && response._data?.data) {
-        currentSubscription.value = response._data.data
+  // Manual subscription fetching - only when explicitly requested
+  const refreshSubscription = async () => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await $fetch<{ success: boolean; data: Subscription }>(
+        '/api/subscriptions/current'
+      )
+
+      if (response.success && response.data) {
+        currentSubscription.value = response.data
+      } else {
+        currentSubscription.value = null
       }
-    },
-    onResponseError({ error: fetchError }) {
-      error.value = fetchError?.message || 'Failed to fetch subscription'
-    },
-  })
+
+      return response
+    } catch (err: any) {
+      error.value = err.message || 'Failed to fetch subscription'
+      currentSubscription.value = null
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   // Create subscription (mutation with $fetch)
   const createSubscription = async (
@@ -59,16 +68,26 @@ export const useSubscriptions = () => {
 
       if (response.success && response.data) {
         currentSubscription.value = response.data
-        // Refresh the subscription data
-        await refreshSubscription()
+        // No need to refresh since we already have the data
       }
 
       return response
     } catch (err: any) {
-      error.value = err.message || 'Failed to create subscription'
+      // Extract error message from the response
+      let errorMessage = 'Failed to create subscription'
+
+      if (err.data?.message) {
+        errorMessage = err.data.message
+      } else if (err.message) {
+        errorMessage = err.message
+      } else if (err.statusMessage) {
+        errorMessage = err.statusMessage
+      }
+
+      error.value = errorMessage
       return {
         success: false,
-        message: error.value,
+        message: errorMessage,
       }
     }
   }

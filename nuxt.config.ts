@@ -20,6 +20,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     paystackSecretKey: process.env.NUXT_PAYSTACK_SECRET_KEY,
+    jwtSecret: process.env.NUXT_JWT_SECRET,
 
     turso: {
       databaseUrl: process.env.NUXT_TURSO_DATABASE_URL,

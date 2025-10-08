@@ -2,7 +2,7 @@
   <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 py-12">
     <!-- Header -->
     <div class="text-center mb-12 w-full max-w-4xl px-4">
-      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose your plan</h1>
       <p class="text-lg text-gray-600">
         Select the perfect plan to start your tailoring business journey
         {{

@@ -3,6 +3,7 @@ import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
 import { ok } from '../../validators'
 import { z } from 'zod'
+import { generateToken } from '../../utils/jwt'
 
 /**
  * Change the current user's subscription plan

@@ -64,19 +64,44 @@ onMounted(async () => {
     // Mark email as verified in onboarding system
     await markEmailVerified()
 
-    toast.add({
-      title: 'Email verified!',
-      description: 'Your email has been successfully verified.',
-      color: 'success',
-    })
-  }, 1500)
+    // Check if user session exists after verification
+    try {
+      const { data: sessionData } = await authClient.getSession()
 
-  try {
-    const { data } = await authClient.getSession()
-    console.log('🔍 Updated session after verification:', data)
-  } catch (sessionError) {
-    console.warn('Could not refresh session, but verification was successful:', sessionError)
-  }
+      if (sessionData?.user) {
+        // User is authenticated via better-auth
+        console.log('User session confirmed after verification:', sessionData.user.email)
+
+        toast.add({
+          title: 'Email verified!',
+          description: 'Your email has been successfully verified.',
+          color: 'success',
+        })
+      } else {
+        console.warn('No session found after verification')
+        toast.add({
+          title: 'Verification complete',
+          description: 'Please sign in to continue with your subscription.',
+          color: 'warning',
+        })
+
+        // Redirect to login page since no session exists
+        await navigateTo('/auth/login')
+        return
+      }
+    } catch (sessionError) {
+      console.warn('Could not verify session after email verification:', sessionError)
+      toast.add({
+        title: 'Verification complete',
+        description: 'Please sign in to continue with your subscription.',
+        color: 'warning',
+      })
+
+      // Redirect to login page
+      await navigateTo('/auth/login')
+      return
+    }
+  }, 1500)
 })
 
 const continueToSetup = () => {

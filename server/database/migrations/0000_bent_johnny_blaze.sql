@@ -190,6 +190,7 @@ CREATE TABLE `payments` (
 --> statement-breakpoint
 CREATE TABLE `plans` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`slug` text NOT NULL,
 	`name` text NOT NULL,
 	`description` text NOT NULL,
 	`price` real NOT NULL,
@@ -204,6 +205,7 @@ CREATE TABLE `plans` (
 	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer))
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `plans_slug_unique` ON `plans` (`slug`);--> statement-breakpoint
 CREATE TABLE `session` (
 	`id` text PRIMARY KEY NOT NULL,
 	`expires_at` integer NOT NULL,
@@ -274,7 +276,13 @@ CREATE TABLE `user` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text,
 	`email` text NOT NULL,
+	`email_verified` integer DEFAULT false NOT NULL,
 	`image` text,
+	`has_active_subscription` integer DEFAULT false NOT NULL,
+	`has_completed_setup` integer DEFAULT false NOT NULL,
+	`subscription_status` text DEFAULT 'none' NOT NULL,
+	`onboarding_step` text DEFAULT 'verification' NOT NULL,
+	`onboarding_completed_at` integer,
 	`created_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL
 );

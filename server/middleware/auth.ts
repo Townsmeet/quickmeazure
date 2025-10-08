@@ -99,7 +99,8 @@ export default defineEventHandler(async event => {
   // Verify JWT token
   try {
     const config = useRuntimeConfig()
-    const decoded = jwt.verify(token, config.jwtSecret) as TokenPayload
+    const secret = config.jwtSecret || 'fallback-secret-for-development'
+    const decoded = jwt.verify(token, secret) as TokenPayload
 
     // Set auth context with user ID from token
     event.context.auth = {

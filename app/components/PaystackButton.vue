@@ -72,14 +72,7 @@ const initiatePayment = async () => {
     onSuccess: async () => {
       loading.value = false
 
-      // Reload subscription data
-      const { getCurrentSubscription } = useSubscriptions()
-      try {
-        await getCurrentSubscription()
-      } catch (error) {
-        console.error('Failed to load subscription:', error)
-      }
-
+      // Payment verification will create the subscription, no need to reload here
       toast.add({
         title: 'Payment Successful',
         description: `Your payment for the ${props.planName} plan was successful!`,

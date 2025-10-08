@@ -2,6 +2,7 @@ import { defineEventHandler, createError } from 'h3'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
 import { ok } from '../../validators'
+import { generateToken } from '../../utils/jwt'
 
 /**
  * Get the current user's active subscription
