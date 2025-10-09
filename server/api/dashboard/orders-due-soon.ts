@@ -60,12 +60,17 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
       status: order.status,
     }))
 
-    return formattedOrders
+    return {
+      success: true,
+      data: formattedOrders,
+    }
   } catch (error: any) {
     console.error('Dashboard orders due soon API error:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to fetch orders due soon',
-    })
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : 'Failed to fetch orders due soon',
+      message: 'Failed to fetch orders due soon',
+    }
   }
 })

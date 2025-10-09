@@ -35,5 +35,5 @@ export default defineEventHandler(async event => {
     .delete(tables.paymentMethods)
     .where(and(eq(tables.paymentMethods.id, id), eq(tables.paymentMethods.userId, userId)))
 
-  return ok({ id, deleted: true })
+  return { success: true, data: { id, deleted: true } }
 })

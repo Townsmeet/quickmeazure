@@ -43,10 +43,13 @@ export default defineEventHandler(async event => {
 
     if (existingUser.length > 0) {
       return {
-        message: 'User already exists',
-        userId: existingUser[0].id,
-        email: existingUser[0].email,
-        name: existingUser[0].name,
+        success: true,
+        data: {
+          message: 'User already exists',
+          userId: existingUser[0].id,
+          email: existingUser[0].email,
+          name: existingUser[0].name,
+        },
       }
     }
 
@@ -64,16 +67,20 @@ export default defineEventHandler(async event => {
     const [insertedUser] = await db.insert(tables.user).values(newUser).returning()
 
     return {
-      message: 'Test user created successfully',
-      userId: insertedUser.id,
-      email: insertedUser.email,
-      name: insertedUser.name,
+      success: true,
+      data: {
+        message: 'Test user created successfully',
+        userId: insertedUser.id,
+        email: insertedUser.email,
+        name: insertedUser.name,
+      },
     }
   } catch (error: any) {
     console.error('Create test user error:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message || 'Failed to create test user',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create test user',
+      message: error.message || 'Failed to create test user',
+    }
   }
 })

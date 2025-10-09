@@ -179,13 +179,16 @@ export default defineEventHandler(async event => {
 
     // Format the response
     return {
-      ...newOrder,
-      dueDate: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      clientName: clientExists[0].name,
-      styleName: styleData?.name || null,
-      styleImageUrl: styleData?.imageUrl || null,
+      success: true,
+      data: {
+        ...newOrder,
+        dueDate: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        clientName: clientExists[0].name,
+        styleName: styleData?.name || null,
+        styleImageUrl: styleData?.imageUrl || null,
+      },
     }
   } catch (error: any) {
     console.error('CREATE ENDPOINT: Error creating order:', error)
@@ -196,9 +199,10 @@ export default defineEventHandler(async event => {
     }
 
     // Handle any other errors
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Failed to create order: ${error.message || 'Unknown error'}`,
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create order',
+      message: 'Failed to create order',
+    }
   }
 })

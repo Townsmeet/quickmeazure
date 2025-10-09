@@ -91,16 +91,13 @@ export default defineEventHandler(async (event: H3Event) => {
       })
       .where(eq(tables.account.userId, userId))
 
-    return {
-      success: true,
-      message: 'Password updated successfully',
-    }
+    return { success: true, data: { message: 'Password updated successfully' } }
   } catch (error) {
     console.error('Error changing password:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage:
-        error instanceof Error ? error.message : 'An error occurred while changing password',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An error occurred while changing password',
+      message: error instanceof Error ? error.message : 'An error occurred while changing password',
+    }
   }
 })

@@ -49,12 +49,13 @@ export default defineEventHandler(async event => {
       .returning({ id: tables.payments.id })
 
     const paymentId = result[0]?.id
-    return ok({ paymentId, amount, orderId })
+    return { success: true, data: { paymentId, amount, orderId } }
   } catch (error: any) {
     console.error('Error recording payment:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      statusMessage: error.message || 'An error occurred while recording payment',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An error occurred while recording payment',
+      message: 'An error occurred while recording payment',
+    }
   }
 })

@@ -293,16 +293,18 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
     } as ClientGrowthResponse
 
     console.log('Client growth API response:', response)
-    return response
+    return {
+      success: true,
+      data: response,
+    }
   } catch (error: any) {
     console.error('Dashboard client growth API error:', error)
-
-    // Return empty data instead of error to keep dashboard working
+    // Return consistent API error structure.
     return {
-      labels: [],
-      data: [],
-      totalGrowth: 0,
-      percentGrowth: 0,
-    } as ClientGrowthResponse
+      success: false,
+      data: { labels: [], data: [], totalGrowth: 0, percentGrowth: 0 },
+      error: error instanceof Error ? error.message : 'Failed to fetch client growth',
+      message: 'Failed to fetch client growth',
+    }
   }
 })

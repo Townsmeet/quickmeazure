@@ -78,15 +78,18 @@ export default defineEventHandler(async event => {
   }
 
   const result = paymentMethod[0]
-  return ok({
-    id: result.id,
-    type: result.type,
-    last4: result.last4,
-    expiryMonth: result.expiryMonth,
-    expiryYear: result.expiryYear,
-    brand: result.brand,
-    isDefault: true,
-    createdAt: result.createdAt,
-    updatedAt: result.updatedAt,
-  })
+  return {
+    success: true,
+    data: {
+      id: result.id,
+      type: result.type,
+      last4: result.last4,
+      expiryMonth: result.expiryMonth,
+      expiryYear: result.expiryYear,
+      brand: result.brand,
+      isDefault: true,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    },
+  }
 })

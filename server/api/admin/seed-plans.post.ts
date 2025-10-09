@@ -13,15 +13,13 @@ export default defineEventHandler(async event => {
 
     await seedPlans()
 
-    return {
-      success: true,
-      message: 'Plans seeded successfully',
-    }
+    return { success: true, data: { message: 'Plans seeded successfully' } }
   } catch (error: any) {
     console.error('Error seeding plans:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message || 'Failed to seed plans',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to seed plans',
+      message: error.message || 'Failed to seed plans',
+    }
   }
 })

@@ -48,5 +48,13 @@ export default defineEventHandler(async event => {
         .returning()
         .then(res => res[0])
 
-  return ok(saved)
+  try {
+    return { success: true, data: saved }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed',
+      message: 'Failed to update business',
+    }
+  }
 })

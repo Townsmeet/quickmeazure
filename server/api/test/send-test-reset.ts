@@ -48,15 +48,19 @@ export default defineEventHandler(async event => {
     console.log('Email sending result:', result)
 
     return {
-      success: result.success,
-      messageId: result.messageId,
-      error: result.error,
+      success: true,
+      data: {
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error,
+      },
     }
   } catch (error: any) {
     console.error('Test reset email error:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message || 'Failed to send test reset email',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send test reset email',
+      message: error.message || 'Failed to send test reset email',
+    }
   }
 })

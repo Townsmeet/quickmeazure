@@ -29,8 +29,9 @@ export default defineEventHandler(async event => {
       .where(eq(tables.paymentMethods.userId, String(userId)))
       .execute()
 
-    return ok(
-      paymentMethods.map(method => ({
+    return {
+      success: true,
+      data: paymentMethods.map(method => ({
         id: method.id,
         type: method.type,
         last4: method.last4,
@@ -40,13 +41,14 @@ export default defineEventHandler(async event => {
         brand: method.brand,
         createdAt: method.createdAt,
         updatedAt: method.updatedAt,
-      }))
-    )
+      })),
+    }
   } catch (err) {
     console.error('Error retrieving payment methods:', err)
-    throw createError({
-      statusCode: err.statusCode || 500,
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Internal server error',
       message: err.message || 'Internal server error',
-    })
+    }
   }
 })

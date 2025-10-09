@@ -17,5 +17,5 @@ export default defineEventHandler(async event => {
   // This endpoint simply acknowledges the reference for success flows.
   console.log('Payment method verification successful for user:', auth.userId, 'ref:', reference)
 
-  return ok({ reference, verified: true })
+  return { success: true, data: { reference, verified: true } }
 })

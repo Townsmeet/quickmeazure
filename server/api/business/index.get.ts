@@ -28,13 +28,14 @@ export default defineEventHandler(async (event: H3Event) => {
 
     return {
       success: true,
-      business: business.length > 0 ? business[0] : null,
+      data: business.length > 0 ? business[0] : null,
     }
   } catch (error: any) {
     console.error('Error fetching business info:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
-      message: error.message || 'Failed to fetch business information',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch business information',
+      message: 'Failed to fetch business information',
+    }
   }
 })

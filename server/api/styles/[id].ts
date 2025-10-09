@@ -66,10 +66,7 @@ export default defineEventHandler(async event => {
       console.log('API: Style data:', styleExists[0])
 
       // Return both style and related tables.orders
-      return {
-        style: styleExists[0],
-        relatedOrders,
-      }
+      return { success: true, data: { style: styleExists[0], relatedOrders } }
     } catch (error) {
       console.error('API Error fetching style:', error)
       throw createError({
@@ -152,7 +149,7 @@ export default defineEventHandler(async event => {
         .set(updatedStyle)
         .where(and(eq(tables.styles.id, parseInt(styleId)), eq(tables.styles.userId, userId)))
 
-      return { ...styleExists[0], ...updatedStyle }
+      return { success: true, data: { ...styleExists[0], ...updatedStyle } }
     } catch (error: any) {
       console.error('Error updating style:', error)
       if (error.statusCode) {
@@ -172,7 +169,7 @@ export default defineEventHandler(async event => {
         .delete(tables.styles)
         .where(and(eq(tables.styles.id, parseInt(styleId)), eq(tables.styles.userId, userId)))
 
-      return { success: true, message: 'Style deleted successfully' }
+      return { success: true, data: { deleted: true, message: 'Style deleted successfully' } }
     } catch (error) {
       console.error('Error deleting style:', error)
       throw createError({

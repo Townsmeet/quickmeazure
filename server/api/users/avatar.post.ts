@@ -80,16 +80,13 @@ export default defineEventHandler(async event => {
     }
 
     // Return the updated user data
-    return {
-      success: true,
-      avatarUrl,
-      message: 'Avatar updated successfully',
-    }
+    return { success: true, data: { avatarUrl, message: 'Avatar updated successfully' } }
   } catch (error: any) {
     console.error('Error uploading avatar:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to upload avatar',
       message: error.message || 'Failed to upload avatar',
-    })
+    }
   }
 })

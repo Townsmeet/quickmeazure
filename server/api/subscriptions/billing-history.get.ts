@@ -32,8 +32,9 @@ export default defineEventHandler(async event => {
       .limit(10) // Limit to last 10 payments
       .execute()
 
-    return ok(
-      payments.map(payment => ({
+    return {
+      success: true,
+      data: payments.map(payment => ({
         id: payment.id,
         date: payment.createdAt,
         description: payment.description || 'Subscription Payment',
@@ -41,13 +42,14 @@ export default defineEventHandler(async event => {
         status: payment.status,
         reference: payment.reference,
         metadata: payment.metadata,
-      }))
-    )
+      })),
+    }
   } catch (err) {
     console.error('Error retrieving billing history:', err)
-    throw createError({
-      statusCode: err.statusCode || 500,
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Internal server error',
       message: err.message || 'Internal server error',
-    })
+    }
   }
 })

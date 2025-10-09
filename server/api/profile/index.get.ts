@@ -67,25 +67,29 @@ export default defineEventHandler(async event => {
 
     // Combine user data with profile and subscription info
     return {
-      ...userData,
-      ...profileData,
-      subscription: activeSubscription
-        ? {
-            plan: activeSubscription.planName,
-            status: activeSubscription.status,
-            expiryDate: activeSubscription.endDate,
-          }
-        : {
-            plan: 'free',
-            status: 'inactive',
-            expiryDate: null,
-          },
+      success: true,
+      data: {
+        ...userData,
+        ...profileData,
+        subscription: activeSubscription
+          ? {
+              plan: activeSubscription.planName,
+              status: activeSubscription.status,
+              expiryDate: activeSubscription.endDate,
+            }
+          : {
+              plan: 'free',
+              status: 'inactive',
+              expiryDate: null,
+            },
+      },
     }
   } catch (error) {
     console.error('Error fetching profile:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Internal server error',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error',
+      message: 'Internal server error',
+    }
   }
 })

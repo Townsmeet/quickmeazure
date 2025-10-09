@@ -64,12 +64,13 @@ export default defineEventHandler(async event => {
       'Returning plans:',
       plans.map(p => `${p.name} (${p.id}): ${p.price}`)
     )
-    return ok(plans)
+    return { success: true, data: plans }
   } catch (error) {
     console.error('Error fetching subscription plans:', error)
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch subscription plans',
       message: 'Failed to fetch subscription plans',
-    })
+    }
   }
 })

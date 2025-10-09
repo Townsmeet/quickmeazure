@@ -61,6 +61,7 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
+      data: { deleted: true },
       message: 'Notification deleted successfully',
     }
   } catch (error: any) {
@@ -70,9 +71,11 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'An error occurred while deleting notification',
       message: 'An error occurred while deleting notification',
-    })
+    }
   }
 })

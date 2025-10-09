@@ -60,14 +60,12 @@ export default defineEventHandler(async event => {
     // Update user in database
     await db.update(user).set(updateData).where(eq(user.id, session.user.id))
 
-    return {
-      success: true,
-      message: 'Onboarding step updated successfully',
-    }
+    return { success: true, data: { message: 'Onboarding step updated successfully' } }
   } catch (error: any) {
-    throw createError({
-      statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || 'Failed to update onboarding step',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update onboarding step',
+      message: error.statusMessage || 'Failed to update onboarding step',
+    }
   }
 })

@@ -32,6 +32,7 @@ export default defineEventHandler(async (event: H3Event) => {
     console.error('Error fetching measurement templates:', error)
     return {
       success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch measurement templates',
       message: error.message || 'Failed to fetch measurement templates',
     }
   }

@@ -28,14 +28,12 @@ export default defineEventHandler(async (event: H3Event) => {
       defaultUnit: body.defaultUnit,
     })
 
-    return {
-      success: true,
-      data: settings,
-    }
+    return { success: true, data: settings }
   } catch (error: any) {
     console.error('Error updating measurement settings:', error)
     return {
       success: false,
+      error: error instanceof Error ? error.message : 'Failed to update measurement settings',
       message: error.message || 'Failed to update measurement settings',
     }
   }

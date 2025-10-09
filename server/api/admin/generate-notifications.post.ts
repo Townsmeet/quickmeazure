@@ -56,20 +56,21 @@ export default defineEventHandler(async event => {
     // Return the results
     return {
       success: true,
-      paymentReminders: paymentReminders.count,
-      expirationAlerts: expirationAlerts.count,
-      usageWarnings: usageWarnings.count,
-      totalTime,
-      message: 'Notifications generated successfully',
+      data: {
+        paymentReminders: paymentReminders.count,
+        expirationAlerts: expirationAlerts.count,
+        usageWarnings: usageWarnings.count,
+        totalTime,
+        message: 'Notifications generated successfully',
+      },
     }
   } catch (error) {
     console.error('Error generating notifications:', error)
 
     return {
-      statusCode: 500,
-      statusMessage: 'Internal Server Error',
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate notifications',
       message: 'Failed to generate notifications',
-      error: error.message,
     }
   }
 })

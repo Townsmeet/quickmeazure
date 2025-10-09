@@ -152,16 +152,25 @@ export default defineEventHandler(async event => {
       // Calculate total pages
       const totalPages = Math.ceil(totalCount / limit)
 
-      return ok({
-        items: clientsData,
-        pagination: { page, limit, totalCount, totalPages },
-      })
+      return {
+        success: true,
+        data: clientsData,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      }
     } catch (error) {
       console.error('Error fetching clients:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to fetch clients',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch clients',
+        message: 'Failed to fetch clients',
+      }
     }
   }
 
@@ -246,13 +255,17 @@ export default defineEventHandler(async event => {
         await db.insert(tables.measurements).values(processedMeasurements)
       }
 
-      return ok(newClient[0])
+      return {
+        success: true,
+        data: newClient[0],
+      }
     } catch (error) {
       console.error('Error creating client:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to create client',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create client',
+        message: 'Failed to create client',
+      }
     }
   }
 

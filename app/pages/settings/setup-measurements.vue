@@ -45,10 +45,10 @@
 
         <template #footer>
           <div class="flex justify-end gap-3">
-            <UButton color="gray" variant="ghost" @click="showDeleteConfirm = false">
+            <UButton color="neutral" variant="ghost" @click="showDeleteConfirm = false">
               Cancel
             </UButton>
-            <UButton color="red" :loading="isDeleting" @click="deleteTemplate"> Delete </UButton>
+            <UButton color="error" :loading="isDeleting" @click="deleteTemplate"> Delete </UButton>
           </div>
         </template>
       </UCard>
@@ -57,8 +57,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import type { MeasurementTemplate } from '~/types/measurement'
+
+definePageMeta({
+  middleware: 'auth',
+  layout: 'dashboard',
+})
 
 // State
 const showDialog = ref(false)

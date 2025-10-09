@@ -275,16 +275,18 @@ export default defineEventHandler(async (event: H3Event<EventHandlerRequest>) =>
 
     // Return the paginated activities with metadata
     return {
-      activities: paginatedActivities,
+      success: true,
+      data: paginatedActivities,
       total,
       page,
       totalPages,
     } as ActivityResponse
   } catch (error: any) {
     console.error('Activity API error:', error)
-    throw createError({
-      statusCode: error.statusCode || 500,
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch activity data',
       message: error.message || 'Failed to fetch activity data',
-    })
+    }
   }
 })

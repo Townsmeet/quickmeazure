@@ -72,80 +72,105 @@ export const useDashboard = () => {
     data: _statsData,
     pending: isLoadingStats,
     refresh: refreshStats,
-  } = useFetch<{ success: boolean; data: DashboardStats }>('/api/dashboard/stats', {
-    server: false,
-    default: () => ({
-      success: false,
-      data: undefined as unknown as DashboardStats,
-    }),
-    onResponse({ response }) {
-      const responseData = response._data
-      if (responseData?.success && responseData?.data) {
-        stats.value = responseData.data
-      }
-    },
-  })
+  } = useFetch<{ success: boolean; data?: DashboardStats; message?: string; error?: string }>(
+    '/api/dashboard/stats',
+    {
+      server: false,
+      default: () => ({
+        success: false,
+        data: undefined as unknown as DashboardStats,
+      }),
+      onResponse({ response }) {
+        const responseData = response._data
+        if (responseData?.success && responseData?.data) {
+          stats.value = responseData.data
+        } else {
+          stats.value = null
+          error.value = responseData?.error || responseData?.message || 'Failed to fetch stats'
+        }
+      },
+    }
+  )
 
   const {
     data: _activityData,
     pending: isLoadingActivity,
     refresh: refreshActivity,
-  } = useFetch<{ success: boolean; data: ActivityItem[] }>('/api/dashboard/recent-activity', {
-    query: { limit: 10 },
-    server: false,
-    default: () => ({
-      success: false,
-      data: [] as ActivityItem[],
-    }),
-    onResponse({ response }) {
-      const responseData = response._data
-      if (responseData?.success && responseData?.data) {
-        recentActivity.value = responseData.data
-      }
-    },
-  })
+  } = useFetch<{ success: boolean; data?: ActivityItem[]; message?: string; error?: string }>(
+    '/api/dashboard/recent-activity',
+    {
+      query: { limit: 10 },
+      server: false,
+      default: () => ({
+        success: false,
+        data: [] as ActivityItem[],
+      }),
+      onResponse({ response }) {
+        const responseData = response._data
+        if (responseData?.success && responseData?.data) {
+          recentActivity.value = responseData.data
+        } else {
+          recentActivity.value = []
+          error.value = responseData?.error || responseData?.message || 'Failed to fetch activity'
+        }
+      },
+    }
+  )
 
   const {
     data: _dueOrdersData,
     pending: isLoadingDueOrders,
     refresh: refreshDueOrders,
-  } = useFetch<{ success: boolean; data: Order[] }>('/api/dashboard/orders-due-soon', {
-    server: false,
-    default: () => ({
-      success: false,
-      data: [] as Order[],
-    }),
-    onResponse({ response }) {
-      const responseData = response._data
-      if (responseData?.success && responseData?.data) {
-        dueOrders.value = responseData.data
-      }
-    },
-  })
+  } = useFetch<{ success: boolean; data?: Order[]; message?: string; error?: string }>(
+    '/api/dashboard/orders-due-soon',
+    {
+      server: false,
+      default: () => ({
+        success: false,
+        data: [] as Order[],
+      }),
+      onResponse({ response }) {
+        const responseData = response._data
+        if (responseData?.success && responseData?.data) {
+          dueOrders.value = responseData.data
+        } else {
+          dueOrders.value = []
+          error.value = responseData?.error || responseData?.message || 'Failed to fetch due orders'
+        }
+      },
+    }
+  )
 
   const {
     data: _growthData,
     pending: isLoadingGrowth,
     refresh: refreshGrowth,
-  } = useFetch<{ success: boolean; data: ClientGrowthData }>('/api/dashboard/client-growth', {
-    query: computed(() => ({ period: chartPeriod.value })),
-    server: false,
-    default: () => ({
-      success: false,
-      data: {
-        labels: [] as string[],
-        data: [] as number[],
-        totalGrowth: 0,
-        percentGrowth: 0,
+  } = useFetch<{ success: boolean; data?: ClientGrowthData; message?: string; error?: string }>(
+    '/api/dashboard/client-growth',
+    {
+      query: computed(() => ({ period: chartPeriod.value })),
+      server: false,
+      default: () => ({
+        success: false,
+        data: {
+          labels: [] as string[],
+          data: [] as number[],
+          totalGrowth: 0,
+          percentGrowth: 0,
+        },
+      }),
+      onResponse({ response }) {
+        const responseData = response._data
+        if (responseData?.success && responseData?.data) {
+          clientGrowth.value = responseData.data
+        } else {
+          clientGrowth.value = { labels: [], data: [], totalGrowth: 0, percentGrowth: 0 }
+          error.value =
+            responseData?.error || responseData?.message || 'Failed to fetch client growth'
+        }
       },
-    }),
-    onResponse({ response }) {
-      const responseData = response._data
-      if (responseData?.success && responseData?.data) {
-        clientGrowth.value = responseData.data
-      }
-    },
-  })
+    }
+  )
 
   // Combined loading state
   const isLoading = computed(

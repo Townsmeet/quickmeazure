@@ -25,12 +25,14 @@ export default defineEventHandler(async (event: H3Event) => {
 
     return {
       success: true,
+      data: { deleted: true },
       message: 'Template deleted successfully',
     }
   } catch (error: any) {
     console.error('Error deleting measurement template:', error)
     return {
       success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete measurement template',
       message: error.message || 'Failed to delete measurement template',
     }
   }

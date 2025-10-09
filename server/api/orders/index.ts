@@ -190,23 +190,25 @@ export default defineEventHandler(async event => {
       })
 
       // Return data with pagination info
-      return ok({
-        items,
+      return {
+        success: true,
+        data: items,
         pagination: {
           total,
           page,
           limit,
           totalPages,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
         },
-      })
+      }
     } catch (error) {
       console.error('Error fetching orders:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to fetch orders',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch orders',
+        message: 'Failed to fetch orders',
+      }
     }
   }
 
@@ -275,22 +277,23 @@ export default defineEventHandler(async event => {
         styleImageUrl = s[0]?.imageUrl ?? null
       }
 
-      return ok({
-        ...insertedOrder,
-        details: orderDetails,
-        clientName: clientExists[0].name,
-        styleName,
-        styleImageUrl,
-      })
-    } catch (error: any) {
-      console.error('Error creating order:', error)
-      if (error.statusCode) {
-        throw error // Re-throw validation errors
+      return {
+        success: true,
+        data: {
+          ...insertedOrder,
+          details: orderDetails,
+          clientName: clientExists[0].name,
+          styleName,
+          styleImageUrl,
+        },
       }
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to create order',
-      })
+    } catch (error) {
+      console.error('Error creating order:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create order',
+        message: 'Failed to create order',
+      }
     }
   }
 

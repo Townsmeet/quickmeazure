@@ -91,20 +91,24 @@ export default defineEventHandler(async event => {
 
       // Return data with pagination info
       return {
+        success: true,
         data: stylesData,
         pagination: {
           page,
           limit,
-          totalCount: total,
+          total: total,
           totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
         },
       }
     } catch (error) {
       console.error('Error fetching styles:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to fetch styles',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch styles',
+        message: 'Failed to fetch styles',
+      }
     }
   }
 
@@ -274,16 +278,17 @@ export default defineEventHandler(async event => {
       const styleId = result[0]?.id
 
       console.log('Style created successfully with ID:', styleId)
-      return { ...newStyle, id: styleId }
+      return { success: true, data: { ...newStyle, id: styleId } }
     } catch (error: any) {
       console.error('Error creating style:', error)
       if (error.statusCode) {
         throw error // Re-throw validation errors
       }
-      throw createError({
-        statusCode: 500,
-        statusMessage: `Failed to create style: ${error.message}`,
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create style',
+        message: 'Failed to create style',
+      }
     }
   }
 

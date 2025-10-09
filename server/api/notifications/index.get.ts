@@ -47,7 +47,7 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
-      notifications,
+      data: notifications,
     }
   } catch (error: any) {
     console.error('Error fetching notifications:', error)
@@ -56,9 +56,11 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'An error occurred while fetching notifications',
       message: 'An error occurred while fetching notifications',
-    })
+    }
   }
 })

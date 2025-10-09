@@ -76,8 +76,10 @@ export default defineEventHandler(async event => {
 
       return {
         success: true,
-        message: 'Direct test email sent successfully',
-        messageId: result.messageId,
+        data: {
+          message: 'Direct test email sent successfully',
+          messageId: result.messageId,
+        },
       }
     } catch (apiError: any) {
       console.error('API Error:', apiError)
@@ -88,33 +90,27 @@ export default defineEventHandler(async event => {
           const responseBody = JSON.parse(apiError.response.text)
           console.error('API Response:', responseBody)
 
-          return {
-            success: false,
-            error: apiError.message,
-            apiResponse: responseBody,
-          }
+          return { success: false, error: apiError.message, data: { apiResponse: responseBody } }
         } catch (_e) {
           console.error('Raw API Response:', apiError.response.text)
 
           return {
             success: false,
             error: apiError.message,
-            apiResponseRaw: apiError.response.text,
+            data: { apiResponseRaw: apiError.response.text },
           }
         }
       }
 
-      return {
-        success: false,
-        error: apiError.message || 'Unknown API error',
-      }
+      return { success: false, error: apiError.message || 'Unknown API error' }
     }
   } catch (error: any) {
     console.error('General error:', error)
 
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message || 'Failed to send direct test email',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send direct test email',
+      message: error.message || 'Failed to send direct test email',
+    }
   }
 })

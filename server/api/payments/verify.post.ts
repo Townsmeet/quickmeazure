@@ -30,7 +30,11 @@ export default defineEventHandler(async event => {
     const billingPeriodRaw = raw.billingPeriod ?? raw.billing_period
 
     if (!reference) {
-      return { success: false, message: 'Payment reference is required' }
+      return {
+        success: false,
+        error: 'Payment reference is required',
+        message: 'Payment reference is required',
+      }
     }
 
     // Get Paystack secret key from server environment
@@ -41,6 +45,7 @@ export default defineEventHandler(async event => {
       console.error('Paystack secret key not found in environment variables')
       return {
         success: false,
+        error: 'Server configuration error',
         message: 'Server configuration error',
       }
     }
@@ -84,7 +89,11 @@ export default defineEventHandler(async event => {
 
         if (planSlug && !plan) {
           console.error('Plan not found:', planSlug)
-          return { success: false, message: 'Selected plan not found' }
+          return {
+            success: false,
+            error: 'Selected plan not found',
+            message: 'Selected plan not found',
+          }
         }
 
         // Calculate subscription end date based on billing period
@@ -151,12 +160,15 @@ export default defineEventHandler(async event => {
         console.log('Subscription created/updated successfully')
 
         // Return success with subscription data
-        return ok({
-          amount: data.data.amount / 100,
-          reference: data.data.reference,
-          plan_id: plan?.id,
-          subscription: subscriptionResult?.[0] || null,
-        })
+        return {
+          success: true,
+          data: {
+            amount: data.data.amount / 100,
+            reference: data.data.reference,
+            plan_id: plan?.id,
+            subscription: subscriptionResult?.[0] || null,
+          },
+        }
       } catch (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError)
         throw createError({
@@ -165,19 +177,23 @@ export default defineEventHandler(async event => {
         })
       }
 
-      return ok({
-        amount: data.data.amount / 100,
-        reference: data.data.reference,
-        plan_id: planIdRaw,
-      })
+      return {
+        success: true,
+        data: {
+          amount: data.data.amount / 100,
+          reference: data.data.reference,
+          plan_id: planIdRaw,
+        },
+      }
     } else {
-      return ok({ reference: data.data.reference, status: 'not_successful' })
+      return { success: true, data: { reference: data.data.reference, status: 'not_successful' } }
     }
   } catch (error) {
     console.error('Error verifying payment:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'An error occurred while verifying payment',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An error occurred while verifying payment',
+      message: 'An error occurred while verifying payment',
+    }
   }
 })

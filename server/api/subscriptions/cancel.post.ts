@@ -52,7 +52,7 @@ export default defineEventHandler(async event => {
       .where(eq(tables.subscriptions.id, subscription.id))
       .returning()
 
-    return ok(canceledSubscription[0])
+    return { success: true, data: canceledSubscription[0] }
   } catch (error: any) {
     console.error('Error canceling subscription:', error)
 
@@ -60,9 +60,11 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'An error occurred while canceling subscription',
       message: 'An error occurred while canceling subscription',
-    })
+    }
   }
 })

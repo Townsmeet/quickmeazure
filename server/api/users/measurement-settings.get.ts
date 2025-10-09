@@ -17,22 +17,15 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // If no settings exist, return default values
     if (!settings) {
-      return {
-        success: true,
-        data: {
-          defaultUnit: 'in',
-        },
-      }
+      return { success: true, data: { defaultUnit: 'in' } }
     }
 
-    return {
-      success: true,
-      data: settings,
-    }
+    return { success: true, data: settings }
   } catch (error: any) {
     console.error('Error fetching measurement settings:', error)
     return {
       success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch measurement settings',
       message: error.message || 'Failed to fetch measurement settings',
     }
   }

@@ -57,15 +57,19 @@ export default defineEventHandler(async event => {
 
       // Combine client and measurement data
       return {
-        ...clientData[0],
-        measurement: measurementData.length > 0 ? measurementData[0] : null,
+        success: true,
+        data: {
+          ...clientData[0],
+          measurement: measurementData.length > 0 ? measurementData[0] : null,
+        },
       }
     } catch (error) {
       console.error('Error fetching client:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to fetch client',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch client',
+        message: 'Failed to fetch client',
+      }
     }
   }
 
@@ -141,15 +145,19 @@ export default defineEventHandler(async event => {
         .limit(1)
 
       return {
-        ...updatedClient[0],
-        measurement: updatedMeasurement.length > 0 ? updatedMeasurement[0] : null,
+        success: true,
+        data: {
+          ...updatedClient[0],
+          measurement: updatedMeasurement.length > 0 ? updatedMeasurement[0] : null,
+        },
       }
     } catch (error) {
       console.error('Error updating client:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to update client',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update client',
+        message: 'Failed to update client',
+      }
     }
   }
 
@@ -162,13 +170,14 @@ export default defineEventHandler(async event => {
       // Delete client
       await db.delete(tables.clients).where(eq(tables.clients.id, id))
 
-      return { success: true }
+      return { success: true, data: { deleted: true } }
     } catch (error) {
       console.error('Error deleting client:', error)
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to delete client',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete client',
+        message: 'Failed to delete client',
+      }
     }
   }
 

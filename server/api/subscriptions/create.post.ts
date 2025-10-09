@@ -161,7 +161,7 @@ export default defineEventHandler(async event => {
         }
       }
 
-      return ok({ subscription: updatedSubscription[0] })
+      return { success: true, data: { subscription: updatedSubscription[0] } }
     } else {
       // Create new subscription
       const newSubscription = await db
@@ -289,16 +289,18 @@ export default defineEventHandler(async event => {
         }
       }
 
-      return ok({ subscription: newSubscription[0] })
+      return { success: true, data: { subscription: newSubscription[0] } }
     }
   } catch (error: any) {
     if (error.statusCode) {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'An error occurred while creating subscription',
       message: 'An error occurred while creating subscription',
-    })
+    }
   }
 })

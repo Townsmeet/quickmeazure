@@ -51,6 +51,7 @@ export default defineEventHandler(async (event: H3Event) => {
     console.error('Error updating measurement template:', error)
     return {
       success: false,
+      error: error instanceof Error ? error.message : 'Failed to update measurement template',
       message: error.message || 'Failed to update measurement template',
     }
   }

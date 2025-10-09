@@ -65,7 +65,7 @@ export default defineEventHandler(async event => {
 
     return {
       success: true,
-      notification: updatedNotification[0],
+      data: updatedNotification[0],
     }
   } catch (error: any) {
     console.error('Error marking notification as read:', error)
@@ -74,9 +74,13 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while marking notification as read',
       message: 'An error occurred while marking notification as read',
-    })
+    }
   }
 })

@@ -27,14 +27,13 @@ export default defineEventHandler(async _event => {
       }
     })
 
-    return {
-      plans: formattedPlans,
-    }
+    return { success: true, data: { plans: formattedPlans } }
   } catch (error) {
     console.error('Error fetching plans:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch plans',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch plans',
+      message: 'Failed to fetch plans',
+    }
   }
 })

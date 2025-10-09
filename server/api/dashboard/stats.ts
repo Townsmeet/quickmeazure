@@ -180,20 +180,24 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
 
     // Return the combined stats
     return {
-      totalClients,
-      newClientsThisMonth,
-      activeOrders,
-      completedOrdersThisMonth,
-      totalRevenue,
-      revenueGrowth,
-      subscriptionPlan,
-      clientsRemaining: clientsRemaining < 0 ? Infinity : clientsRemaining,
+      success: true,
+      data: {
+        totalClients,
+        newClientsThisMonth,
+        activeOrders,
+        completedOrdersThisMonth,
+        totalRevenue,
+        revenueGrowth,
+        subscriptionPlan,
+        clientsRemaining: clientsRemaining < 0 ? Infinity : clientsRemaining,
+      },
     }
   } catch (error) {
     console.error('Error in dashboard stats endpoint:', error)
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch dashboard statistics',
       message: 'Failed to fetch dashboard statistics',
-    })
+    }
   }
 })

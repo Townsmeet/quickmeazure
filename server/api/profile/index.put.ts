@@ -82,18 +82,21 @@ export default defineEventHandler(async event => {
       })()
     : null
 
-  return ok({
-    userId: saved.userId,
-    name: saved.name,
-    email: saved.email,
-    businessName: saved.businessName,
-    phone: saved.phone,
-    location: saved.location,
-    bio: saved.bio,
-    avatar: saved.avatar,
-    specializations: parsedSpecializations,
-    services: parsedServices,
-    createdAt: saved.createdAt,
-    updatedAt: saved.updatedAt,
-  })
+  return {
+    success: true,
+    data: {
+      userId: saved.userId,
+      name: saved.name,
+      email: saved.email,
+      businessName: saved.businessName,
+      phone: saved.phone,
+      location: saved.location,
+      bio: saved.bio,
+      avatar: saved.avatar,
+      specializations: parsedSpecializations,
+      services: parsedServices,
+      createdAt: saved.createdAt,
+      updatedAt: saved.updatedAt,
+    },
+  }
 })

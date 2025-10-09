@@ -218,6 +218,12 @@ export default defineCachedEventHandler(async (event: H3Event<EventHandlerReques
     }))
     return activities.slice(0, limit)
   } catch (error: unknown) {
-    handleDatabaseError(error, 'fetching recent activities')
+    // Return a consistent API error response structure
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : 'An unknown error occurred',
+      message: 'Failed to fetch recent activities',
+    }
   }
 })

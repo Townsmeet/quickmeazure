@@ -83,12 +83,15 @@ export default defineEventHandler(async event => {
     const detailsText = orderWithClient[0].details as unknown as string | null
     const details = (detailsText ? JSON.parse(detailsText) : {}) as OrderDetails
     return {
-      ...orderWithClient[0],
-      measurementId: details.measurementId,
-      styleId: details.styleId,
-      depositAmount: details.depositAmount || 0,
-      balanceAmount: details.balanceAmount || 0,
-      notes: details.notes,
+      success: true,
+      data: {
+        ...orderWithClient[0],
+        measurementId: details.measurementId,
+        styleId: details.styleId,
+        depositAmount: details.depositAmount || 0,
+        balanceAmount: details.balanceAmount || 0,
+        notes: details.notes,
+      },
     }
   }
 
@@ -192,12 +195,15 @@ export default defineEventHandler(async event => {
         const detailsText2 = orderWithClient[0].details as unknown as string | null
         const details = (detailsText2 ? JSON.parse(detailsText2) : {}) as OrderDetails
         return {
-          ...orderWithClient[0],
-          measurementId: details.measurementId,
-          styleId: details.styleId,
-          depositAmount: details.depositAmount || 0,
-          balanceAmount: details.balanceAmount || 0,
-          notes: details.notes,
+          success: true,
+          data: {
+            ...orderWithClient[0],
+            measurementId: details.measurementId,
+            styleId: details.styleId,
+            depositAmount: details.depositAmount || 0,
+            balanceAmount: details.balanceAmount || 0,
+            notes: details.notes,
+          },
         }
       }
 
@@ -229,16 +235,20 @@ export default defineEventHandler(async event => {
         notes: updatedDetails.notes,
       }
 
-      return updatedOrderData
+      return {
+        success: true,
+        data: updatedOrderData,
+      }
     } catch (error: any) {
       console.error('Error updating order:', error)
       if (error.statusCode) {
         throw error // Re-throw validation errors
       }
-      throw createError({
-        statusCode: 500,
-        statusMessage: `Database error: ${error.message || 'Unknown error'}`,
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update order',
+        message: 'Failed to update order',
+      }
     }
   }
 
@@ -246,16 +256,20 @@ export default defineEventHandler(async event => {
   if (method === 'DELETE') {
     try {
       await db.delete(tables.orders).where(eq(tables.orders.id, parseInt(orderId)))
-      return { success: true }
+      return {
+        success: true,
+        data: { deleted: true },
+      }
     } catch (error: any) {
       console.error('Error deleting order:', error)
       if (error.statusCode) {
         throw error // Re-throw validation errors
       }
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to delete order',
-      })
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete order',
+        message: 'Failed to delete order',
+      }
     }
   }
 

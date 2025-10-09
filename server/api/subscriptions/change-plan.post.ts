@@ -212,7 +212,7 @@ export default defineEventHandler(async event => {
       }
     }
 
-    return ok({ subscription: updatedSubscription[0], token: newToken })
+    return { success: true, data: { subscription: updatedSubscription[0], token: newToken } }
   } catch (error: any) {
     console.error('Error changing subscription plan:', error)
 
@@ -220,9 +220,13 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while changing subscription plan',
       message: 'An error occurred while changing subscription plan',
-    })
+    }
   }
 })

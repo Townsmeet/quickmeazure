@@ -41,15 +41,19 @@ export default defineEventHandler(async event => {
       .where(eq(tables.user.email, query.email.toString().toLowerCase()))
 
     return {
-      userExists: userResults.length > 0,
-      email: query.email,
-      userCount: userResults.length,
+      success: true,
+      data: {
+        userExists: userResults.length > 0,
+        email: query.email,
+        userCount: userResults.length,
+      },
     }
   } catch (error: any) {
     console.error('Check user error:', error)
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message || 'Failed to check user',
-    })
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to check user',
+      message: error.message || 'Failed to check user',
+    }
   }
 })

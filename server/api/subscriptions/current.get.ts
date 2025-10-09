@@ -73,16 +73,19 @@ export default defineEventHandler(async event => {
         })
       }
 
-      return ok({
-        active: true,
-        planId: freePlan && freePlan.length > 0 ? freePlan[0].id : null,
-        trialEndsAt: null,
-        currentPeriodEndsAt: null,
-        canceledAt: null,
-        pastDue: false,
-        plan: freePlan && freePlan.length > 0 ? freePlan[0] : null,
-        token: newToken,
-      })
+      return {
+        success: true,
+        data: {
+          active: true,
+          planId: freePlan && freePlan.length > 0 ? freePlan[0].id : null,
+          trialEndsAt: null,
+          currentPeriodEndsAt: null,
+          canceledAt: null,
+          pastDue: false,
+          plan: freePlan && freePlan.length > 0 ? freePlan[0] : null,
+          token: newToken,
+        },
+      }
     }
 
     // Get the first subscription (we limited to 1 in the query)
@@ -106,17 +109,20 @@ export default defineEventHandler(async event => {
       })
     }
 
-    return ok({
-      active: true,
-      planId: sub.planId,
-      trialEndsAt: sub.trialEndsAt,
-      currentPeriodEndsAt: sub.currentPeriodEndsAt,
-      canceledAt: sub.canceledAt,
-      pastDue: sub.pastDue,
-      // Include the complete plan object (as-is)
-      plan: planDetails,
-      token: newToken,
-    })
+    return {
+      success: true,
+      data: {
+        active: true,
+        planId: sub.planId,
+        trialEndsAt: sub.trialEndsAt,
+        currentPeriodEndsAt: sub.currentPeriodEndsAt,
+        canceledAt: sub.canceledAt,
+        pastDue: sub.pastDue,
+        // Include the complete plan object (as-is)
+        plan: planDetails,
+        token: newToken,
+      },
+    }
   } catch (error: any) {
     console.error('Error retrieving subscription:', error)
 
@@ -124,9 +130,11 @@ export default defineEventHandler(async event => {
       throw error
     }
 
-    throw createError({
-      statusCode: 500,
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'An error occurred while retrieving subscription',
       message: 'An error occurred while retrieving subscription',
-    })
+    }
   }
 })
