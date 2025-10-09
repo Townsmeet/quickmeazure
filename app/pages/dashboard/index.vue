@@ -1,5 +1,11 @@
 <template>
   <div class="space-y-6">
+    <!-- Setup Prompt (shown once after signup) -->
+    <SetupPrompt v-if="showSetupPrompt" @setup="navigateToSetup" @later="handleLater"></SetupPrompt>
+
+    <!-- Setup Banner (shown if setup was skipped) -->
+    <SetupBanner v-else-if="showSetupBanner" class="mb-6" @setup="navigateToSetup"></SetupBanner>
+
     <!-- Page Header -->
     <PageHeader
       title="Dashboard"
@@ -21,12 +27,10 @@
               <UIcon name="i-heroicons-users" class="text-primary-500" />
             </div>
           </template>
-          <div class="text-3xl font-bold">{{ dashboardData?.stats?.totalClients || 0 }}</div>
+          <div class="text-3xl font-bold">{{ stats?.totalClients || 0 }}</div>
           <template #footer>
             <div class="text-sm text-gray-500">
-              <span class="text-green-500 font-medium"
-                >+{{ dashboardData?.stats?.newClientsThisMonth || 0 }}</span
-              >
+              <span class="text-green-500 font-medium">+{{ stats?.newClientsThisMonth || 0 }}</span>
               this month
             </div>
           </template>
@@ -39,12 +43,12 @@
               <UIcon name="i-heroicons-shopping-bag" class="text-primary-500" />
             </div>
           </template>
-          <div class="text-3xl font-bold">{{ dashboardData?.stats?.activeOrders || 0 }}</div>
+          <div class="text-3xl font-bold">{{ stats?.activeOrders || 0 }}</div>
           <template #footer>
             <div class="text-sm text-gray-500">
-              <span class="font-medium">{{
-                dashboardData?.stats?.completedOrdersThisMonth || 0
-              }}</span>
+              <span class="font-medium">
+                {{ stats?.completedOrdersThisMonth || 0 }}
+              </span>
               completed this month
             </div>
           </template>
@@ -57,14 +61,10 @@
               <UIcon name="i-heroicons-banknotes" class="text-primary-500" />
             </div>
           </template>
-          <div class="text-3xl font-bold">
-            ₦{{ formatNumber(dashboardData?.stats?.totalRevenue || 0) }}
-          </div>
+          <div class="text-3xl font-bold">₦{{ formatNumber(stats?.totalRevenue || 0) }}</div>
           <template #footer>
             <div class="text-sm text-gray-500">
-              <span class="text-green-500 font-medium"
-                >+{{ dashboardData?.stats?.revenueGrowth || 0 }}%</span
-              >
+              <span class="text-green-500 font-medium">+{{ stats?.revenueGrowth || 0 }}%</span>
               vs last month
             </div>
           </template>
@@ -78,208 +78,208 @@
             </div>
           </template>
           <div class="text-xl py-1 font-bold">
-            {{ dashboardData?.stats?.subscriptionPlan || 'Free Plan' }}
+            {{ stats?.subscriptionPlan || 'Free Plan' }}
           </div>
           <template #footer>
             <div class="text-sm text-gray-500">
-              <span v-if="dashboardData?.stats?.clientsRemaining === Infinity"
-                >Unlimited clients</span
-              >
-              <span v-else
-                >{{ dashboardData?.stats?.clientsRemaining || 0 }} clients remaining</span
-              >
+              <span v-if="stats?.clientsRemaining === Infinity">Unlimited clients</span>
+              <span v-else>{{ stats?.clientsRemaining || 0 }} clients remaining</span>
             </div>
           </template>
         </UCard>
       </div>
 
-      <!-- Recent Activity and Orders -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Charts and Activity -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Client Growth Chart -->
+        <UCard class="lg:col-span-2 bg-white">
+          <template #header>
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
+              <USelect
+                v-model="chartPeriod"
+                :items="chartPeriodOptions"
+                size="sm"
+                class="w-40"
+                @update:model-value="updateChartData"
+              />
+            </div>
+          </template>
+          <div class="h-80">
+            <ClientGrowthChart
+              v-if="hasChartData"
+              :labels="clientGrowth.labels"
+              :data="clientGrowth.data"
+              :period="chartPeriod"
+            />
+            <div v-else class="h-full flex items-center justify-center text-gray-400">
+              No data available for the selected period
+            </div>
+          </div>
+        </UCard>
+
         <!-- Recent Activity -->
         <UCard class="bg-white">
           <template #header>
             <div class="flex justify-between items-center">
-              <h3 class="font-medium">Recent Activity</h3>
+              <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
               <UButton
-color="neutral"
-variant="subtle"
-to="/activity"
-size="xs">
+                to="/activity"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                trailing-icon="i-heroicons-arrow-right"
+              >
                 View all
               </UButton>
             </div>
           </template>
-
           <div class="space-y-4">
-            <template v-if="dashboardData?.activities?.length">
+            <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
+              No recent activity
+            </div>
+            <div
+              v-for="activity in recentActivity"
+              :key="activity.id"
+              class="flex items-start space-x-3"
+            >
               <div
-                v-for="activity in dashboardData?.activities"
-                :key="activity.id"
-                class="flex items-start space-x-3 py-2"
+                class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
               >
-                <div
-                  class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0"
-                >
-                  <UIcon :name="activity.icon || 'i-heroicons-bell'" class="text-primary-600" />
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-900">
-                    {{ activity.message || 'Activity' }}
-                  </p>
-                  <p class="text-xs text-gray-500">{{ activity.time || 'Recently' }}</p>
-                </div>
+                <UIcon :name="getActivityIcon(activity.type)" class="h-4 w-4 text-primary-600" />
               </div>
-            </template>
-            <div v-else class="text-center py-4">
-              <p class="text-gray-500">No recent activity</p>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Due Orders -->
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="font-medium">Orders Due Soon</h3>
-              <UButton
-color="neutral"
-variant="subtle"
-to="/orders"
-size="xs"> View all </UButton>
-            </div>
-          </template>
-
-          <div v-if="!dashboardData?.dueOrders?.length" class="text-center py-8">
-            <p class="text-gray-500">No orders due soon</p>
-          </div>
-
-          <div v-else>
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Client
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Due Date
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Amount
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    ></th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="order in dashboardData?.dueOrders" :key="order.id">
-                    <td class="px-3 py-2 whitespace-nowrap">
-                      <div class="font-medium text-gray-900">{{ order.client }}</div>
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                      <UBadge :color="getDueDateColor(order.dueDate)" variant="subtle" size="sm">
-                        {{ formatDueDate(order.dueDate) }}
-                      </UBadge>
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap">₦{{ formatNumber(order.amount) }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                      <UBadge :color="getStatusColor(order.status)" variant="subtle" size="sm">
-                        {{ order.status }}
-                      </UBadge>
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap text-right">
-                      <UButton
-                        icon="i-heroicons-eye"
-                        color="neutral"
-                        variant="ghost"
-                        size="xs"
-                        :to="`${/orders/}/${order.id}`"
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-gray-900">
+                  {{ activity.title }}
+                </p>
+                <p class="text-sm text-gray-500">{{ activity.description }}</p>
+                <p class="text-xs text-gray-400 mt-1">
+                  {{ formatTimeAgo(activity.timestamp) }}
+                </p>
+              </div>
             </div>
           </div>
         </UCard>
       </div>
 
-      <!-- Client Growth Chart -->
+      <!-- Due Orders -->
       <UCard class="bg-white">
         <template #header>
           <div class="flex justify-between items-center">
-            <h3 class="font-medium">Client Growth</h3>
-            <USelect
-              v-model="chartPeriod"
-              :items="chartPeriodOptions"
-              size="sm"
-              @update:model-value="updateChartData"
-            />
-          </div>
-        </template>
-
-        <div class="h-64">
-          <ClientGrowthChart
-            ref="growthChart"
-            :period="chartPeriod"
-            :real-data="clientGrowth"
-            :has-real-data="hasChartData"
-          />
-        </div>
-
-        <template #footer>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-600"
-              >Total new clients:
-              <span class="font-medium">{{ chartStats.totalGrowth }}</span></span
+            <h3 class="text-sm font-medium text-gray-500">Upcoming Due Orders</h3>
+            <UButton
+              to="/orders"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              trailing-icon="i-heroicons-arrow-right"
             >
-            <span class="text-gray-600"
-              >Growth:
-              <span class="font-medium text-green-600">+{{ chartStats.percentGrowth }}%</span>
-            </span>
+              View all
+            </UButton>
           </div>
         </template>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Order ID
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Client
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Due Date
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th scope="col" class="relative px-6 py-3">
+                  <span class="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-if="dueOrders.length === 0">
+                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                  No due orders
+                </td>
+              </tr>
+              <tr v-for="order in dueOrders" :key="order.id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  #{{ order.id }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {{ order.clientName }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <UBadge :color="getDueDateColor(order.dueDate)" variant="subtle">
+                    {{ formatDueDate(order.dueDate) }}
+                  </UBadge>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <UBadge
+                    :color="getStatusColor(order.status).color"
+                    variant="subtle"
+                    :class="`bg-${getStatusColor(order.status).color}-50 text-${getStatusColor(order.status).color}-700`"
+                  >
+                    {{ order.status }}
+                  </UBadge>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <UButton
+:to="`/orders/${order.id}`"
+color="neutral"
+variant="ghost"
+size="xs">
+                    View
+                  </UButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </UCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useTimeAgo, useLocalStorage } from '@vueuse/core'
 import type { ChartPeriod } from '~/types/dashboard'
 
 definePageMeta({
-  middleware: 'setup-required',
+  middleware: ['auth', 'setup-required'],
+  layout: 'dashboard',
 })
 
-// Initialize composables
-const { user } = useAuth()
+// Initialize dashboard composable
 const {
-  chartPeriod,
-  clientGrowth,
   stats,
   recentActivity,
   dueOrders,
-  isLoading,
+  clientGrowth,
+  chartPeriod,
+  isLoading: _isDashboardLoading,
   fetchDashboardData,
-  setChartPeriod,
 } = useDashboard()
+
+// Set page metadata
+useHead({
+  title: 'Dashboard',
+})
 
 // Chart period options
 const chartPeriodOptions = [
@@ -288,11 +288,6 @@ const chartPeriodOptions = [
   { label: 'Last 90 days', value: '90days' },
   { label: 'Last year', value: 'year' },
 ]
-
-// Set page metadata
-useHead({
-  title: 'Dashboard',
-})
 
 // Helper computed property to check if we have chart data to display
 const hasChartData = computed(() => {
@@ -304,10 +299,11 @@ const hasChartData = computed(() => {
 })
 
 // Update chart data when period changes
-const updateChartData = async (period: string | ChartPeriod) => {
+const updateChartData = async (period: string | ChartPeriod | null | undefined) => {
+  if (!period && period !== '') return // Handle null/undefined/empty string cases
+
   try {
-    const chartPeriod = period as ChartPeriod
-    await dashboardStore.fetchClientGrowth(chartPeriod)
+    await fetchClientGrowth(period as ChartPeriod)
   } catch (error) {
     console.error('Error updating chart data:', error)
     toast.add({
@@ -318,20 +314,14 @@ const updateChartData = async (period: string | ChartPeriod) => {
   }
 }
 
-// Update chart data when period changes
-watch(chartPeriod, newPeriod => {
-  if (newPeriod) {
-    dashboardStore.fetchClientGrowth(newPeriod)
-  }
-})
-
 // Format number with thousands separator
 const formatNumber = (number: number) => {
   if (number === null || number === undefined) return '0'
   return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
-const formatDueDate = (date: string) => {
+// Format due date
+const formatDueDate = (date: string | undefined | null): string => {
   if (!date) return 'No date set'
 
   try {
@@ -343,23 +333,22 @@ const formatDueDate = (date: string) => {
     const diffTime = dueDateNoTime.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays < 0) {
-      return `${Math.abs(diffDays)} days overdue`
-    } else if (diffDays === 0) {
-      return 'Due today'
-    } else if (diffDays === 1) {
-      return 'Due tomorrow'
-    } else {
-      return `Due in ${diffDays} days`
-    }
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Tomorrow'
+    if (diffDays === -1) return 'Yesterday'
+    if (diffDays < 0) return `${Math.abs(diffDays)} days ago`
+
+    return `In ${diffDays} days`
   } catch (error) {
-    console.error('Error formatting due date:', error)
+    console.error('Error formatting date:', error)
     return 'Invalid date'
   }
 }
 
 // Get color for due date badge
-const getDueDateColor = (date: string) => {
+const getDueDateColor = (
+  date: string | undefined | null
+): 'error' | 'warning' | 'info' | 'success' | 'neutral' => {
   if (!date) return 'neutral'
 
   try {
@@ -371,207 +360,120 @@ const getDueDateColor = (date: string) => {
     const diffTime = dueDateNoTime.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays < 0) {
-      return 'error'
-    } else if (diffDays === 0) {
-      return 'warning'
-    } else if (diffDays <= 2) {
-      return 'warning'
-    } else {
-      return 'success'
-    }
+    if (diffDays < 0) return 'error' // Past due (red)
+    if (diffDays === 0) return 'warning' // Due today (orange)
+    if (diffDays <= 3) return 'warning' // Due in 1-3 days (yellow)
+    if (diffDays <= 7) return 'info' // Due in 4-7 days (blue)
+    return 'success' // Due in more than 7 days (green)
   } catch (error) {
     console.error('Error getting due date color:', error)
     return 'neutral'
   }
 }
 
+type BadgeColor = 'error' | 'success' | 'warning' | 'info' | 'neutral' | 'primary' | 'secondary'
+
 // Get color for status badge
-const getStatusColor = (status: string) => {
-  if (!status) return 'neutral'
+const getStatusColor = (status: string): { color: BadgeColor; icon: string } => {
+  if (!status) return { color: 'neutral', icon: 'i-heroicons-question-mark-circle' }
 
   switch (status.toLowerCase()) {
     case 'completed':
-      return 'success'
+      return { color: 'success', icon: 'i-heroicons-check-circle' }
     case 'in progress':
-      return 'primary'
-    case 'pending payment':
-      return 'warning'
-    case 'overdue':
-      return 'error'
+      return { color: 'primary', icon: 'i-heroicons-arrow-path' }
+    case 'pending':
+      return { color: 'warning', icon: 'i-heroicons-clock' }
+    case 'cancelled':
+      return { color: 'error', icon: 'i-heroicons-x-circle' }
     default:
-      return 'neutral'
+      return { color: 'neutral', icon: 'i-heroicons-question-mark-circle' }
   }
 }
 
-// Client growth data - using store action instead
-
-// Function to fetch dashboard data with proper error handling
-const loadDashboardData = async () => {
-  console.log('Fetching dashboard data...')
-
-  // Check if we're on client side
-  if (import.meta.client) {
-    const headers = {
-      'Content-Type': 'application/json',
-    }
-
-    try {
-      console.log('Starting dashboard API calls...')
-
-      // First, check if API endpoints are defined
-      if (!API_ENDPOINTS?.DASHBOARD) {
-        console.error('API endpoints not properly configured')
-        return getDefaultDashboardData()
-      }
-
-      const [stats, activities, dueOrders] = await Promise.allSettled([
-        $fetch(API_ENDPOINTS.DASHBOARD.STATS, {
-          method: 'GET',
-          headers,
-          retry: 1,
-          retryDelay: 1000,
-        }).catch(err => {
-          console.error('Error fetching stats:', err)
-          return null
-        }),
-        $fetch(API_ENDPOINTS.DASHBOARD.RECENT_ACTIVITY, {
-          method: 'GET',
-          params: { limit: 5 },
-          headers,
-          retry: 1,
-          retryDelay: 1000,
-        }).catch(err => {
-          console.error('Error fetching recent activity:', err)
-          return []
-        }),
-        $fetch(API_ENDPOINTS.DASHBOARD.ORDERS_DUE_SOON, {
-          method: 'GET',
-          params: { limit: 5 },
-          headers,
-          retry: 1,
-          retryDelay: 1000,
-        }).catch(err => {
-          console.error('Error fetching due orders:', err)
-          return []
-        }),
-      ])
-
-      // Process the results with fallback values
-      const result = {
-        stats: getValidStats(stats),
-        activities: getValidArray(activities, 'activities'),
-        dueOrders: getValidArray(dueOrders, 'dueOrders'),
-        clientGrowth: null,
-      }
-
-      console.log('Dashboard data fetched successfully:', result)
-      return result
-    } catch (error) {
-      console.error('Error in loadDashboardData:', error)
-      return getDefaultDashboardData()
-    }
+// Get icon for activity type
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case 'order':
+      return 'i-heroicons-shopping-bag'
+    case 'client':
+      return 'i-heroicons-user'
+    case 'payment':
+      return 'i-heroicons-credit-card'
+    default:
+      return 'i-heroicons-bell'
   }
-
-  // Return default data for server-side rendering
-  return getDefaultDashboardData()
 }
 
-// Helper function to get default dashboard data
-const getDefaultDashboardData = () => ({
-  stats: {
-    totalClients: 0,
-    activeOrders: 0,
-    revenue: 0,
-    newClients: 0,
-    newClientsThisMonth: 0,
-    completedOrdersThisMonth: 0,
-    totalRevenue: 0,
-    revenueGrowth: 0,
-    subscriptionPlan: 'Free Plan',
-    clientsRemaining: 5,
-  },
-  activities: [],
-  dueOrders: [],
-  clientGrowth: null,
-})
-
-// Helper function to validate and get stats data
-const getValidStats = (statsResult: any) => {
-  if (statsResult.status === 'fulfilled' && statsResult.value) {
-    return {
-      totalClients: statsResult.value.totalClients || 0,
-      activeOrders: statsResult.value.activeOrders || 0,
-      revenue: statsResult.value.revenue || 0,
-      newClients: statsResult.value.newClients || 0,
-      newClientsThisMonth: statsResult.value.newClientsThisMonth || 0,
-      completedOrdersThisMonth: statsResult.value.completedOrdersThisMonth || 0,
-      totalRevenue: statsResult.value.totalRevenue || 0,
-      revenueGrowth: statsResult.value.revenueGrowth || 0,
-      subscriptionPlan: statsResult.value.subscriptionPlan || 'Free Plan',
-      clientsRemaining:
-        statsResult.value.clientsRemaining !== undefined ? statsResult.value.clientsRemaining : 5,
-    }
-  }
-  return getDefaultDashboardData().stats
+// Format time ago
+const formatTimeAgo = (dateString: string) => {
+  const date = new Date(dateString)
+  return useTimeAgo(date).value
 }
 
-// Helper function to validate and get array data
-const getValidArray = (result: any, type: string) => {
-  if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-    return result.value
-  }
-  console.warn(`Invalid data received for ${type}, using empty array`)
-  return []
+// Navigation methods
+const navigateToSetup = () => {
+  navigateTo('/settings/setup-measurements')
 }
 
-// Fetch all dashboard data in a single request
-const { data: dashboardData, status } = useAsyncData('dashboard-data', loadDashboardData, {
-  default: () => ({
-    stats: null,
-    activities: [],
-    dueOrders: [],
-    clientGrowth: null,
-  }),
-  immediate: true,
-  server: false, // Ensure this only runs on client side
-})
+const handleLater = () => {
+  // Save user preference to skip setup
+  const userPrefs = useLocalStorage('user-preferences', {
+    hasSeenSetupPrompt: true,
+    setupCompleted: false,
+    hasDismissedBanner: false,
+  })
+  userPrefs.value.hasDismissedBanner = true
+}
 
 // Initialize toast
 const toast = useToast()
 
 // Watch for changes in the async data
 watch(
-  () => status.value,
-  newStatus => {
-    if (newStatus === 'success' && dashboardData.value) {
-      // Update store with the fetched data
-      dashboardStore.setStats(dashboardData.value.stats || null)
-      dashboardStore.setRecentActivity(dashboardData.value.activities || [])
-      dashboardStore.setDueOrders(dashboardData.value.dueOrders || [])
-      dashboardStore.setError(null)
-
-      // Fetch client growth data if we have a period selected
-      if (chartPeriod.value) {
-        dashboardStore.fetchClientGrowth(chartPeriod.value)
-      }
-    } else if (newStatus === 'error') {
-      console.error('Error fetching dashboard data')
-      const errorMessage = 'Failed to fetch dashboard data. Using cached data if available.'
-      dashboardStore.setError(errorMessage)
-      toast.add({
-        title: 'Warning',
-        description: errorMessage,
-        color: 'warning',
-      })
+  () => [stats.value, recentActivity.value, dueOrders.value, clientGrowth.value],
+  () => {
+    if (stats.value && recentActivity.value && dueOrders.value && clientGrowth.value) {
+      // Data has been loaded, you can perform any additional logic here
     }
   },
   { immediate: true }
 )
 
-// Chart stats computed property
-const chartStats = computed(() => ({
-  totalGrowth: hasChartData.value ? (clientGrowth.value?.totalGrowth ?? 0) : 0,
-  percentGrowth: hasChartData.value ? (clientGrowth.value?.percentGrowth ?? 0) : 0,
-}))
+// Check if we should show setup prompt or banner
+const showSetupPrompt = computed(() => {
+  const userPrefs = useLocalStorage('user-preferences', {
+    hasSeenSetupPrompt: false,
+    setupCompleted: false,
+    hasDismissedBanner: false,
+  })
+  return !userPrefs.value.hasSeenSetupPrompt && !userPrefs.value.setupCompleted
+})
+
+const showSetupBanner = computed(() => {
+  const userPrefs = useLocalStorage('user-preferences', {
+    hasSeenSetupPrompt: false,
+    setupCompleted: false,
+    hasDismissedBanner: false,
+  })
+  return (
+    userPrefs.value.hasSeenSetupPrompt &&
+    !userPrefs.value.setupCompleted &&
+    !userPrefs.value.hasDismissedBanner
+  )
+})
+
+// Fetch initial data
+onMounted(async () => {
+  try {
+    await fetchDashboardData()
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to load dashboard data',
+      color: 'error',
+    })
+  }
+})
 </script>

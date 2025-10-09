@@ -194,6 +194,18 @@ export default defineEventHandler(async event => {
           .values({ userId: String(userId), hasCompletedSetup: false, createdAt: new Date() })
       }
 
+      // Update user's subscription status
+      await db
+        .update(tables.user)
+        .set({
+          hasActiveSubscription: true,
+          subscriptionStatus: 'active',
+          onboardingStep: 'complete',
+          onboardingCompletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(tables.user.id, String(userId)))
+
       // For paid plans, save or update the payment method
       // Using the single payment method approach - each user has only one payment method
       if (!isFreeOrGrowthPlan && paymentReference && cardDetails) {

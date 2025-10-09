@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 py-12">
+  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6 py-12">
     <!-- Header -->
     <div class="text-center mb-12 w-full max-w-4xl px-4">
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose your plan</h1>
@@ -215,7 +215,11 @@ const createFreeSubscription = async () => {
         color: 'success',
       })
 
-      await navigateTo('/auth/setup-measurements')
+      // Update user's setup status
+      const { init } = useAuth()
+      await init()
+
+      await navigateTo('/dashboard')
     } else {
       throw new Error(result.message || 'Failed to create subscription')
     }
@@ -238,7 +242,12 @@ const handlePaymentSuccess = async () => {
     color: 'success',
   })
 
-  await navigateTo('/auth/setup-measurements')
+  // Update user's setup status
+  const { init } = useAuth()
+  await init()
+
+  // Redirect to dashboard
+  await navigateTo('/dashboard')
 }
 
 // Handle payment error

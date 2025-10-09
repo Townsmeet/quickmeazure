@@ -1,370 +1,573 @@
 <template>
-  <div>
-    <BaseListPage
-      title="Styles"
-      page-type="styles"
-      :primary-action="{
-        label: 'Add Style',
-        to: ROUTE_NAMES.DASHBOARD.STYLES.NEW,
-      }"
-      :show-search="true"
-      :initial-search="search"
-      :sort-options="sortOptions"
-      :current-page="currentPage"
-      :page-size="itemsPerPage"
-      :total-items="filteredStyles.length"
-      :is-loading="isLoading"
-      :has-items="filteredStyles.length > 0"
-      :has-active-filters="hasActiveFilters"
-      empty-state-icon="i-heroicons-swatch"
-      :empty-state-title="search || hasActiveFilters ? 'No styles found' : 'No styles yet'"
-      :empty-state-description="
-        search || hasActiveFilters
-          ? 'Try adjusting your search or filters to find what you\'re looking for.'
-          : 'Get started by adding your first style.'
-      "
-      :empty-state-action="
-        !search && !hasActiveFilters
-          ? {
-              label: 'Add Style',
-              to: ROUTE_NAMES.DASHBOARD.STYLES.NEW,
-              icon: 'i-heroicons-plus',
-            }
-          : undefined
-      "
-      :is-filter-open="isFilterOpen"
-      :active-filters-count="Object.values(filters).filter(v => v !== null && v !== 'all').length"
-      @update:current-page="handlePageChange"
-      @search="handleSearch"
-      @sort="handleSort"
-      @reset-filters="resetFilters"
-      @toggle-filter="isFilterOpen = !isFilterOpen"
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Styles</h1>
+        <p class="mt-1 text-sm text-gray-500">Manage your styles and designs</p>
+      </div>
+      <UButton to="/styles/new" icon="i-heroicons-plus" color="primary"> Add Style </UButton>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-col sm:flex-row gap-3">
+      <UInput
+        v-model="search"
+        placeholder="Search styles..."
+        icon="i-heroicons-magnifying-glass"
+        class="flex-1"
+        @input="handleSearch"
+      />
+      <USelect
+        v-model="sortBy"
+        :options="sortOptions"
+        option-attribute="label"
+        value-attribute="value"
+        placeholder="Sort by"
+        class="w-48"
+        @update:model-value="handleSort"
+      />
+      <UButton
+color="neutral"
+variant="outline"
+icon="i-heroicons-funnel"
+@click="toggleFilter">
+        Filters
+        <template #trailing>
+          <UBadge
+v-if="hasActiveFilters"
+color="primary"
+variant="solid"
+class="ml-1">
+            {{ activeFiltersCount }}
+          </UBadge>
+        </template>
+      </UButton>
+    </div>
+
+    <!-- Filter Panel -->
+    <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 transform -translate-y-2"
+      enter-to-class="opacity-100 transform translate-y-0"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 transform translate-y-0"
+      leave-to-class="opacity-0 transform -translate-y-2"
     >
-      <!-- Filters slot -->
-      <template #filters>
-        <USelect
-          v-model="sortBy"
-          :items="sortOptions"
-          placeholder="Sort by"
-          size="lg"
-          class="w-full sm:w-52"
-          @update:model-value="filterStyles"
-        />
-      </template>
+      <div v-if="isFilterOpen" class="bg-white rounded-lg border border-gray-200 p-4 space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-medium text-gray-900">Filters</h3>
+          <UButton
+            v-if="hasActiveFilters"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            icon="i-heroicons-x-mark"
+            @click="resetFilters"
+          >
+            Clear all
+          </UButton>
+        </div>
 
-      <!-- Filter panel -->
-      <template v-if="isFilterOpen" #filter-panel>
-        <Transition
-          enter-active-class="transition-all duration-300 ease-out"
-          enter-from-class="opacity-0 transform -translate-y-2"
-          enter-to-class="opacity-100 transform translate-y-0"
-          leave-active-class="transition-all duration-200 ease-in"
-          leave-from-class="opacity-100 transform translate-y-0"
-          leave-to-class="opacity-0 transform -translate-y-2"
-        >
-          <div v-show="isFilterOpen" class="mt-3 overflow-hidden">
-            <div
-              class="bg-gradient-to-br from-white to-gray-50/50 border border-gray-200/60 rounded-xl shadow-sm backdrop-blur-sm"
+        <!-- Style Type Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Style Type</label>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <UButton
+              v-for="type in styleTypeOptions"
+              :key="type.value"
+              :color="styleTypeFilter === type.value ? 'primary' : 'neutral'"
+              :variant="styleTypeFilter === type.value ? 'solid' : 'outline'"
+              size="sm"
+              class="justify-center"
+              @click="styleTypeFilter = type.value"
             >
-              <!-- Filter Header -->
-              <div class="px-6 py-4 border-b border-gray-100 bg-white/80 rounded-t-xl">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-2">
-                    <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
-                    <h3 class="text-sm font-semibold text-gray-900">Filter Options</h3>
-                  </div>
-                  <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                    {{ Object.values(filters).filter(v => v !== null && v !== 'all').length }}
-                    active
-                  </div>
-                </div>
-              </div>
+              <UIcon
+                :name="type.icon"
+                class="w-4 h-4 mr-1.5"
+                :class="{
+                  'text-white': styleTypeFilter === type.value,
+                  'text-gray-500': styleTypeFilter !== type.value,
+                }"
+              />
+              {{ type.label }}
+            </UButton>
+          </div>
+        </div>
 
-              <!-- Filter Content -->
-              <div class="p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <!-- Style Source Filter -->
-                  <div class="space-y-2">
-                    <UFormField label="Style Source" name="style-source-filter">
-                      <template #label>
-                        <div class="flex items-center space-x-2">
-                          <UIcon name="i-heroicons-user-circle" class="w-4 h-4 text-gray-500" />
-                          <span class="text-sm font-medium text-gray-700">Style Source</span>
-                        </div>
-                      </template>
-                      <USelect
-                        v-model="filters.styleSource as string | undefined"
-                        :items="styleSourceOptions"
-                        placeholder="All styles"
-                        size="lg"
-                        class="transition-all duration-200 hover:shadow-sm"
-                        :ui="{
-                          base: 'relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0',
-                          placeholder: 'text-gray-400 dark:text-gray-500',
-                        }"
-                        @update:model-value="filterStyles"
-                      />
-                    </UFormField>
-                  </div>
+        <!-- Status Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <UButton
+              v-for="status in statusOptions"
+              :key="status.value"
+              :color="statusFilter === status.value ? 'primary' : 'neutral'"
+              :variant="statusFilter === status.value ? 'solid' : 'outline'"
+              size="sm"
+              class="justify-center"
+              @click="statusFilter = status.value"
+            >
+              <UIcon
+                :name="status.icon"
+                class="w-4 h-4 mr-1.5"
+                :class="{
+                  'text-white': statusFilter === status.value,
+                  'text-gray-500': statusFilter !== status.value,
+                }"
+              />
+              {{ status.label }}
+            </UButton>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
-                  <!-- Style Type Filter -->
-                  <div class="space-y-2">
-                    <UFormField label="Style Type" name="style-type-filter">
-                      <template #label>
-                        <div class="flex items-center space-x-2">
-                          <UIcon name="i-heroicons-swatch" class="w-4 h-4 text-gray-500" />
-                          <span class="text-sm font-medium text-gray-700">Style Type</span>
-                        </div>
-                      </template>
-                      <USelect
-                        v-model="filters.styleType as string | undefined"
-                        :items="styleTypeOptions"
-                        placeholder="All types"
-                        size="lg"
-                        class="transition-all duration-200 hover:shadow-sm"
-                        :ui="{
-                          base: 'relative block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0',
-                          placeholder: 'text-gray-400 dark:text-gray-500',
-                        }"
-                        @update:model-value="filterStyles"
-                      />
-                    </UFormField>
-                  </div>
-                </div>
+    <!-- Desktop Grid View -->
+    <div class="hidden md:block">
+      <div
+        v-if="isLoading"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8"
+      >
+        <div v-for="i in 8" :key="i" class="bg-gray-50 rounded-lg h-64 animate-pulse"></div>
+      </div>
 
-                <!-- Action Buttons -->
-                <div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
-                  <div class="flex items-center space-x-2 text-xs text-gray-500">
-                    <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
-                    <span>Filters are applied automatically</span>
-                  </div>
+      <div v-else-if="filteredStyles.length === 0" class="text-center py-12">
+        <UIcon name="i-heroicons-swatch" class="mx-auto h-12 w-12 text-gray-400" />
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No styles found</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {{
+            hasActiveFilters
+              ? 'Try adjusting your filters'
+              : 'Get started by adding your first style'
+          }}
+        </p>
+        <div class="mt-6">
+          <UButton to="/styles/new" icon="i-heroicons-plus" color="primary"> Add Style </UButton>
+        </div>
+      </div>
 
-                  <div class="flex items-center space-x-3">
-                    <UButton
-                      color="neutral"
-                      variant="outline"
-                      size="sm"
-                      icon="i-heroicons-arrow-path"
-                      class="transition-all duration-200 hover:bg-gray-100"
-                      @click="resetFilters"
-                    >
-                      Reset
-                    </UButton>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <UCard
+          v-for="style in paginatedStyles"
+          :key="style.id"
+          class="group relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col"
+        >
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-medium text-gray-900 truncate">{{ style.name }}</h3>
+              <UDropdown
+                :items="[
+                  [
+                    {
+                      label: 'View',
+                      icon: 'i-heroicons-eye',
+                      click: () => navigateTo(`/styles/${style.id}`),
+                    },
+                    {
+                      label: 'Edit',
+                      icon: 'i-heroicons-pencil',
+                      click: () => navigateTo(`/styles/${style.id}/edit`),
+                    },
+                  ],
+                  [
+                    {
+                      label: 'Delete',
+                      icon: 'i-heroicons-trash',
+                      click: () => confirmDelete(style),
+                    },
+                  ],
+                ]"
+              >
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-heroicons-ellipsis-horizontal"
+                  size="sm"
+                />
+              </UDropdown>
+            </div>
+          </template>
 
-                    <UButton
-                      color="primary"
-                      variant="outline"
-                      size="sm"
-                      icon="i-heroicons-x-mark"
-                      class="transition-all duration-200"
-                      @click="isFilterOpen = false"
-                    >
-                      Close
-                    </UButton>
-                  </div>
-                </div>
-              </div>
+          <div class="aspect-w-4 aspect-h-3 bg-gray-50 rounded-lg overflow-hidden mb-4">
+            <img
+              v-if="style.imageUrl"
+              :src="style.imageUrl"
+              :alt="style.name"
+              class="w-full h-48 object-cover"
+            />
+            <div
+              v-else
+              class="w-full h-48 flex items-center justify-center bg-gray-100 text-gray-400"
+            >
+              <UIcon name="i-heroicons-photo" class="w-12 h-12" />
             </div>
           </div>
-        </Transition>
-      </template>
 
-      <!-- Default slot for content -->
-      <template #default>
-        <!-- Styles grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          <UCard
-            v-for="style in filteredStyles"
-            :key="style.id"
-            class="bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden group flex flex-col"
-            :ui="{
-              root: 'h-full flex flex-col',
-              body: 'flex-1',
-            }"
-          >
-            <!-- Style Image -->
-            <div class="aspect-w-1 aspect-h-1 w-full bg-gray-50 rounded-lg overflow-hidden mb-4">
-              <img
-                v-if="style.imageUrl"
-                :src="style.imageUrl"
-                :alt="style.name"
-                class="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          <div class="mt-auto">
+            <div class="flex items-center justify-between">
+              <UBadge :color="getStatusColor(style.status)" variant="subtle" size="sm">
+                {{ formatStatus(style.status) }}
+              </UBadge>
+              <span class="text-sm text-gray-500">{{ style.itemCount || 0 }} items</span>
+            </div>
+
+            <p v-if="style.description" class="mt-2 text-sm text-gray-500 line-clamp-2">
+              {{ style.description }}
+            </p>
+
+            <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+              <span class="text-xs text-gray-500"> Updated {{ formatDate(style.updatedAt) }} </span>
+              <UButton
+                :to="`/styles/${style.id}`"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                icon="i-heroicons-arrow-right"
+                :ui="{ rounded: 'rounded-full' }"
               />
-              <div
-                v-else
-                class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400"
-              >
-                <UIcon name="i-heroicons-photo" class="w-12 h-12" />
-              </div>
             </div>
+          </div>
+        </UCard>
+      </div>
 
-            <!-- Style Info -->
-            <div class="flex-1">
-              <div class="flex items-start justify-between">
-                <h3 class="text-lg font-medium text-gray-900 line-clamp-2 flex-1 mr-2">
-                  {{ style.name }}
-                </h3>
-
-                <!-- Actions Dropdown -->
-                <UDropdownMenu
-                  :items="
-                    [
-                      {
-                        label: 'View',
-                        icon: 'i-heroicons-eye',
-                        to: `/styles/${style.id}`,
-                      },
-                      {
-                        label: 'Edit',
-                        icon: 'i-heroicons-pencil',
-                        to: getEditStylePath(String(style.id)),
-                      },
-                      {
-                        type: 'divider',
-                      },
-                      {
-                        label: 'Delete',
-                        icon: 'i-heroicons-trash',
-                        click: () => confirmDelete(style),
-                        color: 'error',
-                      },
-                    ] as DropdownMenuItem[]
-                  "
-                  :popper="{ placement: 'bottom-end' }"
-                >
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    icon="i-heroicons-ellipsis-vertical"
-                    size="sm"
-                    class="transition-opacity duration-200"
-                    aria-label="Style actions"
-                  />
-                </UDropdownMenu>
-              </div>
-
-              <p class="mt-1 text-sm text-gray-500 line-clamp-2">
-                {{ style.description || 'No description' }}
-              </p>
-            </div>
-          </UCard>
+      <!-- Pagination -->
+      <div v-if="filteredStyles.length > 0" class="mt-8 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> to
+          <span class="font-medium">{{
+            Math.min(currentPage * itemsPerPage, filteredStyles.length)
+          }}</span>
+          of <span class="font-medium">{{ filteredStyles.length }}</span> results
         </div>
-      </template>
-    </BaseListPage>
+        <UPagination
+          v-model="currentPage"
+          :page-count="itemsPerPage"
+          :total="filteredStyles.length"
+          :ui="{ rounded: 'first-of-type:rounded-s-md last-of-type:rounded-e-md' }"
+        />
+      </div>
+    </div>
+
+    <!-- Mobile List View -->
+    <div class="md:hidden space-y-4">
+      <div
+        v-for="style in paginatedStyles"
+        :key="style.id"
+        class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 p-4 hover:border-gray-300"
+      >
+        <div class="flex">
+          <div class="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
+            <img
+              v-if="style.imageUrl"
+              :src="style.imageUrl"
+              :alt="style.name"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+              <UIcon name="i-heroicons-photo" class="w-6 h-6" />
+            </div>
+          </div>
+
+          <div class="ml-4 flex-1 min-w-0">
+            <div class="flex items-start justify-between">
+              <h3 class="text-base font-medium text-gray-900 truncate">{{ style.name }}</h3>
+              <UDropdown
+                :items="[
+                  [
+                    {
+                      label: 'View',
+                      icon: 'i-heroicons-eye',
+                      click: () => navigateTo(`/styles/${style.id}`),
+                    },
+                    {
+                      label: 'Edit',
+                      icon: 'i-heroicons-pencil',
+                      click: () => navigateTo(`/styles/${style.id}/edit`),
+                    },
+                  ],
+                  [
+                    {
+                      label: 'Delete',
+                      icon: 'i-heroicons-trash',
+                      click: () => confirmDelete(style),
+                    },
+                  ],
+                ]"
+              >
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-heroicons-ellipsis-horizontal"
+                  size="sm"
+                />
+              </UDropdown>
+            </div>
+
+            <div class="mt-1">
+              <UBadge
+:color="getStatusColor(style.status)"
+variant="subtle"
+size="xs"
+class="mr-2">
+                {{ formatStatus(style.status) }}
+              </UBadge>
+              <span class="text-xs text-gray-500">{{ style.itemCount || 0 }} items</span>
+            </div>
+
+            <p v-if="style.description" class="mt-1 text-sm text-gray-500 line-clamp-2">
+              {{ style.description }}
+            </p>
+
+            <div class="mt-2 pt-2 border-t border-gray-100">
+              <span class="text-xs text-gray-500"> Updated {{ formatDate(style.updatedAt) }} </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state for mobile -->
+      <div v-if="!isLoading && paginatedStyles.length === 0" class="text-center py-12">
+        <UIcon name="i-heroicons-swatch" class="mx-auto h-12 w-12 text-gray-400" />
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No styles</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          {{
+            hasActiveFilters
+              ? 'Try adjusting your filters'
+              : 'Get started by adding your first style'
+          }}
+        </p>
+        <div class="mt-6">
+          <UButton to="/styles/new" icon="i-heroicons-plus" color="primary"> Add Style </UButton>
+        </div>
+      </div>
+
+      <!-- Pagination for mobile -->
+      <div v-if="filteredStyles.length > itemsPerPage" class="mt-6">
+        <UPagination
+          v-model="currentPage"
+          :page-count="itemsPerPage"
+          :total="filteredStyles.length"
+          :ui="{ rounded: 'first-of-type:rounded-s-md last-of-type:rounded-e-md' }"
+        />
+      </div>
+    </div>
 
     <!-- Delete Confirmation Modal -->
-    <DeleteModal
-      v-model:model-value="showDeleteModal"
-      :item-type="'style'"
-      :item-name="styleToDelete?.name || 'this style'"
-      :loading="isDeleting"
-      @confirm="deleteStyle"
-      @update:model-value="val => (showDeleteModal = val)"
-    />
+    <UModal v-model="showDeleteModal">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">Delete Style</h3>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-x-mark"
+              @click="showDeleteModal = false"
+            />
+          </div>
+        </template>
+
+        <p class="text-sm text-gray-500">
+          Are you sure you want to delete the style
+          <span class="font-medium">{{ styleToDelete?.name }}</span
+          >? This action cannot be undone.
+        </p>
+
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              :disabled="isDeleting"
+              @click="showDeleteModal = false"
+            >
+              Cancel
+            </UButton>
+            <UButton color="error" :loading="isDeleting" @click="deleteStyle"> Delete </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Style } from '~/types/style'
-import { ROUTE_NAMES } from '~/constants/routes'
-import { useListData } from '~/composables/useListData'
 
-// Route helper
-const getEditStylePath = (id: string): string => {
-  return `/styles/${id}/edit`
-}
-
-// Set page metadata
-useHead({
-  title: 'Styles',
+definePageMeta({
+  middleware: ['auth', 'setup-required'],
+  layout: 'dashboard',
 })
 
-// Delete modal state
+// Use the styles composable
+const {
+  styles,
+  isLoading,
+  _deleteStyleApi,
+  sort,
+  search: searchTerm,
+  pagination,
+  filters,
+  styleTypes,
+} = useStyles()
+
+// Local state
+const search = ref('')
+const sortBy = ref('updatedAt_desc')
+const currentPage = ref(1)
+const itemsPerPage = ref(12)
+const isFilterOpen = ref(false)
+const styleTypeFilter = ref('all')
+const statusFilter = ref('all')
 const showDeleteModal = ref(false)
 const styleToDelete = ref<Style | null>(null)
 const isDeleting = ref(false)
 
-// Use unified list data management
-const {
-  state: {
-    items: styles,
-    currentPage,
-    pageSize: itemsPerPage,
-    search,
-    sortBy,
-    isLoading,
-    isFilterOpen,
-    hasActiveFilters,
-  },
-  actions: { handleSearch, handleSort, handlePageChange, resetFilters, refresh: refreshStyles },
-  setFilter,
-  getFilter,
-} = useListData<Style>({
-  endpoint: '/api/styles',
-  defaultPageSize: 10,
-  defaultSortBy: 'newest',
-  filterKeys: ['styleSource', 'styleType'],
-  serverSide: false,
-  sortByMapping: {
-    newest: { sortBy: 'createdAt', sortOrder: 'desc' },
-    oldest: { sortBy: 'createdAt', sortOrder: 'asc' },
-    'name-asc': { sortBy: 'name', sortOrder: 'asc' },
-    'name-desc': { sortBy: 'name', sortOrder: 'desc' },
-  },
+// Sync local search with composable
+watch(search, newVal => {
+  searchTerm.value = newVal
+  currentPage.value = 1
 })
 
-// Additional filter refs for easier access
-const filters = computed({
-  get: () => ({
-    styleSource: getFilter('styleSource'),
-    styleType: getFilter('styleType'),
-  }),
-  set: value => {
-    setFilter('styleSource', value.styleSource)
-    setFilter('styleType', value.styleType)
-  },
+// Sync sort with composable
+watch(sortBy, newVal => {
+  const [field, direction] = newVal.split('_')
+  sort.value = { field, direction: direction as 'asc' | 'desc' }
+  currentPage.value = 1
 })
 
-// Filter options
-const styleSourceOptions = [
-  { label: 'All styles', value: 'all' },
-  { label: 'My styles', value: 'user' },
-  { label: 'System styles', value: 'system' },
-]
+// Sync pagination
+watch([currentPage, itemsPerPage], () => {
+  pagination.value = {
+    page: currentPage.value,
+    pageSize: itemsPerPage.value,
+  }
+})
 
-const styleTypeOptions = [
-  { label: 'All types', value: 'all' },
-  { label: 'Casual', value: 'casual' },
-  { label: 'Formal', value: 'formal' },
-  { label: 'Business', value: 'business' },
-  { label: 'Evening', value: 'evening' },
-  { label: 'Traditional', value: 'traditional' },
-]
-
-// Computed
-const filteredStyles = computed(() => styles.value)
+// Sync filters
+watch([styleTypeFilter, statusFilter], () => {
+  filters.value = {
+    type: styleTypeFilter.value !== 'all' ? styleTypeFilter.value : undefined,
+    status: statusFilter.value !== 'all' ? statusFilter.value : undefined,
+  }
+  currentPage.value = 1
+})
 
 // Sort options
 const sortOptions = [
-  { label: 'Newest first', value: 'newest', icon: 'i-heroicons-arrow-up' },
-  { label: 'Oldest first', value: 'oldest', icon: 'i-heroicons-arrow-down' },
-  { label: 'Name (A-Z)', value: 'name-asc', icon: 'i-heroicons-bars-arrow-down' },
-  { label: 'Name (Z-A)', value: 'name-desc', icon: 'i-heroicons-bars-arrow-up' },
+  { label: 'Recently Updated', value: 'updatedAt_desc' },
+  { label: 'Oldest First', value: 'updatedAt_asc' },
+  { label: 'Name (A-Z)', value: 'name_asc' },
+  { label: 'Name (Z-A)', value: 'name_desc' },
+  { label: 'Most Items', value: 'itemCount_desc' },
+  { label: 'Least Items', value: 'itemCount_asc' },
 ]
 
-// Additional methods
-const filterStyles = () => {
+// Style type options
+const styleTypeOptions = [
+  { label: 'All Types', value: 'all', icon: 'i-heroicons-funnel' },
+  { label: 'Casual', value: 'casual', icon: 'i-heroicons-t-shirt' },
+  { label: 'Formal', value: 'formal', icon: 'i-heroicons-academic-cap' },
+  { label: 'Traditional', value: 'traditional', icon: 'i-heroicons-sparkles' },
+  { label: 'Custom', value: 'custom', icon: 'i-heroicons-paint-brush' },
+]
+
+// Status options
+const statusOptions = [
+  { label: 'All Statuses', value: 'all', icon: 'i-heroicons-funnel' },
+  { label: 'Active', value: 'active', icon: 'i-heroicons-check-circle' },
+  { label: 'Draft', value: 'draft', icon: 'i-heroicons-document-text' },
+  { label: 'Archived', value: 'archived', icon: 'i-heroicons-archive-box' },
+]
+
+// Computed
+const filteredStyles = computed(() => {
+  let result = [...styles.value]
+
+  // Apply search filter
+  if (search.value) {
+    const searchTerm = search.value.toLowerCase()
+    result = result.filter(
+      style =>
+        style.name?.toLowerCase().includes(searchTerm) ||
+        style.description?.toLowerCase().includes(searchTerm) ||
+        style.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+    )
+  }
+
+  // Apply style type filter
+  if (styleTypeFilter.value !== 'all') {
+    result = result.filter(style => style.type === styleTypeFilter.value)
+  }
+
+  // Apply status filter
+  if (statusFilter.value !== 'all') {
+    result = result.filter(style => style.status === statusFilter.value)
+  }
+
+  // Apply sorting
+  result.sort((a, b) => {
+    const [sortField, sortDirection] = sortBy.value.split('_')
+    const direction = sortDirection === 'desc' ? -1 : 1
+
+    if (sortField === 'updatedAt' || sortField === 'createdAt') {
+      return (new Date(a[sortField]).getTime() - new Date(b[sortField]).getTime()) * direction
+    } else if (sortField === 'name') {
+      return (a.name || '').localeCompare(b.name || '') * direction
+    } else if (sortField === 'itemCount') {
+      return ((a.itemCount || 0) - (b.itemCount || 0)) * direction
+    }
+
+    return 0
+  })
+
+  return result
+})
+
+const paginatedStyles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredStyles.value.slice(start, end)
+})
+
+const hasActiveFilters = computed(() => {
+  return styleTypeFilter.value !== 'all' || statusFilter.value !== 'all' || search.value !== ''
+})
+
+const activeFiltersCount = computed(() => {
+  let count = 0
+  if (styleTypeFilter.value !== 'all') count++
+  if (statusFilter.value !== 'all') count++
+  return count
+})
+
+// Methods
+
+const handleSearch = (value: string) => {
+  search.value = value
   currentPage.value = 1
-  // Data will be automatically refetched due to filters watcher
+}
+
+const handleSort = (value: string) => {
+  sortBy.value = value
+  currentPage.value = 1
+}
+
+const toggleFilter = () => {
+  isFilterOpen.value = !isFilterOpen.value
+}
+
+const resetFilters = () => {
+  styleTypeFilter.value = 'all'
+  statusFilter.value = 'all'
+  search.value = ''
+  currentPage.value = 1
 }
 
 const confirmDelete = (style: Style) => {
-  console.log('confirmDelete called with style:', style)
   styleToDelete.value = style
   showDeleteModal.value = true
-  console.log('showDeleteModal set to:', showDeleteModal.value)
 }
 
 const deleteStyle = async () => {
@@ -372,35 +575,58 @@ const deleteStyle = async () => {
 
   try {
     isDeleting.value = true
-    const response = await $fetch(`/api/styles/${styleToDelete.value.id}`, {
-      method: 'DELETE',
-    })
+    // Replace with your actual API call
+    // await $fetch(`/api/styles/${styleToDelete.value.id}`, { method: 'DELETE' })
 
-    if (response) {
-      // Add success notification
-      useToast().add({
-        title: 'Success',
-        description: 'Style deleted successfully',
-        icon: 'i-heroicons-check-circle',
-        color: 'primary',
-      })
-      // Refresh data
-      await refreshStyles()
-      // Close modal
-      showDeleteModal.value = false
-      styleToDelete.value = null
+    // Remove the style from the list
+    const index = styles.value.findIndex(s => s.id === styleToDelete.value?.id)
+    if (index !== -1) {
+      styles.value.splice(index, 1)
     }
+
+    showDeleteModal.value = false
+    styleToDelete.value = null
   } catch (error) {
-    console.error('Error deleting style:', error)
-    // Add error notification
-    useToast().add({
-      title: 'Error',
-      description: 'Failed to delete style',
-      icon: 'i-heroicons-exclamation-triangle',
-      color: 'error',
-    })
+    console.error('Failed to delete style:', error)
   } finally {
     isDeleting.value = false
+  }
+}
+
+// Helper functions
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (diffInDays === 0) return 'today'
+  if (diffInDays === 1) return 'yesterday'
+  if (diffInDays < 7) return `${diffInDays} days ago`
+
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+const formatStatus = (status: string) => {
+  return status
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'draft':
+      return 'warning'
+    case 'archived':
+      return 'neutral'
+    default:
+      return 'neutral'
   }
 }
 </script>

@@ -12,8 +12,8 @@ import {
 type ExtendedUser = User & {
   hasActiveSubscription?: boolean
   hasCompletedSetup?: boolean
-  subscriptionStatus?: 'none' | 'pending' | 'active' | 'cancelled' | 'expired'
-  onboardingStep?: 'verification' | 'subscription' | 'setup' | 'complete'
+  subscriptionStatus?: string
+  onboardingStep?: string
   onboardingCompletedAt?: Date | null
 }
 
@@ -52,6 +52,7 @@ export const useAuth = () => {
   }
 
   // Login with email/password
+  // Update the login function in useAuth.ts
   const login = async (email: string, password: string, rememberMe = false) => {
     isLoading.value = true
 
@@ -61,23 +62,33 @@ export const useAuth = () => {
       return { error: getNetworkError() }
     }
 
-    const { data, error } = await authClient.signIn.email({
-      email,
-      password,
-      rememberMe,
-    })
+    try {
+      // Sign in first
+      const { error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe,
+      })
 
-    // Handle Better Auth API errors
-    if (error) {
+      if (signInError) {
+        throw new Error(signInError.message)
+      }
+
+      // Then get the full session with additional fields
+      const { data: sessionData, error: sessionError } = await authClient.getSession()
+
+      if (sessionError) {
+        throw new Error(sessionError.message)
+      }
+
+      // Update user state with the full session data
+      user.value = sessionData?.user || null
+      return { error: null }
+    } catch (error: any) {
+      return { error: new Error(error.message || 'Login failed') }
+    } finally {
       isLoading.value = false
-      return { error: new Error(error.message) }
     }
-
-    // Update user state
-    user.value = data.user
-
-    isLoading.value = false
-    return { error: null }
   }
 
   // Register with email/password
@@ -237,7 +248,6 @@ export const useAuth = () => {
         provider: 'google',
         callbackURL: '/auth/confirm', // Direct redirect to plan selection for new users
       })
-
       if (error) {
         return { error: new Error(error.message) }
       }

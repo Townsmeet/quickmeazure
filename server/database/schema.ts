@@ -12,7 +12,7 @@ export const user = sqliteTable('user', {
     .default(false),
   hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' }).notNull().default(false),
   subscriptionStatus: text('subscription_status').notNull().default('none'), // 'none', 'pending', 'active', 'cancelled', 'expired'
-  onboardingStep: text('onboarding_step').notNull().default('verification'), // 'verification', 'subscription', 'setup', 'complete'
+  onboardingStep: text('onboarding_step').notNull().default('verification'), // 'verification', 'subscription', 'complete'
   onboardingCompletedAt: integer('onboarding_completed_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),

@@ -3,7 +3,7 @@ export default defineNuxtRouteMiddleware(async () => {
   // Skip middleware on server-side
   if (import.meta.server) return
 
-  const { isAuthenticated, user, init } = useAuth()
+  const { isAuthenticated, user: _user, init } = useAuth()
 
   // Initialize auth state if not already done
   await init()
@@ -14,7 +14,7 @@ export default defineNuxtRouteMiddleware(async () => {
   }
 
   // If user hasn't completed setup, redirect to setup flow
-  if (user.value?.hasCompletedSetup === false) {
-    return navigateTo('/auth/confirm')
-  }
+  // if (user.value?.hasCompletedSetup === false) {
+  //   return navigateTo('/auth/confirm')
+  // }
 })

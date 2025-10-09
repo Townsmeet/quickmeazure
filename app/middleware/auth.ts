@@ -1,4 +1,4 @@
-export default defineNuxtRouteMiddleware(async to => {
+export default defineNuxtRouteMiddleware(async (to, _from) => {
   // Skip middleware on server-side
   if (import.meta.server) return
 
@@ -49,7 +49,6 @@ export default defineNuxtRouteMiddleware(async to => {
       '/settings',
       '/profile',
       '/auth/confirm',
-      '/auth/setup-measurements',
     ]
 
     return authPrefixes.some(prefix => path.startsWith(prefix))
@@ -87,14 +86,17 @@ export default defineNuxtRouteMiddleware(async to => {
     }
   }
 
+  // If user has an active subscription, allow access to dashboard
+  if (to.path === '/dashboard' && isAuthenticated.value) {
+    return // Allow access to dashboard for authenticated users with or without subscription
+  }
+
   // If user is fully onboarded but trying to access onboarding pages
-  if (
-    isFullyOnboarded.value &&
-    (to.path === '/auth/confirm' ||
-      to.path === '/auth/setup-measurements' ||
-      to.path === '/auth/verify-email')
-  ) {
-    return navigateTo('/dashboard')
+  if (isFullyOnboarded.value) {
+    const onboardingPaths = ['/auth/confirm', '/auth/verify-email']
+    if (onboardingPaths.includes(to.path)) {
+      return navigateTo('/dashboard')
+    }
   }
 
   // Set dashboard layout for authenticated routes

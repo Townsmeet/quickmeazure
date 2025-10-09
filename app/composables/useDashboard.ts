@@ -1,11 +1,17 @@
 interface DashboardStats {
   totalClients: number
+  newClientsThisMonth: number
   totalOrders: number
   totalRevenue: number
   pendingOrders: number
   completedOrders: number
+  completedOrdersThisMonth: number
+  activeOrders: number
   monthlyRevenue: number
   monthlyGrowth: number
+  revenueGrowth: number
+  subscriptionPlan?: string
+  clientsRemaining?: number | null
 }
 
 interface ActivityItem {
@@ -27,13 +33,14 @@ interface ClientGrowthData {
 interface Order {
   id: number
   clientId: number
+  clientName: string
   status: string
   totalAmount: number
   dueDate?: string
   createdAt: string
 }
 
-type ChartPeriod = '7days' | '30days' | '90days' | '1year'
+type ChartPeriod = '7days' | '30days' | '90days' | '1year' | 'year'
 
 interface DashboardResponse {
   success: boolean
@@ -60,29 +67,94 @@ export const useDashboard = () => {
   const error = useState<string | null>('dashboard_error', () => null)
   const chartPeriod = useState<ChartPeriod>('dashboard_chart_period', () => '30days')
 
-  // Data fetching with useFetch
+  // Data fetching with useFetch for each data type
   const {
-    data: dashboardData,
-    pending: isLoading,
-    refresh: refreshDashboard,
-  } = useFetch<DashboardResponse>('/api/dashboard', {
-    query: computed(() => ({ period: chartPeriod.value })),
+    data: _statsData,
+    pending: isLoadingStats,
+    refresh: refreshStats,
+  } = useFetch<{ success: boolean; data: DashboardStats }>('/api/dashboard/stats', {
     server: false,
-    default: () => ({ success: false, data: undefined }) as DashboardResponse,
+    default: () => ({
+      success: false,
+      data: undefined as unknown as DashboardStats,
+    }),
     onResponse({ response }) {
-      const responseData = response._data as DashboardResponse
+      const responseData = response._data
       if (responseData?.success && responseData?.data) {
-        const data = responseData.data
-        stats.value = data.stats
-        recentActivity.value = data.recentActivity
-        dueOrders.value = data.dueOrders
-        clientGrowth.value = data.clientGrowth
+        stats.value = responseData.data
       }
     },
-    onResponseError({ error: fetchError }) {
-      error.value = fetchError?.message || 'Failed to fetch dashboard data'
+  })
+
+  const {
+    data: _activityData,
+    pending: isLoadingActivity,
+    refresh: refreshActivity,
+  } = useFetch<{ success: boolean; data: ActivityItem[] }>('/api/dashboard/recent-activity', {
+    query: { limit: 10 },
+    server: false,
+    default: () => ({
+      success: false,
+      data: [] as ActivityItem[],
+    }),
+    onResponse({ response }) {
+      const responseData = response._data
+      if (responseData?.success && responseData?.data) {
+        recentActivity.value = responseData.data
+      }
     },
   })
+
+  const {
+    data: _dueOrdersData,
+    pending: isLoadingDueOrders,
+    refresh: refreshDueOrders,
+  } = useFetch<{ success: boolean; data: Order[] }>('/api/dashboard/orders-due-soon', {
+    server: false,
+    default: () => ({
+      success: false,
+      data: [] as Order[],
+    }),
+    onResponse({ response }) {
+      const responseData = response._data
+      if (responseData?.success && responseData?.data) {
+        dueOrders.value = responseData.data
+      }
+    },
+  })
+
+  const {
+    data: _growthData,
+    pending: isLoadingGrowth,
+    refresh: refreshGrowth,
+  } = useFetch<{ success: boolean; data: ClientGrowthData }>('/api/dashboard/client-growth', {
+    query: computed(() => ({ period: chartPeriod.value })),
+    server: false,
+    default: () => ({
+      success: false,
+      data: {
+        labels: [] as string[],
+        data: [] as number[],
+        totalGrowth: 0,
+        percentGrowth: 0,
+      },
+    }),
+    onResponse({ response }) {
+      const responseData = response._data
+      if (responseData?.success && responseData?.data) {
+        clientGrowth.value = responseData.data
+      }
+    },
+  })
+
+  // Combined loading state
+  const isLoading = computed(
+    () =>
+      isLoadingStats.value ||
+      isLoadingActivity.value ||
+      isLoadingDueOrders.value ||
+      isLoadingGrowth.value
+  )
 
   // Computed
   const hasChartData = computed(() => {
@@ -93,81 +165,52 @@ export const useDashboard = () => {
   const fetchDashboardData = async (period: ChartPeriod = chartPeriod.value): Promise<boolean> => {
     chartPeriod.value = period
     await refreshDashboard()
-    const responseData = dashboardData.value as DashboardResponse
-    return responseData?.success || false
+    return true
   }
 
-  // Fetch functions using $fetch for individual endpoints
+  // Individual data fetching functions (kept for backward compatibility)
   const fetchStats = async (): Promise<DashboardStats | null> => {
-    try {
-      const response = await $fetch<{ success: boolean; data: DashboardStats }>(
-        '/api/dashboard/stats'
-      )
-      if (response.success && response.data) {
-        stats.value = response.data
-        return response.data
-      }
-      return null
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch stats'
-      return null
-    }
+    if (stats.value) return stats.value
+    await refreshStats()
+    return stats.value
   }
 
   const fetchRecentActivity = async (): Promise<ActivityItem[]> => {
-    try {
-      const response = await $fetch<{ success: boolean; data: ActivityItem[] }>(
-        '/api/dashboard/activity',
-        {
-          query: { limit: 10 },
-        }
-      )
-      if (response.success && response.data) {
-        recentActivity.value = response.data
-        return response.data
-      }
-      return []
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch activity'
-      return []
-    }
+    if (recentActivity.value.length > 0) return recentActivity.value
+    await refreshActivity()
+    return recentActivity.value
   }
 
   const fetchDueOrders = async (): Promise<Order[]> => {
-    try {
-      const response = await $fetch<{ success: boolean; data: Order[] }>(
-        '/api/dashboard/due-orders'
-      )
-      if (response.success && response.data) {
-        dueOrders.value = response.data
-        return response.data
-      }
-      return []
-    } catch (err: any) {
-      error.value = err.message || 'Failed to fetch due orders'
-      return []
-    }
+    if (dueOrders.value.length > 0) return dueOrders.value
+    await refreshDueOrders()
+    return dueOrders.value
   }
 
-  const fetchClientGrowth = async (
-    period: ChartPeriod = chartPeriod.value
+  const _fetchClientGrowth = async (
+    _period: ChartPeriod = chartPeriod.value
   ): Promise<ClientGrowthData | null> => {
-    chartPeriod.value = period
-    await refreshDashboard()
+    if (clientGrowth.value.labels.length > 0) return clientGrowth.value
+    await refreshGrowth()
     return clientGrowth.value
   }
 
-  // Local state management
+  // Watch for period changes and refresh growth data
+  watch(chartPeriod, async () => {
+    await refreshGrowth()
+  })
+
   const setChartPeriod = (period: ChartPeriod) => {
     chartPeriod.value = period
   }
-
   const clearError = () => {
     error.value = null
   }
 
-  const refreshData = async () => {
-    await fetchDashboardData(chartPeriod.value)
+  // Refresh function
+  const refreshDashboard = async () => {
+    // Refresh all data by triggering refetch for each query
+    await Promise.all([refreshStats(), refreshActivity(), refreshDueOrders(), refreshGrowth()])
   }
 
   return {
@@ -183,19 +226,15 @@ export const useDashboard = () => {
     // Computed
     hasChartData,
 
-    // API Actions
+    // Methods
     fetchDashboardData,
     fetchStats,
     fetchRecentActivity,
     fetchDueOrders,
-    fetchClientGrowth,
-
-    // Refresh Actions
     refreshDashboard,
 
     // Local State Actions
     setChartPeriod,
     clearError,
-    refreshData,
   }
 }

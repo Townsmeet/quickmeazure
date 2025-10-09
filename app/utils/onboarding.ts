@@ -1,6 +1,3 @@
-// Onboarding flow utilities
-import type { User } from 'better-auth'
-
 export interface OnboardingStep {
   key: string
   label: string
@@ -22,12 +19,6 @@ export const onboardingSteps: OnboardingStep[] = [
     description: 'Select your subscription plan',
   },
   {
-    key: 'setup',
-    label: 'Setup Profile',
-    path: '/auth/setup-measurements',
-    description: 'Complete your business profile',
-  },
-  {
     key: 'complete',
     label: 'Dashboard',
     path: '/dashboard',
@@ -35,7 +26,7 @@ export const onboardingSteps: OnboardingStep[] = [
   },
 ]
 
-export type OnboardingStepKey = 'verification' | 'subscription' | 'setup' | 'complete'
+export type OnboardingStepKey = 'verification' | 'subscription' | 'complete'
 
 /**
  * Determine the current onboarding step for a user
@@ -46,7 +37,7 @@ export function getCurrentOnboardingStep(user: any): OnboardingStepKey {
   // Use the onboardingStep field if available (from database)
   if (
     user.onboardingStep &&
-    ['verification', 'subscription', 'setup', 'complete'].includes(user.onboardingStep)
+    ['verification', 'subscription', 'complete'].includes(user.onboardingStep)
   ) {
     return user.onboardingStep as OnboardingStepKey
   }
@@ -62,11 +53,8 @@ export function getCurrentOnboardingStep(user: any): OnboardingStepKey {
     return 'subscription'
   }
 
-  // Check setup completion
-  if (!user.hasCompletedSetup) {
-    return 'setup'
-  }
-
+  // After subscription, onboarding is complete
+  // Setup is now handled in the dashboard, so we don't check hasCompletedSetup here
   return 'complete'
 }
 
@@ -156,8 +144,6 @@ export function getOnboardingStatusMessage(user: any): string {
       return 'Please verify your email address to continue'
     case 'subscription':
       return 'Choose a subscription plan to get started'
-    case 'setup':
-      return 'Complete your profile setup'
     case 'complete':
       return 'Welcome to QuickMeazure!'
     default:
