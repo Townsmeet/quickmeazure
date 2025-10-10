@@ -1,319 +1,190 @@
 <template>
-  <div class="min-h-screen bg-gray-50 overflow-x-hidden">
-    <!-- Top Navigation Bar -->
+  <UDashboardGroup v-model:sidebar="isSidebarOpen">
+    <!-- SIDEBAR: use slots for header and footer -->
+    <UDashboardSidebar collapsible resizable :ui="{ footer: 'border-t border-default' }">
+      <template #header="{ collapsed }">
+        <div v-if="!collapsed" class="flex items-center gap-3">
+          <UIcon name="i-heroicons-scissors" class="text-primary-600 text-2xl" />
+          <span class="font-bold text-lg">QuickMeazure</span>
+        </div>
+        <UIcon v-else name="i-heroicons-scissors" class="size-5 text-primary mx-auto" />
+      </template>
 
-    <!-- Main content wrapper -->
-    <div class="flex flex-nowrap min-h-screen">
-      <!-- Fixed Sidebar -->
-      <ClientOnly>
-        <aside
-          class="hidden md:flex flex-col w-64 flex-shrink-0 fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-40"
+      <template #default="{ collapsed }">
+        <UButton
+          :label="collapsed ? undefined : 'Search...'"
+          icon="i-heroicons-magnifying-glass"
+          color="neutral"
+          variant="outline"
+          block
+          :square="collapsed"
         >
-          <!-- Logo at the top -->
-          <div class="px-6 pt-8 pb-6">
-            <ULink to="/dashboard" class="flex items-center space-x-2">
-              <UIcon name="i-heroicons-scissors" class="text-primary-600 text-2xl" />
-              <span class="text-xl font-bold text-primary-600">QuickMeazure</span>
-            </ULink>
-          </div>
-
-          <!-- Navigation Menu -->
-          <div class="flex-1 flex flex-col justify-between pt-12 pb-4">
-            <nav class="flex-1 flex flex-col gap-1 px-4 overflow-y-auto">
-              <NuxtLink
-                to="/dashboard"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1"
-                :class="
-                  route.path === '/dashboard'
-                    ? 'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                "
-              >
-                <UIcon name="i-heroicons-home" class="size-5 shrink-0" />
-                <span class="truncate">Dashboard</span>
-              </NuxtLink>
-
-              <NuxtLink
-                to="/clients/new"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1"
-                :class="
-                  route.path.startsWith('/clients/new') && route.path !== '/clients/new'
-                    ? 'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                "
-              >
-                <UIcon name="i-heroicons-users" class="size-5 shrink-0" />
-                <span class="truncate">Clients</span>
-              </NuxtLink>
-
-              <a
-                :href="'/clients/new'"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1 cursor-pointer"
-                :class="
-                  route.path === '/clients/new'
-                    ? 'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                "
-                @click="navigateToMeasure"
-              >
-                <UIcon name="i-heroicons-variable" class="size-5 shrink-0" />
-                <span class="truncate">Measure</span>
-              </a>
-
-              <NuxtLink
-                to="/styles"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1"
-                :class="
-                  route.path.startsWith('/styles')
-                    ? 'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                "
-              >
-                <UIcon name="i-heroicons-swatch" class="size-5 shrink-0" />
-                <span class="truncate">Styles</span>
-              </NuxtLink>
-
-              <NuxtLink
-                to="/orders"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1"
-                :class="
-                  route.path.startsWith('/orders')
-                    ? 'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1'
-                    : 'text-gray-600 hover:text-gray-900'
-                "
-              >
-                <UIcon name="i-heroicons-shopping-bag" class="size-5 shrink-0" />
-                <span class="truncate">Orders</span>
-              </NuxtLink>
-
-              <!-- Notifications -->
-              <button
-                class="w-full rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1 text-gray-600 hover:text-gray-900"
-                :class="{
-                  'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1':
-                    route.path === '/notifications',
-                }"
-                @click="isNotificationsOpen = true"
-              >
-                <UIcon name="i-heroicons-bell" class="size-5 shrink-0" />
-                <span class="truncate">Notifications</span>
-                <UChip
-                  v-if="unreadCount > 0"
-                  :text="unreadCount.toString()"
-                  size="xs"
-                  color="primary"
-                  class="ml-auto"
-                />
-              </button>
-
-              <!-- Settings -->
-              <NuxtLink
-                to="/settings"
-                class="rounded-lg px-3 py-2.5 text-sm flex items-center gap-3 font-medium justify-start hover:bg-gray-100 transition-all duration-200 hover:translate-x-1 text-gray-600 hover:text-gray-900"
-                :class="{
-                  'bg-primary-50/80 font-semibold text-primary-700 shadow-sm border-l-4 border-primary-500 -ml-1':
-                    route.path.startsWith('/settings'),
-                }"
-              >
-                <UIcon name="i-heroicons-cog-6-tooth" class="size-5 shrink-0" />
-                <span class="truncate">Settings</span>
-              </NuxtLink>
-            </nav>
-          </div>
-
-          <!-- User Section at the bottom -->
-          <div class="px-6 py-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="flex-shrink-0">
-                  <div
-                    class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center"
-                  >
-                    <UIcon name="i-heroicons-user" class="h-6 w-6 text-primary-600" />
-                  </div>
-                </div>
-                <div class="text-sm">
-                  <template v-if="user?.name">
-                    <div class="font-medium text-gray-900">
-                      {{ user.name.split(' ')[0] || 'User' }}
-                    </div>
-                    <div class="text-gray-900">
-                      {{ user.name.split(' ').slice(1).join(' ') || '' }}
-                    </div>
-                  </template>
-                  <div v-else class="font-medium text-gray-900">User</div>
-                </div>
-              </div>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                class="hover:bg-red-50 hover:text-red-600"
-                icon="i-heroicons-power"
-                aria-label="Logout"
-                @click="handleLogout"
-              />
+          <template v-if="!collapsed" #trailing>
+            <div class="flex items-center gap-0.5 ms-auto">
+              <UKbd value="meta" variant="subtle" />
+              <UKbd value="K" variant="subtle" />
             </div>
-          </div>
-        </aside>
-      </ClientOnly>
+          </template>
+        </UButton>
 
-      <!-- Main Content -->
-      <div class="flex-1 min-w-0 md:ml-64 pt-24 pb-24 md:pb-8">
-        <div class="container mx-auto px-6">
-          <main class="w-full">
-            <slot></slot>
-          </main>
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="navigationItems[0]"
+          orientation="vertical"
+        />
+
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="navigationItems[1]"
+          orientation="vertical"
+          class="mt-auto"
+        />
+      </template>
+
+      <template #footer="{ collapsed }">
+        <UButton
+          :avatar="{
+            src: (user as any)?.avatar || undefined,
+            alt: (user as any)?.name || 'User',
+          }"
+          :label="collapsed ? undefined : (user as any)?.name || 'User'"
+          color="neutral"
+          variant="ghost"
+          class="w-full"
+          :block="collapsed"
+          @click="handleUserMenu"
+        >
+          <template v-if="!collapsed" #trailing>
+            <UButton
+              icon="i-heroicons-power"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              aria-label="Logout"
+              @click.stop="handleLogout"
+            />
+          </template>
+        </UButton>
+      </template>
+    </UDashboardSidebar>
+
+    <!-- MAIN PANEL -->
+    <UDashboardPanel class="h-screen overflow-hidden flex flex-col">
+      <template #header>
+        <UDashboardNavbar :title="navTitle">
+          <template #left>
+            <UButton
+              icon="i-heroicons-bars-3"
+              class="md:hidden"
+              variant="ghost"
+              @click="isSidebarOpen = !isSidebarOpen"
+            />
+          </template>
+          <template #right>
+            <UButton icon="i-heroicons-bell" to="/notifications" color="primary" />
+            <UButton icon="i-heroicons-user" to="/settings" color="primary" />
+          </template>
+        </UDashboardNavbar>
+      </template>
+      <!-- DEFAULT SLOT: main content -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="p-4 sm:p-6">
+          <slot />
         </div>
       </div>
-    </div>
-
-    <!-- Mobile Footer Navigation -->
-    <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
-      <nav class="grid grid-cols-5 gap-1 p-2">
-        <NuxtLink
-          to="/"
-          class="flex-col h-auto py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm transition-colors"
-          :class="
-            route.path === '/'
-              ? 'bg-primary-50 font-semibold text-primary-700 border-t-2 border-primary-600'
-              : 'text-gray-500'
-          "
-        >
-          <UIcon name="i-heroicons-home" class="size-5 shrink-0" />
-          <span class="text-xs mt-1">Dashboard</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/clients"
-          class="flex-col h-auto py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm transition-colors"
-          :class="
-            route.path.startsWith('/clients') && route.path !== '/clients/new'
-              ? 'bg-primary-50 font-semibold text-primary-700 border-t-2 border-primary-600'
-              : 'text-gray-500'
-          "
-        >
-          <UIcon name="i-heroicons-users" class="size-5 shrink-0" />
-          <span class="text-xs mt-1">Clients</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/clients/new"
-          class="flex-col h-auto py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm transition-colors"
-          :class="
-            route.path === '/clients/new'
-              ? 'bg-primary-50 font-semibold text-primary-700 border-t-2 border-primary-600'
-              : 'text-gray-500'
-          "
-        >
-          <UIcon name="i-heroicons-variable" class="size-5 shrink-0" />
-          <span class="text-xs mt-1">Measure</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/styles"
-          class="flex-col h-auto py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm transition-colors"
-          :class="
-            route.path.startsWith('/styles')
-              ? 'bg-primary-50 font-semibold text-primary-700 border-t-2 border-primary-600'
-              : 'text-gray-500'
-          "
-        >
-          <UIcon name="i-heroicons-swatch" class="size-5 shrink-0" />
-          <span class="text-xs mt-1">Styles</span>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/orders"
-          class="flex-col h-auto py-2 rounded-lg flex items-center gap-1.5 font-medium text-sm transition-colors"
-          :class="
-            route.path.startsWith('/orders')
-              ? 'bg-primary-50 font-semibold text-primary-700 border-t-2 border-primary-600'
-              : 'text-gray-500'
-          "
-        >
-          <UIcon name="i-heroicons-shopping-bag" class="size-5 shrink-0" />
-          <span class="text-xs mt-1">Orders</span>
-        </NuxtLink>
-      </nav>
-    </footer>
-  </div>
+    </UDashboardPanel>
+  </UDashboardGroup>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import type { NavigationMenuItem } from '@nuxt/ui'
 
-// Get current route and router
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 
-// Navigation methods
-const navigateToMeasure = (e: Event) => {
-  console.log('Navigate to measure clicked', e)
-  e.preventDefault()
-  router.push('/clients/new')
-  return false
-}
+// State for sidebar
+const isSidebarOpen = ref(false)
 
-// Get composables
-const { user, isAuthenticated } = useAuth()
-const toast = useToast()
+// User/auth composable (replace/use as your project implements)
+const { user = ref({}) } = useAuth() || {}
 
-// Use notifications composable
-const {
-  notifications,
-  unreadCount,
-  isLoading: notificationsLoading,
-  error: notificationsError,
-  markAsRead,
-} = useNotifications()
+// Navigation items structured for UNavigationMenu
+const navigationItems: NavigationMenuItem[][] = [
+  [
+    {
+      label: 'Dashboard',
+      icon: 'i-heroicons-home',
+      to: '/dashboard',
+      active: route.path === '/dashboard',
+    },
+    {
+      label: 'Clients',
+      icon: 'i-heroicons-users',
+      to: '/clients',
+      active: route.path.startsWith('/clients'),
+    },
+    {
+      label: 'Styles',
+      icon: 'i-heroicons-swatch',
+      to: '/styles',
+      active: route.path.startsWith('/styles'),
+    },
+    {
+      label: 'Orders',
+      icon: 'i-heroicons-shopping-bag',
+      to: '/orders',
+      active: route.path.startsWith('/orders'),
+    },
+    {
+      label: 'Settings',
+      icon: 'i-heroicons-cog-6-tooth',
+      defaultOpen: true,
+      children: [
+        {
+          label: 'Profile',
+          to: '/settings',
+        },
+        {
+          label: 'Measurement Templates',
+          to: '/measurement-templates',
+        },
+      ],
+    },
+  ],
+  [
+    {
+      label: 'Help & Support',
+      icon: 'i-heroicons-question-mark-circle',
+      to: '/help',
+    },
+  ],
+]
 
-// Delete notification
-// const _deleteNotification = async (id: string) => {
-//   // Implementation here
-// }
+// Title in navbar can be derived from nav or page context
+const navTitle = computed(() => {
+  const mainNavItems = navigationItems[0]
+  const found = mainNavItems?.find(item => {
+    if (item.to && route.path === item.to) return true
+    if (item.children) {
+      return item.children.some(child => child.to === route.path)
+    }
+    return false
+  })
+  return found?.label || 'Dashboard'
+})
 
-// Types for the icons object
-type IconMap = {
-  [key: string]: string | { critical: string; default: string }
-  payment: { critical: string; default: string }
-  subscription: { critical: string; default: string }
-  order: string
+const handleUserMenu = () => {
+  // Handle user menu click - could open a dropdown or navigate to profile
+  navigateTo('/settings')
 }
 
 const handleLogout = async () => {
   try {
     const { logout } = useAuth()
     await logout()
-
-    // Redirect to login page
     await navigateTo('/auth/login')
   } catch (_error) {
-    // Handle error
-    console.error('Error in dashboard layout:', _error)
-    if (import.meta.client) {
-      localStorage.removeItem('intentionalLogout')
-    }
+    if (import.meta.client) localStorage.removeItem('intentionalLogout')
   }
 }
 </script>
-
-<style scoped>
-.active-nav-item {
-  position: relative;
-  font-weight: 500;
-  color: rgb(var(--color-primary-600));
-}
-
-.active-nav-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 60%;
-  width: 3px;
-  background-color: rgb(var(--color-primary-600));
-  border-radius: 0 4px 4px 0;
-}
-</style>

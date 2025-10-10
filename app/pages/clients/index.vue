@@ -197,30 +197,31 @@ size="xs">
               <span class="text-gray-500">Joined {{ formatDate(client.createdAt) }}</span>
             </p>
           </div>
-          <UDropdown
-            :items="[
-              [
-                {
-                  label: 'View',
-                  icon: 'i-heroicons-eye',
-                  click: () => navigateTo(`/clients/${client.id}`),
-                },
-                {
-                  label: 'Edit',
-                  icon: 'i-heroicons-pencil',
-                  click: () => navigateTo(`/clients/${client.id}/edit`),
-                },
-              ],
-              [{ label: 'Delete', icon: 'i-heroicons-trash', click: () => confirmDelete(client) }],
-            ]"
-          >
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-ellipsis-horizontal"
-              size="sm"
-            />
-          </UDropdown>
+          <UDropdownMenu>
+            <UDropdownMenuTrigger as-child>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-ellipsis-horizontal"
+                size="sm"
+              />
+            </UDropdownMenuTrigger>
+            <UDropdownMenuContent>
+              <UDropdownMenuItem @click="navigateTo(`/clients/${client.id}`)">
+                <UIcon name="i-heroicons-eye" class="mr-2 h-4 w-4" />
+                View
+              </UDropdownMenuItem>
+              <UDropdownMenuItem @click="navigateTo(`/clients/${client.id}/edit`)">
+                <UIcon name="i-heroicons-pencil" class="mr-2 h-4 w-4" />
+                Edit
+              </UDropdownMenuItem>
+              <UDropdownMenuSeparator />
+              <UDropdownMenuItem class="text-red-600" @click="confirmDelete(client)">
+                <UIcon name="i-heroicons-trash" class="mr-2 h-4 w-4" />
+                Delete
+              </UDropdownMenuItem>
+            </UDropdownMenuContent>
+          </UDropdownMenu>
         </div>
       </div>
 
@@ -510,36 +511,64 @@ const columns = [
     render: (row: Client) =>
       h(
         UDropdownMenu,
+        {},
         {
-          items: [
-            [
+          default: () => [
+            h(
+              UDropdownMenuTrigger,
+              { asChild: true },
               {
-                label: 'View',
-                icon: 'i-heroicons-eye',
-                click: () => navigateTo(`/clients/${row.id}`),
-              },
+                default: () =>
+                  h(UButton, {
+                    color: 'gray',
+                    variant: 'ghost',
+                    icon: 'i-heroicons-ellipsis-horizontal',
+                  }),
+              }
+            ),
+            h(
+              UDropdownMenuContent,
+              {},
               {
-                label: 'Edit',
-                icon: 'i-heroicons-pencil',
-                click: () => navigateTo(`/clients/${row.id}/edit`),
-              },
-            ],
-            [
-              {
-                label: 'Delete',
-                icon: 'i-heroicons-trash',
-                click: () => confirmDelete(row),
-              },
-            ],
+                default: () => [
+                  h(
+                    UDropdownMenuItem,
+                    { onClick: () => navigateTo(`/clients/${row.id}`) },
+                    {
+                      default: () => [
+                        h(UIcon, { name: 'i-heroicons-eye', class: 'mr-2 h-4 w-4' }),
+                        'View',
+                      ],
+                    }
+                  ),
+                  h(
+                    UDropdownMenuItem,
+                    { onClick: () => navigateTo(`/clients/${row.id}/edit`) },
+                    {
+                      default: () => [
+                        h(UIcon, { name: 'i-heroicons-pencil', class: 'mr-2 h-4 w-4' }),
+                        'Edit',
+                      ],
+                    }
+                  ),
+                  h(UDropdownMenuSeparator),
+                  h(
+                    UDropdownMenuItem,
+                    {
+                      onClick: () => confirmDelete(row),
+                      class: 'text-red-600',
+                    },
+                    {
+                      default: () => [
+                        h(UIcon, { name: 'i-heroicons-trash', class: 'mr-2 h-4 w-4' }),
+                        'Delete',
+                      ],
+                    }
+                  ),
+                ],
+              }
+            ),
           ],
-        },
-        {
-          default: () =>
-            h(UButton, {
-              color: 'gray',
-              variant: 'ghost',
-              icon: 'i-heroicons-ellipsis-horizontal-20-solid',
-            }),
         }
       ),
   },

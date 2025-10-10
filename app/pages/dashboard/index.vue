@@ -1,10 +1,7 @@
 <template>
   <div class="space-y-6">
-    <!-- Setup Prompt (shown once after signup) -->
-    <SetupPrompt v-if="showSetupPrompt" @setup="navigateToSetup" @later="handleLater"></SetupPrompt>
-
-    <!-- Setup Banner (shown if setup was skipped) -->
-    <SetupBanner v-else-if="showSetupBanner" class="mb-6" @setup="navigateToSetup"></SetupBanner>
+    <!-- Setup Modal (shown if setup is needed) -->
+    <SetupModal v-model:open="showSetupModal" @setup="navigateToSetup" @later="handleLater" />
 
     <!-- Page Header -->
     <PageHeader
@@ -18,240 +15,258 @@
 
     <!-- Dashboard Content -->
     <div class="space-y-6">
-      <!-- Stats Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Total Clients</h3>
-              <UIcon name="i-heroicons-users" class="text-primary-500" />
-            </div>
-          </template>
-          <div class="text-3xl font-bold">{{ stats?.totalClients || 0 }}</div>
-          <template #footer>
-            <div class="text-sm text-gray-500">
-              <span class="text-green-500 font-medium">+{{ stats?.newClientsThisMonth || 0 }}</span>
-              this month
-            </div>
-          </template>
-        </UCard>
-
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Active Orders</h3>
-              <UIcon name="i-heroicons-shopping-bag" class="text-primary-500" />
-            </div>
-          </template>
-          <div class="text-3xl font-bold">{{ stats?.activeOrders || 0 }}</div>
-          <template #footer>
-            <div class="text-sm text-gray-500">
-              <span class="font-medium">
-                {{ stats?.completedOrdersThisMonth || 0 }}
-              </span>
-              completed this month
-            </div>
-          </template>
-        </UCard>
-
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Revenue</h3>
-              <UIcon name="i-heroicons-banknotes" class="text-primary-500" />
-            </div>
-          </template>
-          <div class="text-3xl font-bold">₦{{ formatNumber(stats?.totalRevenue || 0) }}</div>
-          <template #footer>
-            <div class="text-sm text-gray-500">
-              <span class="text-green-500 font-medium">+{{ stats?.revenueGrowth || 0 }}%</span>
-              vs last month
-            </div>
-          </template>
-        </UCard>
-
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Subscription</h3>
-              <UIcon name="i-heroicons-credit-card" class="text-primary-500" />
-            </div>
-          </template>
-          <div class="text-xl py-1 font-bold">
-            {{ stats?.subscriptionPlan || 'Free Plan' }}
-          </div>
-          <template #footer>
-            <div class="text-sm text-gray-500">
-              <span v-if="stats?.clientsRemaining === Infinity">Unlimited clients</span>
-              <span v-else>{{ stats?.clientsRemaining || 0 }} clients remaining</span>
-            </div>
-          </template>
-        </UCard>
-      </div>
-
-      <!-- Charts and Activity -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Client Growth Chart -->
-        <UCard class="lg:col-span-2 bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
-              <USelect
-                v-model="chartPeriod"
-                :items="chartPeriodOptions"
-                size="sm"
-                class="w-40"
-                @update:model-value="updateChartData"
-              />
-            </div>
-          </template>
-          <div class="h-80">
-            <ClientGrowthChart
-              v-if="hasChartData"
-              :labels="clientGrowth.labels"
-              :data="clientGrowth.data"
-              :period="chartPeriod"
-            />
-            <div v-else class="h-full flex items-center justify-center text-gray-400">
-              No data available for the selected period
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Recent Activity -->
-        <UCard class="bg-white">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
-              <UButton
-                to="/activity"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                trailing-icon="i-heroicons-arrow-right"
-              >
-                View all
-              </UButton>
-            </div>
-          </template>
-          <div class="space-y-4">
-            <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
-              No recent activity
-            </div>
-            <div
-              v-for="activity in recentActivity"
-              :key="activity.id"
-              class="flex items-start space-x-3"
-            >
-              <div
-                class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
-              >
-                <UIcon :name="getActivityIcon(activity.type)" class="h-4 w-4 text-primary-600" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-gray-900">
-                  {{ activity.title }}
-                </p>
-                <p class="text-sm text-gray-500">{{ activity.description }}</p>
-                <p class="text-xs text-gray-400 mt-1">
-                  {{ formatTimeAgo(activity.timestamp) }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </UCard>
-      </div>
-
-      <!-- Due Orders -->
-      <UCard class="bg-white">
-        <template #header>
-          <div class="flex justify-between items-center">
-            <h3 class="text-sm font-medium text-gray-500">Upcoming Due Orders</h3>
-            <UButton
-              to="/orders"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              trailing-icon="i-heroicons-arrow-right"
-            >
-              View all
-            </UButton>
-          </div>
-        </template>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Order ID
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Client
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Due Date
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th scope="col" class="relative px-6 py-3">
-                  <span class="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-if="dueOrders.length === 0">
-                <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
-                  No due orders
-                </td>
-              </tr>
-              <tr v-for="order in dueOrders" :key="order.id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  #{{ order.id }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ order.clientName }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <UBadge :color="getDueDateColor(order.dueDate)" variant="subtle">
-                    {{ formatDueDate(order.dueDate) }}
-                  </UBadge>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <UBadge
-                    :color="getStatusColor(order.status).color"
-                    variant="subtle"
-                    :class="`bg-${getStatusColor(order.status).color}-50 text-${getStatusColor(order.status).color}-700`"
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <UCard class="bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Total Clients</h3>
+                  <UIcon name="i-heroicons-users" class="text-primary-500" />
+                </div>
+              </template>
+              <div class="text-3xl font-bold">{{ stats?.totalClients || 0 }}</div>
+              <template #footer>
+                <div class="text-sm text-gray-500">
+                  <span class="text-green-500 font-medium"
+                    >+{{ stats?.newClientsThisMonth || 0 }}</span
                   >
-                    {{ order.status }}
-                  </UBadge>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <UButton
-:to="`/orders/${order.id}`"
-color="neutral"
-variant="ghost"
-size="xs">
-                    View
-                  </UButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  this month
+                </div>
+              </template>
+            </UCard>
+
+            <UCard class="bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Active Orders</h3>
+                  <UIcon name="i-heroicons-shopping-bag" class="text-primary-500" />
+                </div>
+              </template>
+              <div class="text-3xl font-bold">{{ stats?.activeOrders || 0 }}</div>
+              <template #footer>
+                <div class="text-sm text-gray-500">
+                  <span class="font-medium">
+                    {{ stats?.completedOrdersThisMonth || 0 }}
+                  </span>
+                  completed this month
+                </div>
+              </template>
+            </UCard>
+
+            <UCard class="bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Revenue</h3>
+                  <UIcon name="i-heroicons-banknotes" class="text-primary-500" />
+                </div>
+              </template>
+              <div class="text-3xl font-bold">₦{{ formatNumber(stats?.totalRevenue || 0) }}</div>
+              <template #footer>
+                <div class="text-sm text-gray-500">
+                  <span class="text-green-500 font-medium">+{{ stats?.revenueGrowth || 0 }}%</span>
+                  vs last month
+                </div>
+              </template>
+            </UCard>
+
+            <UCard class="bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Subscription</h3>
+                  <UIcon name="i-heroicons-credit-card" class="text-primary-500" />
+                </div>
+              </template>
+              <div class="text-xl py-1 font-bold">
+                {{ stats?.subscriptionPlan || 'Free Plan' }}
+              </div>
+              <template #footer>
+                <div class="text-sm text-gray-500">
+                  <span v-if="stats?.clientsRemaining === Infinity">Unlimited clients</span>
+                  <span v-else>{{ stats?.clientsRemaining || 0 }} clients remaining</span>
+                </div>
+              </template>
+            </UCard>
+          </div>
         </div>
-      </UCard>
+      </div>
+
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Growth & Recent Activity</h2>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Client Growth Chart -->
+            <UCard class="lg:col-span-2 bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
+                  <USelect
+                    v-model="chartPeriod"
+                    :items="chartPeriodOptions"
+                    size="sm"
+                    class="w-40"
+                    @update:model-value="updateChartData"
+                  />
+                </div>
+              </template>
+              <div class="h-80">
+                <ClientGrowthChart
+                  v-if="hasChartData"
+                  :labels="clientGrowth.labels"
+                  :data="clientGrowth.data"
+                  :period="chartPeriod"
+                />
+                <div v-else class="h-full flex items-center justify-center text-gray-400">
+                  No data available for the selected period
+                </div>
+              </div>
+            </UCard>
+
+            <!-- Recent Activity -->
+            <UCard class="bg-white">
+              <template #header>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
+                  <UButton
+                    to="/activity"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    trailing-icon="i-heroicons-arrow-right"
+                  >
+                    View all
+                  </UButton>
+                </div>
+              </template>
+              <div class="space-y-4">
+                <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
+                  No recent activity
+                </div>
+                <div
+                  v-for="activity in recentActivity"
+                  :key="activity.id"
+                  class="flex items-start space-x-3"
+                >
+                  <div
+                    class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
+                  >
+                    <UIcon
+                      :name="getActivityIcon(activity.type)"
+                      class="h-4 w-4 text-primary-600"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ activity.title }}
+                    </p>
+                    <p class="text-sm text-gray-500">{{ activity.description }}</p>
+                    <p class="text-xs text-gray-400 mt-1">
+                      {{ formatTimeAgo(activity.timestamp) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </UCard>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Upcoming Due Orders</h2>
+          <UCard class="bg-white">
+            <template #header>
+              <div class="flex justify-between items-center">
+                <h3 class="text-sm font-medium text-gray-500">Upcoming Due Orders</h3>
+                <UButton
+                  to="/orders"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  trailing-icon="i-heroicons-arrow-right"
+                >
+                  View all
+                </UButton>
+              </div>
+            </template>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Order ID
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Client
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Due Date
+                    </th>
+                    <th
+                      scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th scope="col" class="relative px-6 py-3">
+                      <span class="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-if="dueOrders.length === 0">
+                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                      No due orders
+                    </td>
+                  </tr>
+                  <tr v-for="order in dueOrders" :key="order.id" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      #{{ order.id }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {{ order.clientName }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <UBadge :color="getDueDateColor(order.dueDate)" variant="subtle">
+                        {{ formatDueDate(order.dueDate) }}
+                      </UBadge>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <UBadge
+                        :color="getStatusColor(order.status).color"
+                        variant="subtle"
+                        :class="`bg-${getStatusColor(order.status).color}-50 text-${getStatusColor(order.status).color}-700`"
+                      >
+                        {{ order.status }}
+                      </UBadge>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <UButton
+                        :to="`/orders/${order.id}`"
+                        color="neutral"
+                        variant="ghost"
+                        size="xs"
+                      >
+                        View
+                      </UButton>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </UCard>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -413,10 +428,13 @@ const formatTimeAgo = (dateString: string) => {
 
 // Navigation methods
 const navigateToSetup = () => {
+  showSetupModal.value = false
   navigateTo('/settings/setup-measurements')
 }
 
 const handleLater = () => {
+  // Close the modal
+  showSetupModal.value = false
   // Save user preference to skip setup
   const userPrefs = useLocalStorage('user-preferences', {
     hasSeenSetupPrompt: true,
@@ -440,33 +458,32 @@ watch(
   { immediate: true }
 )
 
-// Check if we should show setup prompt or banner
-const showSetupPrompt = computed(() => {
-  const userPrefs = useLocalStorage('user-preferences', {
-    hasSeenSetupPrompt: false,
-    setupCompleted: false,
-    hasDismissedBanner: false,
-  })
-  return !userPrefs.value.hasSeenSetupPrompt && !userPrefs.value.setupCompleted
-})
+// Setup modal state
+const showSetupModal = ref(false)
 
-const showSetupBanner = computed(() => {
+// Check if we should show setup modal
+const checkSetupStatus = () => {
   const userPrefs = useLocalStorage('user-preferences', {
     hasSeenSetupPrompt: false,
     setupCompleted: false,
     hasDismissedBanner: false,
   })
-  return (
-    userPrefs.value.hasSeenSetupPrompt &&
-    !userPrefs.value.setupCompleted &&
-    !userPrefs.value.hasDismissedBanner
-  )
-})
+
+  // Show modal if setup is not completed and user hasn't dismissed it
+  const shouldShow = !userPrefs.value.setupCompleted && !userPrefs.value.hasDismissedBanner
+
+  // Only show on first visit or if explicitly needed
+  if (!userPrefs.value.hasSeenSetupPrompt || shouldShow) {
+    showSetupModal.value = true
+  }
+}
 
 // Fetch initial data
 onMounted(async () => {
   try {
     await fetchDashboardData()
+    // Check if setup modal should be shown
+    checkSetupStatus()
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
     toast.add({
