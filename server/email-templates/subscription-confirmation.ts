@@ -57,7 +57,7 @@ export function createSubscriptionConfirmationEmail(
       </div>
       
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/setup-measurements" style="background: #0d9488; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Complete Your Setup</a>
+        <a href="${process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/settings/templates" style="background: #0d9488; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Complete Your Setup</a>
       </div>
       
       <div style="border-top: 1px solid #e5e7eb; margin-top: 30px; padding-top: 20px;">

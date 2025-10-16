@@ -1,7 +1,11 @@
 <template>
   <div class="space-y-6">
     <!-- Setup Modal (shown if setup is needed) -->
-    <SetupModal v-model:open="showSetupModal" @setup="navigateToSetup" @later="handleLater" />
+    <UModal v-model:open="showSetupModal">
+      <template #content>
+        <SetupModal />
+      </template>
+    </UModal>
 
     <!-- Page Header -->
     <PageHeader
@@ -272,7 +276,7 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeAgo, useLocalStorage } from '@vueuse/core'
+import { useTimeAgo } from '@vueuse/core'
 import type { ChartPeriod } from '~/types/dashboard'
 
 definePageMeta({
@@ -290,6 +294,8 @@ const {
   isLoading: _isDashboardLoading,
   fetchDashboardData,
 } = useDashboard()
+
+const { user } = useAuth()
 
 // Set page metadata
 useHead({
@@ -426,24 +432,6 @@ const formatTimeAgo = (dateString: string) => {
   return useTimeAgo(date).value
 }
 
-// Navigation methods
-const navigateToSetup = () => {
-  showSetupModal.value = false
-  navigateTo('/settings/setup-measurements')
-}
-
-const handleLater = () => {
-  // Close the modal
-  showSetupModal.value = false
-  // Save user preference to skip setup
-  const userPrefs = useLocalStorage('user-preferences', {
-    hasSeenSetupPrompt: true,
-    setupCompleted: false,
-    hasDismissedBanner: false,
-  })
-  userPrefs.value.hasDismissedBanner = true
-}
-
 // Initialize toast
 const toast = useToast()
 
@@ -459,22 +447,12 @@ watch(
 )
 
 // Setup modal state
-const showSetupModal = ref(false)
+const showSetupModal = ref(true)
 
 // Check if we should show setup modal
 const checkSetupStatus = () => {
-  const userPrefs = useLocalStorage('user-preferences', {
-    hasSeenSetupPrompt: false,
-    setupCompleted: false,
-    hasDismissedBanner: false,
-  })
-
-  // Show modal if setup is not completed and user hasn't dismissed it
-  const shouldShow = !userPrefs.value.setupCompleted && !userPrefs.value.hasDismissedBanner
-
-  // Only show on first visit or if explicitly needed
-  if (!userPrefs.value.hasSeenSetupPrompt || shouldShow) {
-    showSetupModal.value = true
+  if (user.value?.hasCompletedSetup) {
+    showSetupModal.value = false
   }
 }
 

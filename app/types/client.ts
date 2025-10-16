@@ -5,12 +5,16 @@
 export interface Client {
   id: number
   userId?: number
-  name: string
+  firstName: string
+  lastName: string
+  name?: string // computed property for backward compatibility
   email?: string | null
   phone?: string | null
   address?: string | null
   notes?: string | null
+  isActive?: boolean
   hasOrders?: boolean
+  orderCount?: number
   createdAt: string
   updatedAt?: string
 }

@@ -10,7 +10,7 @@
             {{ template.description }}
           </p>
         </div>
-        <UBadge color="gray" variant="subtle">
+        <UBadge color="neutral" variant="subtle">
           {{ template.category }}
         </UBadge>
       </div>
@@ -27,7 +27,7 @@
           v-for="field in template.fields.slice(0, 4)"
           :key="field.id"
           variant="subtle"
-          color="gray"
+          color="neutral"
           class="text-xs"
         >
           {{ field.name }}
@@ -35,7 +35,7 @@
         <UBadge
 v-if="template.fields.length > 4"
 variant="subtle"
-color="gray"
+color="neutral"
 class="text-xs">
           +{{ template.fields.length - 4 }} more
         </UBadge>
@@ -47,7 +47,6 @@ class="text-xs">
         <UButton
           variant="outline"
           size="sm"
-          class="flex-1"
           icon="i-heroicons-pencil"
           @click="$emit('edit', template)"
         >
@@ -56,7 +55,7 @@ class="text-xs">
         <UButton
           variant="outline"
           size="sm"
-          color="red"
+          color="error"
           icon="i-heroicons-trash"
           @click="$emit('delete', template.id)"
         />

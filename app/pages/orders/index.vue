@@ -192,7 +192,7 @@ icon="i-heroicons-funnel"
               Due {{ formatDate(order.dueDate) }}
             </p>
           </div>
-          <UDropdown
+          <UDropdownMenu
             :items="[
               [
                 {
@@ -215,7 +215,7 @@ icon="i-heroicons-funnel"
               icon="i-heroicons-ellipsis-horizontal"
               size="sm"
             />
-          </UDropdown>
+          </UDropdownMenu>
         </div>
       </div>
 
@@ -247,40 +247,42 @@ icon="i-heroicons-funnel"
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <UModal v-model="showDeleteModal">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">Delete Order</h3>
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="i-heroicons-x-mark"
-              @click="showDeleteModal = false"
-            />
-          </div>
-        </template>
+    <UModal v-model:open="showDeleteModal">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-gray-900">Delete Order</h3>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-x-mark"
+                @click="showDeleteModal = false"
+              />
+            </div>
+          </template>
 
-        <p class="text-sm text-gray-500">
-          Are you sure you want to delete order
-          <span class="font-medium">#{{ orderToDelete?.orderNumber }}</span
-          >? This action cannot be undone.
-        </p>
+          <p class="text-sm text-gray-500">
+            Are you sure you want to delete order
+            <span class="font-medium">#{{ orderToDelete?.orderNumber }}</span
+            >? This action cannot be undone.
+          </p>
 
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="isDeleting"
-              @click="showDeleteModal = false"
-            >
-              Cancel
-            </UButton>
-            <UButton color="error" :loading="isDeleting" @click="deleteOrder"> Delete </UButton>
-          </div>
-        </template>
-      </UCard>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                :disabled="isDeleting"
+                @click="showDeleteModal = false"
+              >
+                Cancel
+              </UButton>
+              <UButton color="error" :loading="isDeleting" @click="deleteOrder"> Delete </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
@@ -412,17 +414,20 @@ const hasActiveFilters = computed(() => {
 // Table columns
 const columns = [
   {
+    id: 'orderNumber',
     key: 'orderNumber',
     label: 'Order ID',
     sortable: true,
   },
   {
+    id: 'clientName',
     key: 'clientName',
     label: 'Client',
     sortable: true,
     render: (row: Order) => `${row.client?.firstName} ${row.client?.lastName}`,
   },
   {
+    id: 'totalAmount',
     key: 'totalAmount',
     label: 'Total',
     sortable: true,
@@ -430,6 +435,7 @@ const columns = [
       `₦${(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   },
   {
+    id: 'status',
     key: 'status',
     label: 'Status',
     sortable: true,
@@ -445,12 +451,14 @@ const columns = [
       ),
   },
   {
+    id: 'dueDate',
     key: 'dueDate',
     label: 'Due Date',
     sortable: true,
     format: (value: string) => (value ? formatDate(value) : 'N/A'),
   },
   {
+    id: 'actions',
     key: 'actions',
     label: '',
     sortable: false,
@@ -492,10 +500,8 @@ const columns = [
   },
 ]
 
-// Methods
-
-const handleSearch = (value: string) => {
-  search.value = value
+const handleSort = (value: string) => {
+  sortBy.value = value
   currentPage.value = 1
 }
 
@@ -560,7 +566,7 @@ const getStatusColor = (status: string) => {
     case 'processing':
       return 'info'
     case 'pending':
-      return 'warnng'
+      return 'warning'
     case 'cancelled':
       return 'error'
     case 'draft':

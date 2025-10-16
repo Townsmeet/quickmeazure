@@ -92,21 +92,205 @@
           <slot />
         </div>
       </div>
+      <!-- MOBILE BOTTOM NAVIGATION -->
+      <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div class="grid grid-cols-5 gap-1 p-2 relative">
+          <UButton
+            v-for="item in mobileNavItems"
+            :key="item.label"
+            :to="item.isMore ? undefined : item.to"
+            :icon="item.icon"
+            :color="isActiveRoute(item) ? 'primary' : 'neutral'"
+            variant="ghost"
+            size="sm"
+            class="flex flex-col items-center justify-center h-16 relative mobile-more-button"
+            :class="isActiveRoute(item) ? 'text-primary-600' : 'text-gray-600'"
+            @click="item.isMore ? toggleMobileMore() : undefined"
+          >
+            <UIcon :name="item.icon" class="w-5 h-5 mb-1" />
+            <span class="text-xs">{{ item.label }}</span>
+          </UButton>
+
+          <!-- Mobile More Dropdown -->
+          <Transition
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0 transform translate-y-2"
+            enter-to-class="opacity-100 transform translate-y-0"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100 transform translate-y-0"
+            leave-to-class="opacity-0 transform translate-y-2"
+          >
+            <div
+              v-if="isMobileMoreOpen"
+              class="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50"
+              @click.stop
+            >
+              <div class="space-y-1">
+                <!-- Settings submenu -->
+                <div class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Settings
+                </div>
+                <UButton
+                  v-for="settingItem in settingsItems"
+                  :key="settingItem.to"
+                  :to="settingItem.to"
+                  :icon="settingItem.icon"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  class="w-full justify-start"
+                  @click="isMobileMoreOpen = false"
+                >
+                  {{ settingItem.label }}
+                </UButton>
+
+                <!-- Separator -->
+                <div class="border-t border-gray-100 my-2"></div>
+
+                <!-- Help & Support -->
+                <UButton
+                  to="/help"
+                  icon="i-heroicons-question-mark-circle"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  class="w-full justify-start"
+                  @click="isMobileMoreOpen = false"
+                >
+                  Help & Support
+                </UButton>
+              </div>
+            </div>
+          </Transition>
+        </div>
+      </div>
     </UDashboardPanel>
   </UDashboardGroup>
 </template>
-
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { onMounted, onUnmounted } from 'vue'
 
-const router = useRouter()
 const route = useRoute()
 
 // State for sidebar
 const isSidebarOpen = ref(false)
 
+// State for mobile more menu
+const isMobileMoreOpen = ref(false)
+
 // User/auth composable (replace/use as your project implements)
 const { user = ref({}) } = useAuth() || {}
+const settingsItems = [
+  {
+    label: 'Templates',
+    icon: 'i-heroicons-document-text',
+    to: '/settings/templates',
+  },
+  {
+    label: 'Profile',
+    icon: 'i-heroicons-user',
+    to: '/settings/profile',
+  },
+  {
+    label: 'Billing',
+    icon: 'i-heroicons-credit-card',
+    to: '/settings/billing',
+  },
+  {
+    label: 'Security',
+    icon: 'i-heroicons-shield-check',
+    to: '/settings/security',
+  },
+]
+
+// Function to toggle mobile more menu
+const toggleMobileMore = () => {
+  isMobileMoreOpen.value = !isMobileMoreOpen.value
+}
+
+// Close mobile more menu when clicking outside (but not on the More button)
+const closeMobileMore = (event: Event) => {
+  // Don't close if clicking on the More button itself
+  if (event.target && (event.target as Element).closest('.mobile-more-button')) {
+    return
+  }
+  isMobileMoreOpen.value = false
+}
+
+// Add click outside listener
+onMounted(() => {
+  if (import.meta.client) {
+    document.addEventListener('click', closeMobileMore)
+  }
+})
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    document.removeEventListener('click', closeMobileMore)
+  }
+})
+type MobileNavItem = {
+  label: string
+  icon: string
+  to: string
+  isMore?: boolean
+}
+
+// Mobile navigation items (subset of main navigation for bottom nav)
+const mobileNavItems: MobileNavItem[] = [
+  {
+    label: 'Dashboard',
+    icon: 'i-heroicons-home',
+    to: '/dashboard',
+  },
+  {
+    label: 'Clients',
+    icon: 'i-heroicons-users',
+    to: '/clients',
+  },
+  {
+    label: 'Styles',
+    icon: 'i-heroicons-swatch',
+    to: '/styles',
+  },
+  {
+    label: 'Orders',
+    icon: 'i-heroicons-shopping-bag',
+    to: '/orders',
+  },
+  {
+    label: 'More',
+    icon: 'i-heroicons-ellipsis-horizontal',
+    to: '', // No navigation, opens dropdown instead
+    isMore: true,
+  },
+]
+
+// Helper function to check if a mobile nav item is active
+const isActiveRoute = (item: MobileNavItem) => {
+  // More button is active if we're on settings or help pages
+  if (item.isMore) {
+    return route.path.startsWith('/settings') || route.path.startsWith('/help')
+  }
+
+  if (item.to && route.path === item.to) return true
+  if (item.to && route.path.startsWith(item.to + '/')) return true
+
+  // Handle special cases for nested routes
+  switch (item.to) {
+    case '/clients':
+      return route.path.startsWith('/clients')
+    case '/styles':
+      return route.path.startsWith('/styles')
+    case '/orders':
+      return route.path.startsWith('/orders')
+    case '/dashboard':
+      return route.path === '/dashboard'
+    default:
+      return false
+  }
+}
 
 // Navigation items structured for UNavigationMenu
 const navigationItems: NavigationMenuItem[][] = [
@@ -141,12 +325,20 @@ const navigationItems: NavigationMenuItem[][] = [
       defaultOpen: true,
       children: [
         {
-          label: 'Profile',
-          to: '/settings',
+          label: 'Templates',
+          to: '/settings/templates',
         },
         {
-          label: 'Measurement Templates',
-          to: '/measurement-templates',
+          label: 'Profile',
+          to: '/settings/profile',
+        },
+        {
+          label: 'Billing',
+          to: '/settings/billing',
+        },
+        {
+          label: 'Security',
+          to: '/settings/security',
         },
       ],
     },

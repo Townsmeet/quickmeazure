@@ -2,7 +2,10 @@
  * Measurement related types
  */
 
-import type { MeasurementValues } from './enhanced'
+import type { MeasurementValue } from './enhanced'
+
+// Type for measurement values collection
+export type MeasurementValues = Record<string, MeasurementValue>
 
 export interface Measurement {
   id: number
@@ -18,6 +21,8 @@ export interface MeasurementTemplate {
   userId: number
   name: string
   description?: string
+  category?: string // Template category for organization
+  unit: 'cm' | 'in' | 'm' // Global unit for all fields in this template
   fields: MeasurementField[]
   isDefault: boolean
   archived?: boolean
@@ -33,7 +38,6 @@ export interface MeasurementField {
   required: boolean
   defaultValue?: string | number
   options?: string[]
-  unit?: string
   min?: number
   max?: number
   step?: number

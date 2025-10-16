@@ -80,13 +80,6 @@ export const routeConfigs: RouteConfig[] = [
     guestOnly: false,
     layout: 'auth',
   },
-  {
-    path: '/auth/setup-measurements',
-    requiresAuth: true,
-    requiresSetup: false,
-    guestOnly: false,
-    layout: 'auth',
-  },
 
   // Protected routes (require auth + setup)
   {
@@ -213,11 +206,7 @@ export const getAuthRedirect = (
   }
 
   // Setup/confirm pages when already completed
-  if (
-    isAuthenticated &&
-    hasCompletedSetup &&
-    (path === '/auth/confirm' || path === '/auth/setup-measurements')
-  ) {
+  if (isAuthenticated && hasCompletedSetup && path === '/auth/confirm') {
     return '/dashboard'
   }
 

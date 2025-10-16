@@ -1,84 +1,134 @@
 <template>
-  <UModal v-model="isOpen">
-    <UCard>
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">
-            {{ editingTemplate ? 'Edit Template' : 'Create Template' }}
-          </h3>
-          <UButton
-color="gray"
-variant="ghost"
-icon="i-heroicons-x-mark-20-solid"
-@click="close" />
-        </div>
-      </template>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">
+          {{ editingTemplate ? 'Edit Template' : 'Create Template' }}
+        </h3>
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-heroicons-x-mark-20-solid"
+          @click="close"
+        />
+      </div>
+    </template>
 
-      <UForm :state="form" class="space-y-4" @submit="handleSubmit">
-        <UFormGroup label="Template Name" name="name" required>
-          <UInput v-model="form.name" placeholder="e.g., Men's Formal Shirt" />
-        </UFormGroup>
+    <UForm :state="form" class="space-y-4" @submit="handleSubmit">
+      <UFormField label="Template Name" name="name" required>
+        <UInput v-model="form.name" placeholder="e.g., Men's Formal Shirt" class="w-full" />
+      </UFormField>
 
-        <UFormGroup label="Description" name="description">
-          <UTextarea
-            v-model="form.description"
-            placeholder="Brief description of this template..."
-            :rows="3"
-          />
-        </UFormGroup>
+      <UFormField label="Description" name="description">
+        <UTextarea
+          v-model="form.description"
+          placeholder="Brief description of this template..."
+          :rows="3"
+          class="w-full"
+        />
+      </UFormField>
 
-        <UFormGroup label="Category" name="category" required>
-          <USelect v-model="form.category" :options="categories" placeholder="Select category" />
-        </UFormGroup>
+      <UFormField label="Measurement Unit" name="unit" required>
+        <USelect
+v-model="form.unit"
+:items="units"
+placeholder="Select unit"
+class="w-full" />
+      </UFormField>
 
-        <UFormGroup label="Measurement Fields" required>
-          <div class="space-y-3">
-            <div class="flex gap-2">
-              <UInput
-                v-model="newField.name"
-                placeholder="Field name (e.g., Chest)"
-                class="flex-1"
-                @keyup.enter="addField"
-              />
-              <USelect v-model="newField.unit" :options="units" class="w-24" />
-              <UButton icon="i-heroicons-plus" type="button" @click="addField" />
-            </div>
+      <UFormField label="Measurement Fields" required>
+        <div class="space-y-6">
+          <!-- Add Field Input -->
+          <div class="flex gap-2">
+            <UInput
+              v-model="newField.name"
+              placeholder="Field name (e.g., Chest)"
+              class="flex-1"
+              @keyup.enter="addField"
+            />
+            <USelect
+              v-model="newField.category"
+              :items="fieldCategories"
+              placeholder="Category"
+              class="w-32"
+            />
+            <UButton icon="i-heroicons-plus" type="button" @click="addField" />
+          </div>
 
-            <div v-if="form.fields.length > 0" class="space-y-2">
+          <!-- Upper Body Fields -->
+          <div v-if="upperBodyFields.length > 0" class="space-y-2">
+            <h4 class="text-sm font-medium text-gray-700 border-b border-gray-200 pb-2">
+              Upper Body
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div
-                v-for="(field, index) in form.fields"
+                v-for="field in upperBodyFields"
                 :key="field.id"
-                class="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
               >
-                <span class="text-sm"> {{ field.name }} ({{ field.unit }}) </span>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
+                  <span class="text-sm font-medium">{{ field.name }}</span>
+                </div>
                 <UButton
                   variant="ghost"
-                  color="red"
+                  color="error"
                   icon="i-heroicons-trash"
                   size="xs"
-                  @click="removeField(index)"
+                  @click="removeField(field.id)"
                 />
               </div>
             </div>
           </div>
-        </UFormGroup>
 
-        <UButtonGroup class="flex justify-end gap-2 pt-4">
-          <UButton type="button" variant="outline" @click="close"> Cancel </UButton>
-          <UButton type="submit" :disabled="!isFormValid" :loading="isSubmitting">
-            {{ editingTemplate ? 'Update' : 'Create' }} Template
-          </UButton>
-        </UButtonGroup>
-      </UForm>
-    </UCard>
-  </UModal>
+          <!-- Lower Body Fields -->
+          <div v-if="lowerBodyFields.length > 0" class="space-y-2">
+            <h4 class="text-sm font-medium text-gray-700 border-b border-gray-200 pb-2">
+              Lower Body
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                v-for="field in lowerBodyFields"
+                :key="field.id"
+                class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+              >
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-heroicons-arrow-down" class="w-4 h-4 text-green-600" />
+                  <span class="text-sm font-medium">{{ field.name }}</span>
+                </div>
+                <UButton
+                  variant="ghost"
+                  color="error"
+                  icon="i-heroicons-trash"
+                  size="xs"
+                  @click="removeField(field.id)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- No fields message -->
+          <div v-if="form.fields.length === 0" class="text-center py-8 text-gray-500">
+            <UIcon name="i-heroicons-document-text" class="w-8 h-8 mx-auto mb-2 text-gray-300" />
+            <p>No measurement fields added yet</p>
+          </div>
+        </div>
+      </UFormField>
+
+      <div class="flex justify-end gap-2 pt-4">
+        <UButton type="button" variant="outline" @click="close"> Cancel </UButton>
+        <UButton type="submit" :disabled="!isFormValid" :loading="isSubmitting">
+          {{ editingTemplate ? 'Update' : 'Create' }} Template
+        </UButton>
+      </div>
+    </UForm>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import type { MeasurementTemplate } from '~/types/measurement'
 
 const props = defineProps<{
-  modelValue: boolean
   template?: MeasurementTemplate | null
 }>()
 
@@ -100,24 +150,39 @@ const isOpen = computed({
 
 const categories = ['Shirts', 'Pants', 'Suits', 'Dresses', 'Traditional', 'Other']
 const units = ['cm', 'in', 'm']
+const fieldCategories = [
+  { label: 'Upper Body', value: 'upper' },
+  { label: 'Lower Body', value: 'lower' },
+]
 
 const newField = ref({
   name: '',
-  unit: 'cm',
+  category: 'upper',
 })
 
 const form = ref({
   name: '',
   description: '',
   category: '',
-  fields: [] as Array<{ id: string; name: string; unit: string }>,
+  unit: 'cm',
+  fields: [] as Array<{ id: string; name: string; category: string }>,
 })
 
 const isSubmitting = ref(false)
 const editingTemplate = computed(() => !!props.template)
 
+const upperBodyFields = computed(() =>
+  form.value.fields.filter(field => field.category === 'upper')
+)
+
+const lowerBodyFields = computed(() =>
+  form.value.fields.filter(field => field.category === 'lower')
+)
+
 const isFormValid = computed(() => {
-  return form.value.name.trim() && form.value.category && form.value.fields.length > 0
+  return (
+    form.value.name.trim() && form.value.category && form.value.unit && form.value.fields.length > 0
+  )
 })
 
 const addField = () => {
@@ -125,14 +190,17 @@ const addField = () => {
     form.value.fields.push({
       id: Date.now().toString(),
       name: newField.value.name.trim(),
-      unit: newField.value.unit,
+      category: newField.value.category,
     })
     newField.value.name = ''
   }
 }
 
-const removeField = (index: number) => {
-  form.value.fields.splice(index, 1)
+const removeField = (id: string) => {
+  const index = form.value.fields.findIndex(field => field.id === id)
+  if (index !== -1) {
+    form.value.fields.splice(index, 1)
+  }
 }
 
 const resetForm = () => {
@@ -140,11 +208,12 @@ const resetForm = () => {
     name: '',
     description: '',
     category: '',
+    unit: 'cm',
     fields: [],
   }
   newField.value = {
     name: '',
-    unit: 'cm',
+    category: 'upper',
   }
 }
 
@@ -171,6 +240,7 @@ watch(
         name: template.name,
         description: template.description || '',
         category: template.category,
+        unit: template.unit || 'cm',
         fields: [...template.fields],
       }
     } else {

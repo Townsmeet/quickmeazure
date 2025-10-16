@@ -124,7 +124,7 @@ class="ml-1">
     </Transition>
 
     <!-- Desktop Table View -->
-    <div class="hidden md:block">
+    <div v-if="!isLoading" class="hidden md:block">
       <UTable
         :rows="paginatedClients"
         :columns="columns"
@@ -162,8 +162,16 @@ class="ml-1">
       </div>
     </div>
 
+    <!-- Loading state for desktop -->
+    <div v-else class="hidden md:block">
+      <div class="flex items-center justify-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-gray-400 mr-3" />
+        <span class="text-gray-500">Loading clients...</span>
+      </div>
+    </div>
+
     <!-- Mobile List View -->
-    <div class="md:hidden space-y-4">
+    <div v-if="!isLoading" class="md:hidden space-y-4">
       <div
         v-for="client in paginatedClients"
         :key="client.id"
@@ -197,30 +205,35 @@ size="xs">
               <span class="text-gray-500">Joined {{ formatDate(client.createdAt) }}</span>
             </p>
           </div>
-          <UDropdownMenu>
-            <UDropdownMenuTrigger as-child>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                icon="i-heroicons-ellipsis-horizontal"
-                size="sm"
-              />
-            </UDropdownMenuTrigger>
-            <UDropdownMenuContent>
-              <UDropdownMenuItem @click="navigateTo(`/clients/${client.id}`)">
-                <UIcon name="i-heroicons-eye" class="mr-2 h-4 w-4" />
-                View
-              </UDropdownMenuItem>
-              <UDropdownMenuItem @click="navigateTo(`/clients/${client.id}/edit`)">
-                <UIcon name="i-heroicons-pencil" class="mr-2 h-4 w-4" />
-                Edit
-              </UDropdownMenuItem>
-              <UDropdownMenuSeparator />
-              <UDropdownMenuItem class="text-red-600" @click="confirmDelete(client)">
-                <UIcon name="i-heroicons-trash" class="mr-2 h-4 w-4" />
-                Delete
-              </UDropdownMenuItem>
-            </UDropdownMenuContent>
+          <UDropdownMenu
+            :items="[
+              [
+                {
+                  label: 'View',
+                  icon: 'i-heroicons-eye',
+                  click: () => navigateTo(`/clients/${client.id}`),
+                },
+                {
+                  label: 'Edit',
+                  icon: 'i-heroicons-pencil',
+                  click: () => navigateTo(`/clients/${client.id}/edit`),
+                },
+              ],
+              [
+                {
+                  label: 'Delete',
+                  icon: 'i-heroicons-trash',
+                  click: () => confirmDelete(client),
+                },
+              ],
+            ]"
+          >
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-ellipsis-horizontal"
+              size="sm"
+            />
           </UDropdownMenu>
         </div>
       </div>
@@ -252,42 +265,52 @@ size="xs">
       </div>
     </div>
 
+    <!-- Loading state for mobile -->
+    <div v-else class="md:hidden">
+      <div class="flex items-center justify-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-gray-400 mr-3" />
+        <span class="text-gray-500">Loading clients...</span>
+      </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
-    <UModal v-model="showDeleteModal">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">Delete Client</h3>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-x-mark"
-              @click="showDeleteModal = false"
-            />
-          </div>
-        </template>
+    <UModal v-model:open="showDeleteModal">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-gray-900">Delete Client</h3>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-x-mark"
+                @click="showDeleteModal = false"
+              />
+            </div>
+          </template>
 
-        <p class="text-sm text-gray-500">
-          Are you sure you want to delete
-          <span class="font-medium"
-            >{{ clientToDelete?.firstName }} {{ clientToDelete?.lastName }}</span
-          >? This action cannot be undone.
-        </p>
+          <p class="text-sm text-gray-500">
+            Are you sure you want to delete
+            <span class="font-medium"
+              >{{ clientToDelete?.firstName }} {{ clientToDelete?.lastName }}</span
+            >? This action cannot be undone.
+          </p>
 
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="isDeleting"
-              @click="showDeleteModal = false"
-            >
-              Cancel
-            </UButton>
-            <UButton color="error" :loading="isDeleting" @click="deleteClient"> Delete </UButton>
-          </div>
-        </template>
-      </UCard>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                :disabled="isDeleting"
+                @click="showDeleteModal = false"
+              >
+                Cancel
+              </UButton>
+              <UButton color="error" :loading="isDeleting" @click="deleteClient"> Delete </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
@@ -331,10 +354,7 @@ watch(sortBy, newVal => {
 
 // Sync pagination
 watch([currentPage, itemsPerPage], () => {
-  pagination.value = {
-    page: currentPage.value,
-    pageSize: itemsPerPage.value,
-  }
+  // Pagination is handled locally in this component
 })
 const hasOrdersFilter = ref('all')
 const dateAddedFilter = ref('any')
@@ -460,22 +480,26 @@ const activeFiltersCount = computed(() => {
 // Table columns
 const columns = [
   {
+    id: 'name',
     key: 'name',
     label: 'Name',
     sortable: true,
     render: (row: Client) => `${row.firstName} ${row.lastName}`,
   },
   {
+    id: 'email',
     key: 'email',
     label: 'Email',
     sortable: true,
   },
   {
+    id: 'phone',
     key: 'phone',
     label: 'Phone',
     sortable: true,
   },
   {
+    id: 'orderCount',
     key: 'orderCount',
     label: 'Orders',
     sortable: true,
@@ -483,12 +507,14 @@ const columns = [
     render: (row: Client) => row.orderCount || 0,
   },
   {
+    id: 'createdAt',
     key: 'createdAt',
     label: 'Date Added',
     sortable: true,
     format: (value: string) => formatDate(value),
   },
   {
+    id: 'status',
     key: 'status',
     label: 'Status',
     sortable: true,
@@ -504,6 +530,7 @@ const columns = [
       ),
   },
   {
+    id: 'actions',
     key: 'actions',
     label: '',
     sortable: false,
@@ -511,64 +538,36 @@ const columns = [
     render: (row: Client) =>
       h(
         UDropdownMenu,
-        {},
         {
-          default: () => [
-            h(
-              UDropdownMenuTrigger,
-              { asChild: true },
+          items: [
+            [
               {
-                default: () =>
-                  h(UButton, {
-                    color: 'gray',
-                    variant: 'ghost',
-                    icon: 'i-heroicons-ellipsis-horizontal',
-                  }),
-              }
-            ),
-            h(
-              UDropdownMenuContent,
-              {},
+                label: 'View',
+                icon: 'i-heroicons-eye',
+                click: () => navigateTo(`/clients/${row.id}`),
+              },
               {
-                default: () => [
-                  h(
-                    UDropdownMenuItem,
-                    { onClick: () => navigateTo(`/clients/${row.id}`) },
-                    {
-                      default: () => [
-                        h(UIcon, { name: 'i-heroicons-eye', class: 'mr-2 h-4 w-4' }),
-                        'View',
-                      ],
-                    }
-                  ),
-                  h(
-                    UDropdownMenuItem,
-                    { onClick: () => navigateTo(`/clients/${row.id}/edit`) },
-                    {
-                      default: () => [
-                        h(UIcon, { name: 'i-heroicons-pencil', class: 'mr-2 h-4 w-4' }),
-                        'Edit',
-                      ],
-                    }
-                  ),
-                  h(UDropdownMenuSeparator),
-                  h(
-                    UDropdownMenuItem,
-                    {
-                      onClick: () => confirmDelete(row),
-                      class: 'text-red-600',
-                    },
-                    {
-                      default: () => [
-                        h(UIcon, { name: 'i-heroicons-trash', class: 'mr-2 h-4 w-4' }),
-                        'Delete',
-                      ],
-                    }
-                  ),
-                ],
-              }
-            ),
+                label: 'Edit',
+                icon: 'i-heroicons-pencil',
+                click: () => navigateTo(`/clients/${row.id}/edit`),
+              },
+            ],
+            [
+              {
+                label: 'Delete',
+                icon: 'i-heroicons-trash',
+                click: () => confirmDelete(row),
+              },
+            ],
           ],
+        },
+        {
+          default: () =>
+            h(UButton, {
+              color: 'gray',
+              variant: 'ghost',
+              icon: 'i-heroicons-ellipsis-horizontal',
+            }),
         }
       ),
   },

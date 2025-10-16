@@ -156,7 +156,7 @@ class="ml-1">
           <template #header>
             <div class="flex items-center justify-between">
               <h3 class="text-base font-medium text-gray-900 truncate">{{ style.name }}</h3>
-              <UDropdown
+              <UDropdownMenu
                 :items="[
                   [
                     {
@@ -185,7 +185,7 @@ class="ml-1">
                   icon="i-heroicons-ellipsis-horizontal"
                   size="sm"
                 />
-              </UDropdown>
+              </UDropdownMenu>
             </div>
           </template>
 
@@ -272,7 +272,7 @@ class="ml-1">
           <div class="ml-4 flex-1 min-w-0">
             <div class="flex items-start justify-between">
               <h3 class="text-base font-medium text-gray-900 truncate">{{ style.name }}</h3>
-              <UDropdown
+              <UDropdownMenu
                 :items="[
                   [
                     {
@@ -301,7 +301,7 @@ class="ml-1">
                   icon="i-heroicons-ellipsis-horizontal"
                   size="sm"
                 />
-              </UDropdown>
+              </UDropdownMenu>
             </div>
 
             <div class="mt-1">
@@ -354,40 +354,42 @@ class="mr-2">
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <UModal v-model="showDeleteModal">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">Delete Style</h3>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-x-mark"
-              @click="showDeleteModal = false"
-            />
-          </div>
-        </template>
+    <UModal v-model:open="showDeleteModal">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-gray-900">Delete Style</h3>
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-x-mark"
+                @click="showDeleteModal = false"
+              />
+            </div>
+          </template>
 
-        <p class="text-sm text-gray-500">
-          Are you sure you want to delete the style
-          <span class="font-medium">{{ styleToDelete?.name }}</span
-          >? This action cannot be undone.
-        </p>
+          <p class="text-sm text-gray-500">
+            Are you sure you want to delete the style
+            <span class="font-medium">{{ styleToDelete?.name }}</span
+            >? This action cannot be undone.
+          </p>
 
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              :disabled="isDeleting"
-              @click="showDeleteModal = false"
-            >
-              Cancel
-            </UButton>
-            <UButton color="error" :loading="isDeleting" @click="deleteStyle"> Delete </UButton>
-          </div>
-        </template>
-      </UCard>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                :disabled="isDeleting"
+                @click="showDeleteModal = false"
+              >
+                Cancel
+              </UButton>
+              <UButton color="error" :loading="isDeleting" @click="deleteStyle"> Delete </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
@@ -439,10 +441,7 @@ watch(sortBy, newVal => {
 
 // Sync pagination
 watch([currentPage, itemsPerPage], () => {
-  pagination.value = {
-    page: currentPage.value,
-    pageSize: itemsPerPage.value,
-  }
+  // Pagination is handled locally in this component
 })
 
 // Sync filters
@@ -491,8 +490,7 @@ const filteredStyles = computed(() => {
     result = result.filter(
       style =>
         style.name?.toLowerCase().includes(searchTerm) ||
-        style.description?.toLowerCase().includes(searchTerm) ||
-        style.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+        style.description?.toLowerCase().includes(searchTerm)
     )
   }
 

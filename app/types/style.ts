@@ -19,6 +19,27 @@ export interface StyleTemplate {
   }>
 }
 
+/**
+ * Style and product related types
+ */
+
+export interface StyleMeasurement {
+  value: number
+  unit?: string
+  notes?: string
+}
+
+export interface StyleTemplate {
+  id: number
+  name: string
+  fields: Array<{
+    id: string
+    name: string
+    type: string
+    required: boolean
+  }>
+}
+
 export interface Style {
   id: number
   userId: number
@@ -26,6 +47,9 @@ export interface Style {
   description?: string | null
   imageUrl?: string | null
   category?: string | null
+  type?: string
+  status?: 'active' | 'inactive' | 'draft' | 'archived'
+  itemCount?: number
   details?: Record<string, string | number | boolean>
   measurements?: Record<string, StyleMeasurement>
   templateId?: number

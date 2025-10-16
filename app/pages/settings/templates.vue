@@ -1,16 +1,14 @@
 <template>
-  <div class="container mx-auto p-4 md:p-6">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Measurement Templates</h1>
-        <p class="text-gray-600 mt-1">
-          Manage your measurement templates for different clothing types
-        </p>
-      </div>
-      <UButton icon="i-heroicons-plus" color="primary" @click="openCreateDialog">
-        New Template
-      </UButton>
-    </div>
+  <div class="space-y-6">
+    <!-- Page Header -->
+    <PageHeader
+      title="Measurement Templates"
+      :primary-action="{
+        label: 'New Template',
+        icon: 'i-heroicons-plus',
+        onClick: openCreateDialog,
+      }"
+    />
 
     <div v-if="templates.length === 0" class="text-center py-12">
       <UIcon name="i-heroicons-document-text" class="w-12 h-12 text-gray-300 mx-auto" />
@@ -30,28 +28,36 @@
     </div>
 
     <!-- Create/Edit Dialog -->
-    <TemplateDialog v-model="showDialog" :template="editingTemplate" @submit="handleSubmit" />
+    <UModal v-model:open="showDialog">
+      <template #content>
+        <TemplateDialog :template="editingTemplate" @submit="handleSubmit" />
+      </template>
+    </UModal>
 
     <!-- Delete Confirmation -->
-    <UModal v-model="showDeleteConfirm">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">Delete Template</h3>
-        </template>
+    <UModal v-model:open="showDeleteConfirm">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">Delete Template</h3>
+          </template>
 
-        <p class="text-gray-600">
-          Are you sure you want to delete this template? This action cannot be undone.
-        </p>
+          <p class="text-gray-600">
+            Are you sure you want to delete this template? This action cannot be undone.
+          </p>
 
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="showDeleteConfirm = false">
-              Cancel
-            </UButton>
-            <UButton color="error" :loading="isDeleting" @click="deleteTemplate"> Delete </UButton>
-          </div>
-        </template>
-      </UCard>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton color="neutral" variant="outline" @click="showDeleteConfirm = false">
+                Cancel
+              </UButton>
+              <UButton color="error" :loading="isDeleting" @click="deleteTemplate">
+                Delete
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
     </UModal>
   </div>
 </template>
@@ -162,10 +168,18 @@ onMounted(async () => {
         name: "Men's Shirt",
         description: "Standard measurements for men's dress shirts",
         category: 'Shirts',
+        unit: 'cm',
         fields: [
-          { id: 1, name: 'Chest', unit: 'cm' },
-          { id: 2, name: 'Neck', unit: 'cm' },
-          { id: 3, name: 'Sleeve Length', unit: 'cm' },
+          { id: '1', name: 'Chest', category: 'upper', type: 'number', required: true, order: 1 },
+          { id: '2', name: 'Neck', category: 'upper', type: 'number', required: true, order: 2 },
+          {
+            id: '3',
+            name: 'Sleeve Length',
+            category: 'upper',
+            type: 'number',
+            required: true,
+            order: 3,
+          },
         ],
         createdAt: '2023-01-01T00:00:00Z',
         updatedAt: '2023-01-01T00:00:00Z',
@@ -178,11 +192,12 @@ onMounted(async () => {
         name: "Women's Dress",
         description: "Standard measurements for women's dresses",
         category: 'Dresses',
+        unit: 'cm',
         fields: [
-          { id: 4, name: 'Bust', unit: 'cm' },
-          { id: 5, name: 'Waist', unit: 'cm' },
-          { id: 6, name: 'Hips', unit: 'cm' },
-          { id: 7, name: 'Length', unit: 'cm' },
+          { id: '4', name: 'Bust', category: 'upper', type: 'number', required: true, order: 1 },
+          { id: '5', name: 'Waist', category: 'lower', type: 'number', required: true, order: 2 },
+          { id: '6', name: 'Hips', category: 'lower', type: 'number', required: true, order: 3 },
+          { id: '7', name: 'Length', category: 'lower', type: 'number', required: false, order: 4 },
         ],
         createdAt: '2023-01-02T00:00:00Z',
         updatedAt: '2023-01-02T00:00:00Z',
