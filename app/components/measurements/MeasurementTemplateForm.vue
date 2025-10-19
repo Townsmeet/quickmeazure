@@ -1,140 +1,130 @@
 <template>
-  <UModal v-model="isOpen">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">
-            {{ editing ? 'Edit Template' : 'New Measurement Template' }}
-          </h3>
-          <UButton
+  <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">
+          {{ editing ? 'Edit Template' : 'New Measurement Template' }}
+        </h3>
+        <UButton
 color="neutral"
 variant="ghost"
 icon="i-heroicons-x-mark"
 @click="close" />
+      </div>
+    </template>
+
+    <UForm :state="form" class="space-y-6" @submit="onSubmit">
+      <!-- Template Name -->
+      <UFormField label="Template Name" name="name" required>
+        <UInput v-model="form.name" placeholder="e.g., Standard Measurements, Custom Fit, etc." />
+      </UFormField>
+
+      <!-- Gender -->
+      <UFormField label="Gender" name="gender" required>
+        <USelect v-model="form.gender" :options="genderOptions" placeholder="Select gender" />
+      </UFormField>
+
+      <!-- Measurement Fields -->
+      <UFormField label="Measurement Fields" name="fields" />
+
+      <!-- Fields List -->
+      <div class="border rounded-lg p-4 bg-gray-50">
+        <div v-if="form.fields.length === 0" class="text-center py-8">
+          <UIcon name="i-heroicons-ruler" class="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p class="text-sm text-gray-500">No fields added yet</p>
         </div>
-      </template>
 
-      <UForm :state="form" class="space-y-6" @submit="onSubmit">
-        <!-- Template Name -->
-        <UFormField label="Template Name" name="name" required>
-          <UInput v-model="form.name" placeholder="e.g., Standard Measurements, Custom Fit, etc." />
-        </UFormField>
+        <div v-else class="space-y-3">
+          <div
+            v-for="(field, index) in form.fields"
+            :key="field.key"
+            class="flex items-start gap-3 p-3 border rounded-lg"
+            :class="{ 'border-red-200 bg-red-50': fieldErrors[field.key] }"
+          >
+            <div class="flex-1 space-y-2">
+              <UFormField
+                :label="`Field ${index + 1}`"
+                :name="`field-${index}-name`"
+                :error="fieldErrors[field.key]?.name"
+              >
+                <UInput v-model="field.name" placeholder="e.g., Chest, Waist, Sleeve Length">
+                  <template #trailing>
+                    <UButton
+                      v-if="!field.isDefault"
+                      color="error"
+                      variant="ghost"
+                      icon="i-heroicons-trash"
+                      size="xs"
+                      @click="removeField(index)"
+                    />
+                  </template>
+                </UInput>
+              </UFormField>
 
-        <!-- Gender -->
-        <UFormField label="Gender" name="gender" required>
-          <USelect v-model="form.gender" :options="genderOptions" placeholder="Select gender" />
-        </UFormField>
-
-        <!-- Measurement Fields -->
-        <UFormField label="Measurement Fields" name="fields" />
-
-        <!-- Fields List -->
-        <div class="border rounded-lg p-4 bg-gray-50">
-          <div v-if="form.fields.length === 0" class="text-center py-8">
-            <UIcon name="i-heroicons-ruler" class="h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p class="text-sm text-gray-500">No fields added yet</p>
-          </div>
-
-          <div v-else class="space-y-3">
-            <div
-              v-for="(field, index) in form.fields"
-              :key="field.key"
-              class="flex items-start gap-3 p-3 border rounded-lg"
-              :class="{ 'border-red-200 bg-red-50': fieldErrors[field.key] }"
-            >
-              <div class="flex-1 space-y-2">
+              <div class="grid grid-cols-2 gap-3">
                 <UFormField
-                  :label="`Field ${index + 1}`"
-                  :name="`field-${index}-name`"
-                  :error="fieldErrors[field.key]?.name"
+                  label="Unit"
+                  :name="`field-${index}-unit`"
+                  :error="fieldErrors[field.key]?.unit"
                 >
-                  <UInput v-model="field.name" placeholder="e.g., Chest, Waist, Sleeve Length">
-                    <template #trailing>
-                      <UButton
-                        v-if="!field.isDefault"
-                        color="error"
-                        variant="ghost"
-                        icon="i-heroicons-trash"
-                        size="xs"
-                        @click="removeField(index)"
-                      />
-                    </template>
-                  </UInput>
+                  <USelect v-model="field.unit" :options="unitOptions" placeholder="Select unit" />
                 </UFormField>
 
-                <div class="grid grid-cols-2 gap-3">
-                  <UFormField
-                    label="Unit"
-                    :name="`field-${index}-unit`"
-                    :error="fieldErrors[field.key]?.unit"
-                  >
-                    <USelect
-                      v-model="field.unit"
-                      :options="unitOptions"
-                      placeholder="Select unit"
-                    />
-                  </UFormField>
-
-                  <UFormField label="Required" :name="`field-${index}-required`" class="pt-6">
-                    <USwitch v-model="field.isRequired" />
-                  </UFormField>
-                </div>
+                <UFormField label="Required" :name="`field-${index}-required`" class="pt-6">
+                  <USwitch v-model="field.isRequired" />
+                </UFormField>
               </div>
+            </div>
 
-              <div class="flex flex-col gap-1 pt-6">
-                <UButton
-                  v-if="index > 0"
-                  icon="i-heroicons-arrow-up"
-                  size="lg"
-                  color="neutral"
-                  variant="ghost"
-                  :ui="{ base: 'rounded-full' }"
-                  @click="moveFieldUp(index)"
-                />
-                <UButton
-                  v-if="index < form.fields.length - 1"
-                  icon="i-heroicons-arrow-down"
-                  size="lg"
-                  color="neutral"
-                  variant="ghost"
-                  :ui="{ base: 'rounded-full' }"
-                  @click="moveFieldDown(index)"
-                />
-              </div>
+            <div class="flex flex-col gap-1 pt-6">
+              <UButton
+                v-if="index > 0"
+                icon="i-heroicons-arrow-up"
+                size="lg"
+                color="neutral"
+                variant="ghost"
+                :ui="{ base: 'rounded-full' }"
+                @click="moveFieldUp(index)"
+              />
+              <UButton
+                v-if="index < form.fields.length - 1"
+                icon="i-heroicons-arrow-down"
+                size="lg"
+                color="neutral"
+                variant="ghost"
+                :ui="{ base: 'rounded-full' }"
+                @click="moveFieldDown(index)"
+              />
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Form Actions -->
-        <div class="flex justify-end gap-3 pt-4">
-          <UButton
+      <!-- Form Actions -->
+      <div class="flex justify-end gap-3 pt-4">
+        <UButton
 type="button"
 color="neutral"
 variant="ghost"
 @click="close"> Cancel </UButton>
-          <UButton
-            type="submit"
-            color="primary"
-            :loading="isSubmitting"
-            :disabled="form.fields.length === 0"
-          >
-            {{ editing ? 'Update' : 'Create' }} Template
-          </UButton>
-        </div>
-      </UForm>
-    </UCard>
-  </UModal>
+        <UButton
+          type="submit"
+          color="primary"
+          :loading="isSubmitting"
+          :disabled="form.fields.length === 0"
+        >
+          {{ editing ? 'Update' : 'Create' }} Template
+        </UButton>
+      </div>
+    </UForm>
+  </UCard>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { MeasurementField, MeasurementTemplate } from '~/types/measurement'
+import type { MeasurementField, MeasurementTemplate } from '~/types'
 
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false,
-  },
   template: {
     type: Object,
     default: null,
@@ -142,17 +132,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'saved'): void
+  (e: 'saved' | 'cancel'): void
 }>()
 
 const { createTemplate, updateTemplate } = useMeasurementTemplates()
 const toast = useToast()
-
-const isOpen = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
 
 const editing = computed(() => !!props.template)
 const isSubmitting = ref(false)
@@ -395,16 +379,34 @@ const onSubmit = async () => {
 
 // Close modal
 const close = () => {
-  isOpen.value = false
+  emit('cancel')
 }
 
 // Watch for template changes
-watch(() => props.template, loadTemplateData, { immediate: true })
-
-// Reset form when modal is closed
-watch(isOpen, newVal => {
-  if (!newVal) {
-    resetForm()
-  }
-})
+watch(
+  () => props.template,
+  newTemplate => {
+    if (newTemplate) {
+      loadTemplateData()
+    } else {
+      resetForm()
+    }
+  },
+  { immediate: true }
+)
 </script>
+
+<style scoped>
+/* Ensure USelect dropdowns appear above modal content */
+:deep(.ui-select-dropdown) {
+  z-index: 9999 !important;
+}
+
+:deep(.ui-select-popper) {
+  z-index: 9999 !important;
+}
+
+:deep(.ui-select-menu) {
+  z-index: 9999 !important;
+}
+</style>

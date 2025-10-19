@@ -1,0 +1,1 @@
+ALTER TABLE `measurement_templates` ADD `description` text;

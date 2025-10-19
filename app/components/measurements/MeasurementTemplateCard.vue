@@ -100,7 +100,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MeasurementTemplate } from '~/types/measurement'
+import type { MeasurementTemplate } from '~/types'
 
 interface Props {
   template: MeasurementTemplate

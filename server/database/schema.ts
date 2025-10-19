@@ -236,6 +236,8 @@ export const measurementTemplates = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    description: text('description'),
+    unit: text('unit').notNull().default('cm'), // measurement unit for all fields in this template
     isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),
     isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
     gender: text('gender').notNull(), // 'male', 'female', or 'unisex'

@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { updateTemplate } from '../../../repositories/measurementTemplateRepository'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Archive the template
-    const template = await archiveTemplate(templateId, user.id)
+    const template = await updateTemplate(templateId, user.id, { isArchived: true })
 
     return {
       success: true,

@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { deleteTemplate } from '../../repositories/measurementTemplateRepository'
+import { setDefaultTemplate } from '../../../repositories/measurementTemplateRepository'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -21,20 +21,20 @@ export default defineEventHandler(async (event: H3Event) => {
       })
     }
 
-    // Delete the template
-    await deleteTemplate(templateId, user.id)
+    // Set the template as default
+    await setDefaultTemplate(templateId, user.id)
 
     return {
       success: true,
-      data: { deleted: true },
-      message: 'Template deleted successfully',
+      data: { isDefault: true },
+      message: 'Template set as default successfully',
     }
   } catch (error: any) {
-    console.error('Error deleting measurement template:', error)
+    console.error('Error setting default template:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete measurement template',
-      message: error.message || 'Failed to delete measurement template',
+      error: error instanceof Error ? error.message : 'Failed to set default template',
+      message: error.message || 'Failed to set default template',
     }
   }
 })

@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { updateTemplate } from '../../repositories/measurementTemplateRepository'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -12,7 +13,15 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Get the template ID from the route
-    const templateId = parseInt(event.context.params?.id, 10)
+    const idParam = event.context.params?.id
+    if (!idParam) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Template ID is required',
+      })
+    }
+
+    const templateId = parseInt(idParam, 10)
     if (isNaN(templateId)) {
       throw createError({
         statusCode: 400,
@@ -37,6 +46,8 @@ export default defineEventHandler(async (event: H3Event) => {
       user.id,
       {
         name: body.name,
+        unit: body.unit,
+        description: body.description,
         gender: body.gender,
         isArchived: body.isArchived,
       },

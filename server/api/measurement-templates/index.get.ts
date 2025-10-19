@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { getUserTemplates } from '../../utils/templates'
+import { getUserTemplates } from '../../repositories/measurementTemplateRepository'
 
 export default defineEventHandler(async (event: H3Event) => {
   try {

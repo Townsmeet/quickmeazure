@@ -1,8 +1,18 @@
 import type { H3Event } from 'h3'
-import { createTemplate } from '../../utils/templates'
+import { createTemplate } from '../../repositories/measurementTemplateRepository'
 import { db } from '../../utils/drizzle'
-import * as tables from '../../database/schema'
 import { measurementTemplates, measurementFields, user as userTable } from '../../database/schema'
+import { and, eq } from 'drizzle-orm'
+
+interface FieldInput {
+  name: string
+  description?: string | null
+  unit?: string
+  isRequired?: boolean
+  order?: number
+  displayOrder?: number
+  category?: string
+}
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
@@ -54,7 +64,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
       // Then add the new fields
       if (body.fields && body.fields.length > 0) {
-        const newFields = body.fields.map((field, index) => ({
+        const newFields = body.fields.map((field: FieldInput, index: number) => ({
           templateId: existingTemplate.id,
           name: field.name,
           description: field.description || null,
@@ -79,31 +89,54 @@ export default defineEventHandler(async (event: H3Event) => {
         fields: updatedFields,
       }
     } else {
+      // Check if this is the user's first template
+      const userTemplateCount = await db
+        .select()
+        .from(measurementTemplates)
+        .where(eq(measurementTemplates.userId, user.id))
+        .execute()
+        .then(results => results.length)
+
+      const isFirstTemplate = userTemplateCount === 0
+
       // Create a new template if it doesn't exist
       template = await createTemplate(
         user.id,
         {
           name: body.name,
+          unit: body.unit || 'in',
+          description: body.description,
           gender: body.gender || 'unisex',
           isArchived: false,
         },
         body.fields || []
       )
+
+      // If this is the user's first template, mark setup as completed
+      if (isFirstTemplate) {
+        await db
+          .update(userTable)
+          .set({ hasCompletedSetup: true })
+          .where(eq(userTable.id, user.id))
+          .execute()
+
+        console.log(`User ${user.id} created their first template and completed setup`)
+      }
     }
 
     // Check if this is part of the setup process (can be determined by a query parameter or request header)
     const isSetupProcess =
       event.node.req.url?.includes('setup') || event.node.req.headers['x-setup-process'] === 'true'
 
-    // If this is part of the setup process, mark the user's setup as completed
-    if (isSetupProcess) {
+    // If this is part of the setup process, also mark the user's setup as completed
+    if (isSetupProcess && !user.hasCompletedSetup) {
       await db
         .update(userTable)
         .set({ hasCompletedSetup: true })
         .where(eq(userTable.id, user.id))
         .execute()
 
-      console.log(`User ${user.id} has completed setup`)
+      console.log(`User ${user.id} has completed setup via setup process`)
     }
 
     return {

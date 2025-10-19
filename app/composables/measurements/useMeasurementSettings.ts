@@ -1,4 +1,4 @@
-import type { MeasurementSettings } from '~/types/measurement'
+import type { MeasurementSettings } from '~/types'
 
 interface SettingsResponse {
   success: boolean

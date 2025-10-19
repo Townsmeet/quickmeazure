@@ -16,34 +16,33 @@ export interface Measurement {
   createdAt: string
 }
 
-export interface MeasurementTemplate {
-  id: number
-  userId: number
+export interface MeasurementField {
+  id: string | number
   name: string
-  description?: string
-  category?: string // Template category for organization
-  unit: 'cm' | 'in' | 'm' // Global unit for all fields in this template
-  fields: MeasurementField[]
-  isDefault: boolean
-  archived?: boolean
-  gender?: string
-  createdAt: string
+  description?: string | null
+  isRequired: boolean
+  displayOrder: number
+  metadata?: string | null
+  category?: string // Derived from metadata for frontend convenience
+  createdAt?: string
   updatedAt?: string
 }
 
-export interface MeasurementField {
-  id: string
+export interface MeasurementTemplate {
+  id: string | number
   name: string
-  type: 'number' | 'text' | 'select'
-  required: boolean
-  defaultValue?: string | number
-  options?: string[]
-  min?: number
-  max?: number
-  step?: number
-  category?: string
-  order: number
+  unit: string // measurement unit for all fields in this template
+  gender: 'male' | 'female' | 'unisex'
+  fields: MeasurementField[]
+  createdAt: string
+  updatedAt?: string
   isDefault?: boolean
+  isArchived?: boolean
+  userId?: string | number
+  // Legacy fields for backward compatibility
+  description?: string
+  category?: string
+  isActive?: boolean
 }
 
 export interface ClientMeasurement {
@@ -60,4 +59,8 @@ export interface MeasurementStats {
   total: number
   byClient: Record<number, number> // clientId: count
   lastUpdated: string | null
+}
+
+export interface MeasurementSettings {
+  defaultUnit: 'cm' | 'in' | 'm'
 }

@@ -42,29 +42,31 @@
       </template>
 
       <template #footer="{ collapsed }">
-        <UButton
-          :avatar="{
-            src: (user as any)?.avatar || undefined,
-            alt: (user as any)?.name || 'User',
-          }"
-          :label="collapsed ? undefined : (user as any)?.name || 'User'"
-          color="neutral"
-          variant="ghost"
-          class="w-full"
-          :block="collapsed"
-          @click="handleUserMenu"
-        >
-          <template v-if="!collapsed" #trailing>
-            <UButton
-              icon="i-heroicons-power"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              aria-label="Logout"
-              @click.stop="handleLogout"
-            />
-          </template>
-        </UButton>
+        <ClientOnly>
+          <UButton
+            :avatar="{
+              src: userDisplayData.avatar,
+              alt: userDisplayData.name,
+            }"
+            :label="collapsed ? undefined : userDisplayData.name"
+            color="neutral"
+            variant="ghost"
+            class="w-full"
+            :block="collapsed"
+            @click="handleUserMenu"
+          >
+            <template v-if="!collapsed" #trailing>
+              <UButton
+                icon="i-heroicons-power"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                aria-label="Logout"
+                @click.stop="handleLogout"
+              />
+            </template>
+          </UButton>
+        </ClientOnly>
       </template>
     </UDashboardSidebar>
 
@@ -167,6 +169,7 @@
     </UDashboardPanel>
   </UDashboardGroup>
 </template>
+
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { onMounted, onUnmounted } from 'vue'
@@ -179,8 +182,33 @@ const isSidebarOpen = ref(false)
 // State for mobile more menu
 const isMobileMoreOpen = ref(false)
 
-// User/auth composable (replace/use as your project implements)
-const { user = ref({}) } = useAuth() || {}
+// User/auth composable
+const { user, init } = useAuth()
+
+// Initialize auth on mount
+onMounted(() => {
+  init()
+})
+
+// Computed property to handle hydration mismatch
+const userDisplayData = computed(() => {
+  // Ensure consistent data structure between server and client
+  if (!user.value) {
+    return {
+      name: 'User',
+      avatar: undefined,
+    }
+  }
+
+  const currentUser = user.value as any
+  // Ensure name is consistent and properly formatted
+  const userName = currentUser?.name || 'User'
+
+  return {
+    name: userName,
+    avatar: currentUser?.avatar || undefined,
+  }
+})
 const settingsItems = [
   {
     label: 'Templates',

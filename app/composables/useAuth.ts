@@ -18,7 +18,15 @@ type ExtendedUser = User & {
 }
 
 export const useAuth = () => {
-  const user = useState<ExtendedUser | null>('auth_user', () => null)
+  // Use persistent cookie storage for user data
+  const user = useCookie<ExtendedUser | null>('auth_user', {
+    default: () => null,
+    httpOnly: false, // Accessible on client-side
+    secure: true, // HTTPS only in production
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  })
+
   const isAuthenticated = computed(() => !!user.value)
   const isLoading = useState<boolean>('auth_loading', () => false)
   const initialized = useState<boolean>('auth_initialized', () => false)
@@ -31,18 +39,28 @@ export const useAuth = () => {
   const onboardingStatusMessage = computed(() => getOnboardingStatusMessage(user.value))
   const isFullyOnboarded = computed(() => currentOnboardingStep.value === 'complete')
 
-  // Initialize auth state once
+  // Initialize auth state once with Better Auth best practices
   const init = async () => {
     if (initialized.value) return
+
     // If we already have a user (e.g., just logged in), mark initialized and skip network
     if (user.value) {
       initialized.value = true
       return
     }
+
     try {
       isLoading.value = true
-      const { data } = await authClient.getSession()
-      user.value = data?.user || null
+
+      // Better Auth recommendation: Always call getSession
+      // Better Auth internally handles session validation and caching
+      const { data, error } = await authClient.getSession()
+
+      if (error) {
+        user.value = null
+      } else {
+        user.value = data?.user || null
+      }
     } catch {
       user.value = null
     } finally {

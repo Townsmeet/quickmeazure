@@ -1,14 +1,26 @@
-import type { MeasurementTemplate } from '~/types/measurement'
+import type { MeasurementTemplate } from '~/types'
+
+interface CreateFieldData {
+  name: string
+  isRequired: boolean
+  displayOrder: number
+  category: string
+}
+
+interface UpdateTemplateData {
+  name?: string
+  unit?: string
+  description?: string
+  gender?: 'male' | 'female' | 'unisex'
+  fields?: CreateFieldData[]
+}
 
 interface CreateTemplateData {
   name: string
+  unit: string
   description?: string
   gender: string
-  fields: Array<{
-    name: string
-    category: string
-    order: number
-  }>
+  fields: CreateFieldData[]
   setupProcess?: boolean
 }
 
@@ -34,29 +46,31 @@ export const useMeasurementTemplates = () => {
   const error = useState<string | null>('measurement_templates_error', () => null)
 
   // Data fetching with useFetch
-  const {
-    data: templatesData,
-    pending: isLoading,
-    refresh: refreshTemplates,
-  } = useFetch<TemplatesResponse>('/api/measurement-templates', {
-    server: false,
-    default: () => ({ success: false, data: [] }) as TemplatesResponse,
-    onResponse({ response }) {
-      const responseData = response._data as TemplatesResponse
-      if (responseData?.success && responseData?.data) {
-        templates.value = responseData.data
-      }
-    },
-    onResponseError({ error: fetchError }) {
-      error.value = fetchError?.message || 'Failed to fetch templates'
-    },
-  })
+  const { pending: isLoading, refresh: refreshTemplates } = useFetch<TemplatesResponse>(
+    '/api/measurement-templates',
+    {
+      server: true,
+      query: { includeArchived: 'true' },
+      default: () => ({ success: false, data: [] }) as TemplatesResponse,
+      onResponse({ response }) {
+        const responseData = response._data as TemplatesResponse
+        if (responseData?.success && responseData?.data) {
+          templates.value = responseData.data.map(template => ({
+            ...template,
+            fields: template.fields.map(field => ({ ...field })),
+          })) as MeasurementTemplate[]
+        }
+      },
+      onResponseError({ error: fetchError }) {
+        error.value = fetchError?.message || 'Failed to fetch templates'
+      },
+    }
+  )
 
   // Computed
   const defaultTemplate = computed<MeasurementTemplate | undefined>(() =>
     templates.value.find(t => t.isDefault)
   )
-
   const templateNames = computed<string[]>(() => templates.value.map(t => t.name))
 
   // Fetch all templates (for compatibility)
@@ -68,62 +82,63 @@ export const useMeasurementTemplates = () => {
   // Create template (mutation with $fetch)
   const createTemplate = async (data: CreateTemplateData): Promise<TemplateResponse> => {
     error.value = null
-
     try {
+      console.log('Sending to API:', data)
       const response = await $fetch<TemplateResponse>('/api/measurement-templates', {
         method: 'POST',
         body: data,
+        credentials: 'include',
       })
-
+      console.log('API Response:', response)
       if (response.success && response.data) {
-        templates.value.push(response.data)
+        const mutableTemplate = {
+          ...response.data,
+          fields: response.data.fields.map(field => ({ ...field })),
+        } as MeasurementTemplate
+        templates.value.push(mutableTemplate)
         await refreshTemplates()
       }
-
       return response
     } catch (err: any) {
+      console.error('API Error:', err)
       error.value = err.message || 'Failed to create template'
-      return {
-        success: false,
-        message: error.value || undefined,
-      }
+      return { success: false, message: error.value || undefined }
     }
   }
 
   // Update template (mutation with $fetch)
   const updateTemplate = async (
     id: number,
-    updates: Partial<MeasurementTemplate>
+    updates: UpdateTemplateData
   ): Promise<TemplateResponse> => {
     error.value = null
-
     try {
+      console.log('Making PUT request to:', `/api/measurement-templates/${id}`)
       const response = await $fetch<TemplateResponse>(`/api/measurement-templates/${id}`, {
         method: 'PUT',
         body: updates,
+        credentials: 'include',
       })
-
       if (response.success && response.data) {
         const index = templates.value.findIndex(t => t.id === id)
         if (index !== -1) {
-          templates.value[index] = response.data
+          templates.value[index] = {
+            ...response.data,
+            fields: response.data.fields.map(field => ({ ...field })),
+          } as MeasurementTemplate
         }
-
-        // Update current template if it's the one being edited
-        if (currentTemplate.value?.id === id) {
-          currentTemplate.value = response.data
+        if (currentTemplate.value && currentTemplate.value.id === id) {
+          currentTemplate.value = {
+            ...response.data,
+            fields: response.data.fields.map(field => ({ ...field })),
+          } as MeasurementTemplate
         }
-
         await refreshTemplates()
       }
-
       return response
     } catch (err: any) {
       error.value = err.message || 'Failed to update template'
-      return {
-        success: false,
-        message: error.value || undefined,
-      }
+      return { success: false, message: error.value || undefined }
     }
   }
 
@@ -140,7 +155,7 @@ export const useMeasurementTemplates = () => {
         templates.value = templates.value.filter(t => t.id !== id)
 
         // Clear current template if it's the one being removed
-        if (currentTemplate.value?.id === id) {
+        if (currentTemplate.value && currentTemplate.value.id === id) {
           currentTemplate.value = null
         }
 
@@ -197,7 +212,14 @@ export const useMeasurementTemplates = () => {
       if (response.success) {
         const index = templates.value.findIndex(t => t.id === id)
         if (index !== -1) {
-          templates.value[index] = { ...templates.value[index], archived: true }
+          const templateToUpdate = templates.value[index]
+          if (templateToUpdate) {
+            templates.value[index] = {
+              ...templateToUpdate,
+              fields: templateToUpdate.fields.map(field => ({ ...field })),
+              isArchived: true,
+            } as MeasurementTemplate
+          }
         }
         await refreshTemplates()
       }
@@ -224,7 +246,14 @@ export const useMeasurementTemplates = () => {
       if (response.success) {
         const index = templates.value.findIndex(t => t.id === id)
         if (index !== -1) {
-          templates.value[index] = { ...templates.value[index], archived: false }
+          const templateToUpdate = templates.value[index]
+          if (templateToUpdate) {
+            templates.value[index] = {
+              ...templateToUpdate,
+              fields: templateToUpdate.fields.map(field => ({ ...field })),
+              isArchived: false,
+            } as MeasurementTemplate
+          }
         }
         await refreshTemplates()
       }
@@ -251,7 +280,7 @@ export const useMeasurementTemplates = () => {
 
   return {
     // State
-    templates: readonly(templates),
+    templates,
     currentTemplate: readonly(currentTemplate),
     isLoading: readonly(isLoading),
     error: readonly(error),

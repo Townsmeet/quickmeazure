@@ -1,0 +1,1 @@
+ALTER TABLE `measurement_templates` ADD `unit` text DEFAULT 'cm' NOT NULL;
