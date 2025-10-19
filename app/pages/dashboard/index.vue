@@ -115,11 +115,14 @@
                 </div>
               </template>
               <div class="h-80">
-                <ClientGrowthChart
-                  v-if="hasChartData"
-                  :labels="clientGrowth.labels"
-                  :data="clientGrowth.data"
-                  :period="chartPeriod"
+                <LineChart
+                  v-if="chartData.length > 0"
+                  :data="chartData"
+                  :categories="chartCategories"
+                  :height="300"
+                  :x-formatter="xFormatter"
+                  x-label="Period"
+                  y-label="New Clients"
                 />
                 <div v-else class="h-full flex items-center justify-center text-gray-400">
                   No data available for the selected period
@@ -310,21 +313,35 @@ const chartPeriodOptions = [
   { label: 'Last year', value: 'year' },
 ]
 
-// Helper computed property to check if we have chart data to display
-const hasChartData = computed(() => {
-  return (
-    clientGrowth.value?.labels?.length > 0 &&
-    clientGrowth.value?.data?.length > 0 &&
-    clientGrowth.value.data.some(value => value > 0)
-  )
+// Prepare chart data for nuxt-charts
+const chartData = computed(() => {
+  if (!clientGrowth.value?.labels?.length || !clientGrowth.value?.data?.length) {
+    return []
+  }
+
+  return clientGrowth.value.labels.map((label, index) => ({
+    period: label,
+    clients: clientGrowth.value.data[index] || 0,
+  }))
 })
+
+// Chart categories configuration
+const chartCategories = {
+  clients: {
+    name: 'New Clients',
+    color: '#4f46e5', // Primary color
+  },
+}
+
+// X-axis formatter
+const xFormatter = (i: number) => chartData.value[i]?.period || ''
 
 // Update chart data when period changes
 const updateChartData = async (period: string | ChartPeriod | null | undefined) => {
   if (!period && period !== '') return // Handle null/undefined/empty string cases
 
   try {
-    await fetchClientGrowth(period as ChartPeriod)
+    await fetchDashboardData(period as ChartPeriod)
   } catch (error) {
     console.error('Error updating chart data:', error)
     toast.add({
@@ -456,19 +473,8 @@ const checkSetupStatus = () => {
   }
 }
 
-// Fetch initial data
-onMounted(async () => {
-  try {
-    await fetchDashboardData()
-    // Check if setup modal should be shown
-    checkSetupStatus()
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error)
-    toast.add({
-      title: 'Error',
-      description: 'Failed to load dashboard data',
-      color: 'error',
-    })
-  }
+// Check setup status when component mounts
+onMounted(() => {
+  checkSetupStatus()
 })
 </script>

@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     '@sentry/nuxt/module',
     '@vite-pwa/nuxt',
     '@nuxt/test-utils/module',
+    'nuxt-charts',
   ],
 
   components: [{ path: '~/components', pathPrefix: false }],

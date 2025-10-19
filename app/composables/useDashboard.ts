@@ -76,6 +76,7 @@ export const useDashboard = () => {
     '/api/dashboard/stats',
     {
       server: false,
+
       default: () => ({
         success: false,
         data: undefined as unknown as DashboardStats,
