@@ -1,328 +1,362 @@
 <template>
-  <div class="max-w-5xl mx-auto space-y-6 py-6">
-    <!-- Page Header -->
-    <PageHeader
-      title="Add Client"
-      :primary-action="{
-        label: 'Save',
-        onClick: saveClient,
-        disabled: !isFormValid,
-      }"
-    />
+  <div class="max-w-4xl mx-auto pb-20 md:pb-6">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Add Client</h1>
+        </div>
+        <div class="flex gap-3">
+          <UButton
+variant="soft"
+color="neutral"
+size="lg"
+@click="handleCancel"> Cancel </UButton>
+          <UButton
+            color="primary"
+            size="lg"
+            :disabled="!canSave"
+            :loading="isSaving"
+            @click="saveClient"
+          >
+            Save Client
+          </UButton>
+        </div>
+      </div>
+    </div>
 
-    <ClientOnly>
-      <UCard class="bg-white shadow border-0">
-        <form class="space-y-8" @submit.prevent="saveClient">
-          <!-- Client Detail Section -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-2">
-              <label
-for="clientName"
-class="block text-sm font-medium text-gray-700"
-                >Full Name <span class="text-red-500">*</span></label
-              >
-              <UInput
-                id="clientName"
-                v-model="client.name"
-                name="clientName"
-                placeholder="Client name"
-                class="w-full"
-                icon="i-heroicons-user"
-                size="lg"
-                autocomplete="name"
-              />
-            </div>
+    <form class="space-y-8" @submit.prevent="saveClient">
+      <!-- Client Information Card -->
+      <UCard>
+        <template #header>
+          <div class="flex items-center space-x-2">
+            <UIcon name="i-heroicons-user" class="w-5 h-5 text-primary-500" />
+            <h2 class="text-lg font-semibold">Client Information</h2>
+          </div>
+        </template>
 
-            <div class="space-y-2">
-              <label
-for="clientPhone"
-class="block text-sm font-medium text-gray-700"
-                >Phone Number</label
-              >
-              <UInput
-                id="clientPhone"
-                v-model="client.phone"
-                name="clientPhone"
-                placeholder="Phone number"
-                class="w-full"
-                icon="i-heroicons-phone"
-                size="lg"
-                type="tel"
-                autocomplete="tel"
-              />
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Full Name -->
+          <div class="space-y-2">
+            <label for="fullName" class="block text-sm font-medium text-gray-700">
+              Full Name <span class="text-red-500">*</span>
+            </label>
+            <UInput
+              id="fullName"
+              v-model="client.name"
+              placeholder="Enter client's full name"
+              class="w-full"
+              size="lg"
+              icon="i-heroicons-user"
+              :error="errors.name"
+            />
+            <p v-if="errors.name" class="text-sm text-red-600">{{ errors.name }}</p>
           </div>
 
-          <!-- Measurements Section -->
-          <div class="space-y-4">
-            <h2 class="text-lg font-medium text-gray-900 border-b pb-2">Measurements</h2>
+          <!-- Gender -->
+          <div class="space-y-2">
+            <label for="gender" class="block text-sm font-medium text-gray-700">
+              Gender <span class="text-red-500">*</span>
+            </label>
+            <USelect
+              id="gender"
+              v-model="client.gender"
+              :items="genderOptions"
+              placeholder="Select gender"
+              class="w-full"
+              size="lg"
+              :error="errors.gender"
+            />
+            <p v-if="errors.gender" class="text-sm text-red-600">{{ errors.gender }}</p>
+          </div>
 
-            <!-- Template Selection Section -->
-            <div class="space-y-4">
-              <div class="max-w-md">
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between">
-                    <label for="template-select" class="block text-sm font-medium text-gray-700">
-                      Select a measurement template
-                    </label>
-                    <UButton
-                      v-if="templatesLoading"
-                      variant="ghost"
-                      color="gray"
-                      size="xs"
-                      :loading="true"
-                      class="ml-2"
-                    >
-                      Loading...
-                    </UButton>
-                  </div>
+          <!-- Phone Number -->
+          <div class="space-y-2">
+            <label for="phone" class="block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <UInput
+              id="phone"
+              v-model="client.phone"
+              placeholder="Enter phone number"
+              class="w-full"
+              size="lg"
+              icon="i-heroicons-phone"
+              type="tel"
+            />
+          </div>
 
-                  <USelect
-                    id="template-select"
-                    v-model="selectedTemplateId"
-                    name="template-select"
-                    :items="templateOptions"
-                    placeholder="Choose a measurement template"
-                    class="w-full"
-                    size="lg"
-                    :loading="templatesLoading"
-                    @update:model-value="selectTemplate"
-                  />
+          <!-- Email -->
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-700">
+              Email Address
+            </label>
+            <UInput
+              id="email"
+              v-model="client.email"
+              placeholder="Enter email address"
+              class="w-full"
+              size="lg"
+              icon="i-heroicons-envelope"
+              type="email"
+            />
+          </div>
+        </div>
 
-                  <!-- Empty state message -->
-                  <div v-if="!templatesLoading && !hasTemplates" class="mt-2 text-sm text-gray-500">
-                    <p>
-                      No measurement templates found.
-                      <NuxtLink
-to="/measurement-templates"
-class="text-primary-600 hover:underline"
-                        >Create a template</NuxtLink
-                      >
-                      first.
-                    </p>
-                  </div>
+        <!-- Address -->
+        <div class="mt-6 space-y-2">
+          <label for="address" class="block text-sm font-medium text-gray-700"> Address </label>
+          <UTextarea
+            id="address"
+            v-model="client.address"
+            placeholder="Enter client's address"
+            class="w-full"
+            :rows="3"
+            size="lg"
+          />
+        </div>
 
-                  <!-- Retry button if templates failed to load -->
-                  <div v-if="!templatesLoading && !hasTemplates" class="mt-2">
-                    <UButton
-                      size="sm"
-                      variant="soft"
-                      color="gray"
-                      icon="i-heroicons-arrow-path"
-                      @click="loadTemplates(true)"
-                    >
-                      Retry
-                    </UButton>
-                  </div>
-                </div>
-              </div>
+        <!-- Client Notes -->
+        <div class="mt-6 space-y-2">
+          <label for="clientNotes" class="block text-sm font-medium text-gray-700">
+            Client Notes
+          </label>
+          <UTextarea
+            id="clientNotes"
+            v-model="client.notes"
+            placeholder="Any special notes about this client..."
+            :rows="3"
+            size="lg"
+            class="w-full"
+          />
+        </div>
+      </UCard>
+
+      <!-- Measurements Card -->
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <UIcon name="i-heroicons-calculator" class="w-5 h-5 text-primary-500" />
+              <h2 class="text-lg font-semibold">Measurements</h2>
             </div>
+            <UBadge v-if="selectedTemplate" color="primary" variant="soft">
+              {{ selectedTemplate.name }}
+            </UBadge>
+          </div>
+        </template>
 
-            <!-- Template-based Measurements -->
-            <div v-if="selectedTemplateId && hasFields">
-              <!-- Upper Body Measurements -->
-              <div v-if="upperBodyFields.length > 0" class="space-y-4">
-                <h3 class="text-md font-medium text-gray-700 flex items-center">
-                  <UIcon name="i-heroicons-user-circle" class="w-4 h-4 mr-2 text-primary-500" />
-                  Upper Body
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <div v-for="field in upperBodyFields" :key="field.id" class="space-y-2">
-                    <label
-                      :for="field.name.toLowerCase()"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      {{ field.name }}
-                      <span v-if="field.isRequired" class="text-red-500">*</span>
-                    </label>
-                    <div class="flex">
-                      <UInput
-                        :id="field.name.toLowerCase()"
-                        v-model="measurements[field.name.toLowerCase()]"
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        class="w-full rounded-r-none focus:ring-primary-500"
-                        size="lg"
-                      />
-                      <span
-                        class="inline-flex items-center px-3 border border-l-0 border-gray-300 bg-primary-50 text-primary-700 text-sm font-medium rounded-r-md"
-                      >
-                        {{ field.unit || 'in' }}
-                      </span>
-                    </div>
-                    <p v-if="field.description" class="text-xs text-gray-500 mt-1">
-                      {{ field.description }}
-                    </p>
-                  </div>
-                </div>
-              </div>
+        <!-- Template Selection -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <label class="block text-sm font-medium text-gray-700">
+              Measurement Template <span class="text-red-500">*</span>
+            </label>
+            <UButton
+variant="ghost"
+size="sm"
+icon="i-heroicons-plus"
+to="/settings/templates">
+              Create Template
+            </UButton>
+          </div>
 
-              <!-- Lower Body Measurements -->
-              <div v-if="lowerBodyFields.length > 0" class="space-y-4 mt-8">
-                <h3 class="text-md font-medium text-gray-700 flex items-center">
-                  <UIcon name="i-heroicons-rectangle-stack" class="w-4 h-4 mr-2 text-primary-500" />
-                  Lower Body
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <div v-for="field in lowerBodyFields" :key="field.id" class="space-y-2">
-                    <label
-                      :for="field.name.toLowerCase()"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      {{ field.name }}
-                      <span v-if="field.isRequired" class="text-red-500">*</span>
-                    </label>
-                    <div class="flex">
-                      <UInput
-                        :id="field.name.toLowerCase()"
-                        v-model="measurements[field.name.toLowerCase()]"
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        class="w-full rounded-r-none focus:ring-primary-500"
-                        size="lg"
-                      />
-                      <span
-                        class="inline-flex items-center px-3 border border-l-0 border-gray-300 bg-primary-50 text-primary-700 text-sm font-medium rounded-r-md"
-                      >
-                        {{ field.unit || 'in' }}
-                      </span>
-                    </div>
-                    <p v-if="field.description" class="text-xs text-gray-500 mt-1">
-                      {{ field.description }}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <USelect
+            v-model="selectedTemplateId"
+            :items="templateOptions"
+            placeholder="Choose a measurement template"
+            size="lg"
+            class="w-full"
+            :loading="templatesLoading"
+            @update:model-value="onTemplateSelect"
+          />
 
-              <!-- Other Measurements -->
-              <div v-if="otherFields.length > 0" class="space-y-4 mt-8">
-                <h3 class="text-md font-medium text-gray-700 flex items-center">
-                  <UIcon name="i-heroicons-variable" class="w-4 h-4 mr-2 text-primary-500" />
-                  Other Measurements
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <div v-for="field in otherFields" :key="field.id" class="space-y-2">
-                    <label
-                      :for="field.name.toLowerCase()"
-                      class="block text-sm font-medium text-gray-700"
-                    >
-                      {{ field.name }}
-                      <span v-if="field.isRequired" class="text-red-500">*</span>
-                    </label>
-                    <div class="flex">
-                      <UInput
-                        :id="field.name.toLowerCase()"
-                        v-model="measurements[field.name.toLowerCase()]"
-                        type="number"
-                        step="0.1"
-                        placeholder="0.0"
-                        class="w-full rounded-r-none focus:ring-primary-500"
-                        size="lg"
-                      />
-                      <span
-                        class="inline-flex items-center px-3 border border-l-0 border-gray-300 bg-primary-50 text-primary-700 text-sm font-medium rounded-r-md"
-                      >
-                        {{ field.unit || 'in' }}
-                      </span>
-                    </div>
-                    <p v-if="field.description" class="text-xs text-gray-500 mt-1">
-                      {{ field.description }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <!-- Loading state -->
+          <div v-if="templatesLoading" class="mt-2 flex items-center text-sm text-gray-500">
+            <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+            Loading templates...
+          </div>
 
-            <!-- No template selected message -->
-            <div v-else-if="selectedTemplateId === null" class="py-6 text-center text-gray-500">
-              <UIcon name="i-heroicons-document-text" class="w-12 h-12 mx-auto text-gray-400" />
-              <p class="mt-2 text-sm">Please select a measurement template to continue</p>
-            </div>
-
-            <!-- Template has no fields message -->
-            <div
-              v-else-if="selectedTemplateId && !hasFields"
-              class="py-6 text-center text-gray-500"
+          <!-- Empty state -->
+          <div v-else-if="templateOptions.length === 0" class="mt-2 text-sm text-amber-600">
+            <p>
+              No templates available.
+              <NuxtLink to="/settings/templates" class="text-primary-600 hover:underline">
+                Create one first
+              </NuxtLink>
+              to continue.
+            </p>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="neutral"
+              icon="i-heroicons-arrow-path"
+              class="mt-2"
+              @click="loadTemplates(true)"
             >
-              <UIcon
-                name="i-heroicons-exclamation-circle"
-                class="w-12 h-12 mx-auto text-amber-400"
-              />
-              <p class="mt-2 text-sm">The selected template has no measurement fields defined</p>
-              <p class="text-xs mt-1">
-                <NuxtLink
-                  :to="`/measurement-templates/${selectedTemplateId}/edit`"
-                  class="text-primary-600 hover:underline"
-                >
-                  Edit template
-                </NuxtLink>
-              </p>
+              Retry Loading
+            </UButton>
+          </div>
+        </div>
+
+        <!-- Measurement Fields with Tabs -->
+        <div v-if="selectedTemplate && measurementFields.length > 0" class="space-y-6">
+          <!-- Measurement Tabs -->
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+              <button
+                v-for="tab in measurementTabs"
+                :key="tab.key"
+                :class="[
+                  'flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap',
+                  activeMeasurementTab === tab.key
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                ]"
+                @click="activeMeasurementTab = tab.key"
+              >
+                <UIcon :name="tab.icon" class="w-4 h-4 mr-2" />
+                {{ tab.label }}
+                <UBadge
+:label="tab.count.toString()"
+color="neutral"
+variant="soft"
+class="ml-2" />
+              </button>
+            </nav>
+          </div>
+
+          <!-- Active Tab Content -->
+          <div class="min-h-[300px]">
+            <!-- Unit Information -->
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center text-sm text-blue-800">
+                <UIcon name="i-heroicons-information-circle" class="w-4 h-4 mr-2" />
+                All measurements are in <strong>{{ selectedTemplate.unit }}</strong>
+              </div>
             </div>
 
-            <!-- Notes Section -->
-            <div class="space-y-4 mt-8">
-              <h3 class="text-md font-medium text-gray-700 flex items-center">
-                <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 mr-2 text-primary-500" />
-                Notes
-              </h3>
-              <div class="space-y-2">
-                <label
-for="measurement-notes"
-class="block text-sm font-medium text-gray-700"
-                  >Measurement Notes</label
-                >
-                <UTextarea
-                  id="measurement-notes"
-                  v-model="measurements.notes"
-                  name="measurement-notes"
-                  placeholder="Add any special instructions or notes about these measurements"
-                  :rows="4"
-                  class="w-full focus:ring-primary-500"
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-for="field in activeMeasurementFields" :key="field.id" class="space-y-2">
+                <label :for="`field-${field.id}`" class="block text-sm font-medium text-gray-700">
+                  {{ field.name }}
+                  <span v-if="field.isRequired" class="text-red-500">*</span>
+                </label>
+                <UInput
+                  :id="`field-${field.id}`"
+                  v-model="measurements[String(field.id)]"
+                  type="number"
+                  step="0.25"
+                  placeholder="0.0"
                   size="lg"
                 />
               </div>
             </div>
           </div>
-        </form>
+
+          <!-- Measurement Notes -->
+          <div class="pt-6 border-t">
+            <label for="measurementNotes" class="block text-sm font-medium text-gray-700 mb-2">
+              Measurement Notes
+            </label>
+            <UTextarea
+              id="measurementNotes"
+              v-model="measurementNotes"
+              placeholder="Any special notes about these measurements..."
+              class="w-full"
+              :rows="3"
+              size="lg"
+            />
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="!selectedTemplate" class="text-center py-12">
+          <UIcon
+            name="i-heroicons-clipboard-document-list"
+            class="w-16 h-16 mx-auto text-gray-400 mb-4"
+          />
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Select a Template</h3>
+          <p class="text-gray-600 mb-4">
+            Choose a measurement template to start capturing measurements
+          </p>
+        </div>
+
+        <!-- No Fields State -->
+        <div v-else-if="measurementFields.length === 0" class="text-center py-12">
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-16 h-16 mx-auto text-amber-400 mb-4"
+          />
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Template has no fields</h3>
+          <p class="text-gray-600 mb-4">
+            This template doesn't have any measurement fields defined
+          </p>
+          <UButton variant="ghost" :to="`/measurement-templates/${selectedTemplateId}/edit`">
+            Edit Template
+          </UButton>
+        </div>
       </UCard>
-    </ClientOnly>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
 
-// Composable
-const routes = useAppRoutes()
-const router = useRouter()
-
-// Constants
-const CLIENTS_PATH = routes.ROUTE_PATHS[routes.ROUTE_NAMES.DASHBOARD.CLIENTS.INDEX] as string
+definePageMeta({
+  layout: 'dashboard',
+  middleware: ['auth', 'setup-required'],
+})
 
 // Set page metadata
 useHead({
-  title: 'Add New Client',
+  title: 'Add Client',
 })
 
-// Initialize composables
-const { user, isAuthenticated } = useAuth()
+// Initialize composables for API integration
 const { templates, isLoading: templatesLoading, fetchTemplates } = useMeasurementTemplates()
+const { isAuthenticated } = useAuth()
 const { createClient } = useClients()
 
+// Reactive state
+const client = reactive({
+  name: '',
+  phone: '',
+  email: '',
+  address: '',
+  gender: undefined as 'male' | 'female' | undefined,
+  notes: '',
+})
+
+const measurements = reactive<Record<string | number, number | null>>({})
+const measurementNotes = ref('')
+const selectedTemplateId = ref<number | undefined>(undefined)
+const isSaving = ref(false)
+const activeMeasurementTab = ref('upper')
 const hasLoadedTemplates = ref(false)
+const errors = reactive({
+  name: '',
+  gender: '',
+})
+
+// Load templates on mount and when auth changes
+onMounted(async () => {
+  if (isAuthenticated.value && import.meta.client) {
+    await loadTemplates()
+  }
+})
 
 // Watch for auth changes to reload templates if needed
 watch(
   () => isAuthenticated.value,
   async isAuth => {
-    if (isAuth && !hasLoadedTemplates.value) {
+    if (isAuth && !hasLoadedTemplates.value && import.meta.client) {
       console.log('User authenticated, fetching templates...')
       await loadTemplates()
     }
   },
-  { immediate: true }
+  { immediate: false }
 )
 
 // Load templates function
@@ -331,198 +365,195 @@ async function loadTemplates(forceRefresh = false) {
 
   try {
     console.log('Fetching measurement templates...', forceRefresh ? '(forced refresh)' : '')
-    // Use a client-only wrapper to avoid SSR issues
-    if (import.meta.client) {
+    if (import.meta.client && isAuthenticated.value) {
       await fetchTemplates()
       console.log('Templates fetched:', templates.value)
       hasLoadedTemplates.value = true
     } else {
-      console.log('Skipping template fetch during SSR')
+      console.log('Skipping template fetch during SSR or when not authenticated')
     }
   } catch (error) {
     console.error('Failed to fetch measurement templates:', error)
-    // Show error toast only on client side
     if (import.meta.client) {
       useToast().add({
         title: 'Error',
         description: 'Failed to load measurement templates',
-        color: 'red',
+        color: 'error',
       })
     }
   }
 }
 
-// Selected template
-const selectedTemplateId = ref(null)
+// Gender options
+const genderOptions = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+]
 
-// Computed property for template options in the select dropdown
+// Template options for select dropdown
 const templateOptions = computed(() => {
-  console.log('Computing template options, templates count:', templates.value?.length || 0)
   if (!templates.value || templates.value.length === 0) {
     return []
   }
 
-  return templates.value.map(template => ({
-    label: `${template.name} (${template.gender.charAt(0).toUpperCase() + template.gender.slice(1)})`,
-    value: template.id,
-  }))
+  return templates.value
+    .filter(template => !template.isArchived) // Only show active templates
+    .map(template => ({
+      label: `${template.name} (${template.gender.charAt(0).toUpperCase() + template.gender.slice(1)})`,
+      value: template.id,
+    }))
 })
 
-// Flag to show loading or empty state
-const hasTemplates = computed(() => templateOptions.value.length > 0)
-
-// Computed property for selected template name
-const _selectedTemplateName = computed(() => {
-  const template = templates.value.find(t => t.id === selectedTemplateId.value)
-  return template ? template.name : ''
+// Selected template
+const selectedTemplate = computed(() => {
+  return templates.value?.find(t => t.id === selectedTemplateId.value)
 })
 
-// Client data
-const client = ref({
-  name: '',
-  phone: '',
-  notes: '',
+// All measurement fields from selected template
+const measurementFields = computed(() => {
+  return selectedTemplate.value?.fields || []
 })
 
-// Measurement data
-const measurements = ref({
-  notes: '',
-})
-
-// Measurement fields by category
-const upperBodyFields = ref([])
-const lowerBodyFields = ref([])
-const otherFields = ref([])
-
-// Flag to indicate if fields are available
-const hasFields = computed(() => {
-  return (
-    upperBodyFields.value.length > 0 ||
-    lowerBodyFields.value.length > 0 ||
-    otherFields.value.length > 0
-  )
-})
-
-const isSaving = ref(false)
-
-// Add computed property for form validation
-const isFormValid = computed(() => {
-  return client.value.name && client.value.name.trim() !== ''
-})
-
-// Function to select a template
-const selectTemplate = async templateId => {
-  console.log('Selecting template with ID:', templateId)
-  selectedTemplateId.value = templateId
-
-  // Find the selected template
-  const template = templates.value.find(t => t.id === templateId)
-  console.log('Found template:', template)
-
-  if (!template) {
-    console.error('Template not found for ID:', templateId)
-    useToast().add({
-      title: 'Error',
-      description: 'Template not found',
-      color: 'red',
-    })
-    return
-  }
-
-  // Reset measurements object to only contain notes
-  const notes = measurements.value.notes
-  measurements.value = { notes }
-
-  try {
-    // Check if template has fields
-    if (!template.fields || template.fields.length === 0) {
-      console.warn('Template has no fields:', template.name)
-      upperBodyFields.value = []
-      lowerBodyFields.value = []
-      otherFields.value = []
-      return
-    }
-
-    console.log('Template fields:', template.fields)
-
-    // Categorize fields from the template
-    const upperBody = []
-    const lowerBody = []
-    const other = []
-
-    template.fields.forEach(field => {
-      // Extract category from metadata if available
-      const category = field.metadata?.category || ''
-      const fieldData = {
-        id: field.id,
-        name: field.name,
-        unit: field.unit || 'in',
-        description: field.description || '',
-        isRequired: field.isRequired,
-        displayOrder: field.displayOrder,
-        category: category,
+// Categorized fields
+const upperBodyFields = computed(() => {
+  return measurementFields.value
+    .filter(field => {
+      // Handle both string and object metadata
+      let category = ''
+      if (typeof field.metadata === 'string') {
+        try {
+          const parsed = JSON.parse(field.metadata) as any
+          category = parsed?.category || ''
+        } catch {
+          category = ''
+        }
+      } else if (field.metadata && typeof field.metadata === 'object') {
+        category = (field.metadata as any)?.category || ''
       }
 
-      // Categorize based on metadata or field name
-      if (
+      return (
         category.toLowerCase().includes('upper') ||
         ['bust', 'chest', 'shoulder', 'sleeve', 'neck', 'arm'].some(term =>
           field.name.toLowerCase().includes(term)
         )
-      ) {
-        upperBody.push(fieldData)
-      } else if (
-        category.toLowerCase().includes('lower') ||
-        ['waist', 'hip', 'inseam', 'thigh', 'leg'].some(term =>
+      )
+    })
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+})
+
+const lowerBodyFields = computed(() => {
+  return measurementFields.value
+    .filter(field => {
+      // Handle both string and object metadata
+      let category = ''
+      if (typeof field.metadata === 'string') {
+        try {
+          const parsed = JSON.parse(field.metadata) as any
+          category = parsed?.category || ''
+        } catch {
+          category = ''
+        }
+      } else if (field.metadata && typeof field.metadata === 'object') {
+        category = (field.metadata as any)?.category || ''
+      }
+
+      const isUpper =
+        category.toLowerCase().includes('upper') ||
+        ['bust', 'chest', 'shoulder', 'sleeve', 'neck', 'arm'].some(term =>
           field.name.toLowerCase().includes(term)
         )
-      ) {
-        lowerBody.push(fieldData)
-      } else {
-        other.push(fieldData)
-      }
+      // Include lower body fields and any other fields not categorized as upper
+      return !isUpper
     })
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+})
 
-    // Sort fields by display order
-    const sortByOrder = (a, b) => a.displayOrder - b.displayOrder
-    upperBody.sort(sortByOrder)
-    lowerBody.sort(sortByOrder)
-    other.sort(sortByOrder)
+// Form validation
+const isFormValid = computed(() => {
+  return (
+    client.name.trim() !== '' &&
+    client.gender !== undefined &&
+    selectedTemplateId.value !== undefined
+  )
+})
 
-    // Set the fields by category
-    upperBodyFields.value = upperBody
-    lowerBodyFields.value = lowerBody
-    otherFields.value = other
+// Can save validation
+const canSave = computed(() => {
+  return (
+    client.name.trim() !== '' &&
+    client.gender !== undefined &&
+    selectedTemplateId.value !== undefined
+  )
+})
 
-    console.log('Set upperBodyFields:', upperBodyFields.value)
-    console.log('Set lowerBodyFields:', lowerBodyFields.value)
-    console.log('Set otherFields:', otherFields.value)
+// Active measurement fields based on selected tab
+const activeMeasurementFields = computed(() => {
+  switch (activeMeasurementTab.value) {
+    case 'upper':
+      return upperBodyFields.value
+    case 'lower':
+      return lowerBodyFields.value
+    default:
+      return upperBodyFields.value.length > 0 ? upperBodyFields.value : lowerBodyFields.value
+  }
+})
 
-    // Initialize measurement values for each field
-    const allFields = [...upperBody, ...lowerBody, ...other]
-    allFields.forEach(field => {
-      const fieldName = field.name.toLowerCase().replace(/\s+/g, '_')
-      measurements.value[fieldName] = null
-      console.log('Added field to measurements:', fieldName)
+// Measurement tabs
+const measurementTabs = computed(() => {
+  const tabs: Array<{
+    key: string
+    label: string
+    icon: string
+    count: number
+  }> = []
+
+  if (upperBodyFields.value.length > 0) {
+    tabs.push({
+      key: 'upper',
+      label: 'Upper Body',
+      icon: 'i-heroicons-user-circle',
+      count: upperBodyFields.value.length,
     })
+  }
 
-    console.log('Updated measurements:', measurements.value)
+  if (lowerBodyFields.value.length > 0) {
+    tabs.push({
+      key: 'lower',
+      label: 'Lower Body',
+      icon: 'i-heroicons-rectangle-stack',
+      count: lowerBodyFields.value.length,
+    })
+  }
 
-    useToast().add({
-      title: 'Template Selected',
-      description: `Using ${template.name} template`,
-      color: 'green',
+  return tabs
+})
+
+// Navigation functions
+const handleCancel = () => {
+  navigateTo('/clients')
+}
+
+// Template selection handler with smart suggestions
+const onTemplateSelect = (templateId: string | number) => {
+  const numericId = typeof templateId === 'string' ? parseInt(templateId) : templateId
+  selectedTemplateId.value = numericId
+
+  // Clear existing measurements
+  Object.keys(measurements).forEach(key => {
+    delete measurements[key as any]
+  })
+
+  // Initialize measurement fields
+  if (selectedTemplate.value) {
+    selectedTemplate.value.fields.forEach(field => {
+      measurements[String(field.id)] = null
     })
-  } catch (error) {
-    console.error('Error setting up template fields:', error)
-    useToast().add({
-      title: 'Error',
-      description: 'Failed to set up measurement fields',
-      color: 'red',
-    })
-    upperBodyFields.value = []
-    lowerBodyFields.value = []
-    otherFields.value = []
+  }
+
+  // Reset to first tab when template changes
+  const firstTab = measurementTabs.value?.[0]
+  if (firstTab) {
+    activeMeasurementTab.value = firstTab.key
   }
 }
 
@@ -530,131 +561,123 @@ const selectTemplate = async templateId => {
 const processMeasurements = () => {
   // Create a base object with notes and values
   const processedMeasurements = {
-    // Keep the notes field as is
-    notes: measurements.value.notes || null,
-    // Initialize values field to store all measurements
-    values: {},
+    notes: measurementNotes.value?.trim() || undefined,
+    values: {} as Record<string, any>,
   }
 
   // Process all fields from the template
-  const allFields = [...upperBodyFields.value, ...lowerBodyFields.value, ...otherFields.value]
+  const allFields = [...upperBodyFields.value, ...lowerBodyFields.value]
 
   // Store ALL fields from the template, even those without values
   allFields.forEach(field => {
-    // Convert field name to the format used in measurements object (lowercase with underscores)
-    const fieldName = field.name.toLowerCase().replace(/\s+/g, '_')
-    const value = measurements.value[fieldName]
+    const fieldKey = String(field.id)
+    const value = measurements[fieldKey]
 
     // Store field metadata and value (even if null)
-    processedMeasurements.values[fieldName] = {
-      value: value !== null && value !== '' ? parseFloat(value) : null,
-      unit: field.unit || 'in',
+    processedMeasurements.values[fieldKey] = {
+      value:
+        value !== null && value !== undefined && String(value).trim() !== ''
+          ? parseFloat(String(value))
+          : undefined,
+      unit: selectedTemplate.value?.unit || 'in',
       name: field.name,
       fieldId: field.id,
-      category: field.category || null,
       isRequired: field.isRequired || false,
       displayOrder: field.displayOrder || 0,
     }
   })
 
-  // Store template information in the values if selected
-  if (selectedTemplateId.value) {
-    const template = templates.value.find(t => t.id === selectedTemplateId.value)
-    if (template) {
-      processedMeasurements.values._template = {
-        id: template.id,
-        name: template.name,
-        gender: template.gender,
-        fields: allFields.map(f => f.id), // Store references to all fields in the template
-      }
+  // Store template information if selected
+  if (selectedTemplateId.value && selectedTemplate.value) {
+    processedMeasurements.values._template = {
+      id: selectedTemplate.value.id,
+      name: selectedTemplate.value.name,
+      gender: selectedTemplate.value.gender,
+      unit: selectedTemplate.value.unit,
+      fields: allFields.map(f => f.id),
     }
   }
 
-  // Log the processed measurements
   console.log('Processed measurements for saving:', processedMeasurements)
-
   return processedMeasurements
 }
 
-// Validate client data
-const validateClient = () => {
-  const errors = []
+// Validation
+const validateForm = () => {
+  errors.name = ''
+  errors.gender = ''
 
-  if (!client.value.name || client.value.name.trim() === '') {
-    errors.push('Please enter the client name')
+  if (!client.name.trim()) {
+    errors.name = 'Client name is required'
+    return false
   }
 
-  if (errors.length > 0) {
-    useToast().add({
-      title: 'Missing information',
-      description: errors.join(', '),
-      color: 'red',
-    })
+  if (!client.gender || client.gender === undefined) {
+    errors.gender = 'Gender is required'
     return false
   }
 
   return true
 }
 
-// Save client to API
-const saveClientToApi = async () => {
+// Save client function
+const saveClient = async () => {
+  if (!validateForm()) {
+    return
+  }
+
+  isSaving.value = true
+
   try {
     // Check if user is authenticated
     if (!isAuthenticated.value) {
       useToast().add({
         title: 'Authentication required',
         description: 'Please log in to add clients',
-        color: 'orange',
+        color: 'warning',
       })
-      navigateTo('/auth/login')
-      return null
+      await navigateTo('/auth/login')
+      return
     }
 
+    // Prepare measurements data
     const processedMeasurements = processMeasurements()
 
-    // Use the createClient composable
-    const result = await createClient({
-      ...client.value,
+    // Prepare client data for API
+    const clientData = {
+      name: client.name.trim(),
+      phone: client.phone?.trim() || undefined,
+      email: client.email?.trim() || undefined,
+      address: client.address?.trim() || undefined,
+      gender: client.gender,
+      notes: client.notes?.trim() || undefined,
       measurements: processedMeasurements,
-    })
+    }
+
+    console.log('Saving client data:', clientData)
+
+    // Use the createClient composable
+    const result = await createClient(clientData)
 
     if (result.success && result.data) {
       useToast().add({
         title: 'Success',
         description: 'Client added successfully',
-        color: 'green',
+        color: 'success',
       })
 
-      return result.data
+      // Navigate to the new client's detail page
+      await navigateTo(`/clients/${result.data.id}`)
     } else {
       throw new Error(result.message || 'Failed to create client')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving client:', error)
-
     useToast().add({
       title: 'Error',
       description: error.message || 'Failed to add client',
-      color: 'red',
+      color: 'error',
     })
-
-    return null
-  }
-}
-
-// Save client function
-const saveClient = async () => {
-  if (!validateClient()) return
-
-  isSaving.value = true
-
-  try {
-    const newClient = await saveClientToApi()
-
-    if (newClient) {
-      // Redirect to clients list on success
-      await router.push(`${CLIENTS_PATH}/${newClient.id}`)
-    }
   } finally {
     isSaving.value = false
   }

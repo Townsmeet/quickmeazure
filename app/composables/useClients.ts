@@ -17,11 +17,16 @@ interface CreateClientData {
   address?: string
   gender?: 'male' | 'female'
   notes?: string
+  measurements?: {
+    values?: Record<string, any>
+    notes?: string
+    additionalMeasurements?: Record<string, any>
+  }
 }
 
 interface ClientResponse {
   success: boolean
-  data?: Client
+  data?: Client | null
   message?: string
 }
 
@@ -69,7 +74,7 @@ export const useClients = () => {
     try {
       const { data } = await useFetch<ClientResponse>(`/api/clients/${id}`, {
         server: false,
-        default: () => ({ success: false, data: null }) as ClientResponse,
+        default: () => ({ success: false, data: undefined }) as ClientResponse,
       })
 
       const responseData = data.value as ClientResponse

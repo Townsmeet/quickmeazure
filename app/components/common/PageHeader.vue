@@ -9,6 +9,8 @@
         <UButton
           v-if="primaryAction"
           :to="primaryAction.to"
+          :disabled="primaryAction.disabled"
+          :loading="primaryAction.loading"
           color="primary"
           size="lg"
           @click="primaryAction.onClick && primaryAction.onClick()"
