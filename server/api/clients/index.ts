@@ -2,8 +2,9 @@ import { eq, count, exists, desc, asc, sql, and } from 'drizzle-orm'
 import { defineEventHandler, createError } from 'h3'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { ok } from '../../validators'
+import { ok as _ok } from '../../validators'
 import { z } from 'zod'
+import { processTimestamps } from '../../utils/timestamps'
 
 // Define event handler for GET requests
 export default defineEventHandler(async event => {
@@ -143,6 +144,11 @@ export default defineEventHandler(async event => {
       console.log('Query result - clients data:', clientsData)
       console.log('Number of clients found:', clientsData.length)
 
+      // Process the data to ensure proper timestamp formatting
+      const processedClientsData = clientsData.map(client =>
+        processTimestamps(client, ['createdAt'])
+      )
+
       // Get total count
       const totalCountResult = await countQuery
       const totalCount = totalCountResult[0]?.count || 0
@@ -154,7 +160,7 @@ export default defineEventHandler(async event => {
 
       return {
         success: true,
-        data: clientsData,
+        data: processedClientsData,
         pagination: {
           page,
           limit,
@@ -251,8 +257,11 @@ export default defineEventHandler(async event => {
           }
         }
 
-        // Create measurement record
-        await db.insert(tables.measurements).values(processedMeasurements)
+        // Create measurement record, stringifying the values map
+        await db.insert(tables.measurements).values({
+          ...processedMeasurements,
+          values: JSON.stringify(processedMeasurements.values),
+        })
       }
 
       return {

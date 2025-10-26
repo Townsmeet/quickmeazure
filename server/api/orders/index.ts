@@ -2,8 +2,8 @@ import { eq, and, desc, asc, sql, count } from 'drizzle-orm'
 import { defineEventHandler, createError, getMethod, getQuery, readBody } from 'h3'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { ok } from '../../validators'
 import { z } from 'zod'
+import { processTimestamps } from '../../utils/timestamps'
 
 // Define event handler for orders API
 export default defineEventHandler(async event => {
@@ -176,7 +176,7 @@ export default defineEventHandler(async event => {
       // Calculate total pages
       const totalPages = Math.ceil(total / limit)
 
-      // Parse details JSON text
+      // Parse details JSON text and process timestamps
       const items = ordersData.map(o => {
         let details: any = null
         if (typeof o.details === 'string' && o.details) {
@@ -186,7 +186,9 @@ export default defineEventHandler(async event => {
             details = o.details
           }
         }
-        return { ...o, details }
+
+        // Process timestamps to ensure proper formatting
+        return processTimestamps({ ...o, details }, ['createdAt', 'updatedAt'])
       })
 
       // Return data with pagination info

@@ -44,6 +44,12 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      dayjs:
+        specifier: ^1.11.18
+        version: 1.11.18
+      dayjs-nuxt:
+        specifier: 2.1.11
+        version: 2.1.11(magicast@0.3.5)
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -4829,6 +4835,12 @@ packages:
 
   davezip@0.4.7:
     resolution: {integrity: sha512-p6z4TlVEyjn9dbwozPtIp5aqcb6QUFBUMHWhHTZkmBPIbMhD45AbQkKtUMtJwba1ylvjw2/doQbUHsvb2AGkDQ==}
+
+  dayjs-nuxt@2.1.11:
+    resolution: {integrity: sha512-KDDNiET7KAKf6yzL3RaPWq5aV7ql9QTt5fIDYv+4eOegDmnEQGjwkKYADDystsKtPjt7QZerpVbhC96o3BIyqQ==}
+
+  dayjs@1.11.18:
+    resolution: {integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==}
 
   db0@0.3.4:
     resolution: {integrity: sha512-RiXXi4WaNzPTHEOu8UPQKMooIbqOEyqA1t7Z6MsdxSCeb8iUC9ko3LcmsLmeUt2SM5bctfArZKkRQggKZz7JNw==}
@@ -15020,6 +15032,15 @@ snapshots:
       daveutils: 0.4.74
     transitivePeerDependencies:
       - react-native-b4a
+
+  dayjs-nuxt@2.1.11(magicast@0.3.5):
+    dependencies:
+      '@nuxt/kit': 3.19.2(magicast@0.3.5)
+      dayjs: 1.11.18
+    transitivePeerDependencies:
+      - magicast
+
+  dayjs@1.11.18: {}
 
   db0@0.3.4(@libsql/client@0.15.15)(drizzle-orm@0.42.0(@libsql/client@0.15.15)(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(kysely@0.28.7)(mysql2@3.15.1)(pg@8.16.3))(mysql2@3.15.1):
     optionalDependencies:

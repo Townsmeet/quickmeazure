@@ -13,7 +13,7 @@
       :primary-action="{
         label: 'Add Client',
         icon: 'i-heroicons-plus',
-        to: '/clients/new',
+        onClick: () => (showAddSlideover = true),
       }"
     />
 
@@ -275,6 +275,29 @@
         </div>
       </div>
     </div>
+
+    <!-- Client Add Component -->
+    <ClientAdd
+      :is-open="showAddSlideover"
+      @close="showAddSlideover = false"
+      @success="handleClientAdded"
+    />
+
+    <!-- Client Detail Component -->
+    <ClientDetail
+      :is-open="showDetailSlideover"
+      :client="selectedClient"
+      @close="showDetailSlideover = false"
+      @edit="openEditSlideover"
+    />
+
+    <!-- Client Edit Component -->
+    <ClientEdit
+      :is-open="showEditSlideover"
+      :client="selectedClient"
+      @close="showEditSlideover = false"
+      @save="saveClient"
+    />
   </div>
 </template>
 
@@ -466,6 +489,12 @@ watch(
 // Setup modal state
 const showSetupModal = ref(true)
 
+// Slideover state
+const showAddSlideover = ref(false)
+const showDetailSlideover = ref(false)
+const showEditSlideover = ref(false)
+const selectedClient = ref<any>(null)
+
 // Check if we should show setup modal
 const checkSetupStatus = () => {
   if (user.value?.hasCompletedSetup) {
@@ -477,4 +506,101 @@ const checkSetupStatus = () => {
 onMounted(() => {
   checkSetupStatus()
 })
+
+// Client management functions
+const { getClient, updateClient } = useClients()
+
+const handleClientAdded = async (client: any) => {
+  // Close the add slideover
+  showAddSlideover.value = false
+
+  // Refresh dashboard data
+  await fetchDashboardData()
+
+  // Open the detail slideover for the newly created client
+  selectedClient.value = client
+  showDetailSlideover.value = true
+}
+
+const openEditSlideover = async (client: any) => {
+  // Fetch full client data with measurements
+  const fullClient = await getClient(client.id)
+  selectedClient.value = fullClient || client
+
+  // Ensure measurement values are properly initialized
+  if (selectedClient.value?.measurement?.values) {
+    // Parse values if it's a string (JSON from database)
+    if (typeof selectedClient.value.measurement.values === 'string') {
+      try {
+        selectedClient.value.measurement.values = JSON.parse(
+          selectedClient.value.measurement.values
+        )
+      } catch (error) {
+        console.error('Failed to parse measurement values:', error)
+        selectedClient.value.measurement.values = {}
+      }
+    }
+
+    // Ensure values is an object
+    if (
+      typeof selectedClient.value.measurement.values !== 'object' ||
+      selectedClient.value.measurement.values === null
+    ) {
+      selectedClient.value.measurement.values = {}
+    }
+  }
+
+  showEditSlideover.value = true
+}
+
+const saveClient = async (client: any) => {
+  if (!client) return
+
+  try {
+    // Prepare the measurement values
+    let measurementValues = {}
+    if (client.measurement) {
+      measurementValues = { ...client.measurement.values }
+    }
+
+    // Prepare the update data
+    const updateData = {
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      notes: client.notes,
+      measurements: client.measurement
+        ? {
+            values: measurementValues,
+            notes: client.measurement.notes || undefined,
+          }
+        : undefined,
+    }
+
+    // Update the client using the API
+    const result = await updateClient(client.id, updateData)
+
+    if (result.success) {
+      showEditSlideover.value = false
+      // Refresh dashboard data
+      await fetchDashboardData()
+
+      toast.add({
+        title: 'Client updated',
+        description: 'The client has been successfully updated.',
+        color: 'success',
+      })
+    } else {
+      throw new Error(result.message || 'Failed to update client')
+    }
+  } catch (error) {
+    console.error('Failed to update client:', error)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to update client. Please try again.',
+      color: 'error',
+    })
+  }
+}
 </script>

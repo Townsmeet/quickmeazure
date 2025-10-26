@@ -4,17 +4,25 @@
 
 export interface Client {
   id: number
-  userId?: number
-  firstName: string
-  lastName: string
-  name?: string // computed property for backward compatibility
+  userId?: string
+  name: string
+  gender?: string | null
   email?: string | null
   phone?: string | null
   address?: string | null
   notes?: string | null
-  isActive?: boolean
   hasOrders?: boolean
   orderCount?: number
+  measurementCount?: number
+  totalRevenue?: number
+  measurement?: {
+    id: number
+    clientId: number
+    values: Record<string, any>
+    notes?: string | null
+    lastUpdated: string
+    createdAt?: string
+  } | null
   createdAt: string
   updatedAt?: string
 }

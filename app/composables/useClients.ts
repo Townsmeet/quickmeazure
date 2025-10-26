@@ -1,22 +1,12 @@
-interface Client {
-  id: number
-  name: string
-  email?: string
-  phone?: string
-  address?: string
-  gender?: 'male' | 'female'
-  notes?: string
-  createdAt: string
-  updatedAt: string
-}
+import type { Client } from '~/types/client'
 
 interface CreateClientData {
   name: string
-  email?: string
-  phone?: string
-  address?: string
-  gender?: 'male' | 'female'
-  notes?: string
+  gender?: string | null
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  notes?: string | null
   measurements?: {
     values?: Record<string, any>
     notes?: string
@@ -44,7 +34,7 @@ export const useClients = () => {
 
   // Data fetching with useFetch
   const {
-    data: clientsData,
+    data: _clientsData,
     pending: isLoading,
     refresh: refreshClients,
   } = useFetch<ClientsResponse>('/api/clients', {

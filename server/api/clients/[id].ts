@@ -56,11 +56,23 @@ export default defineEventHandler(async event => {
         .limit(1)
 
       // Combine client and measurement data
+      const measurement = measurementData.length > 0 ? measurementData[0] : null
+
+      // Parse JSON values if measurement exists
+      if (measurement && measurement.values) {
+        try {
+          measurement.values = JSON.parse(measurement.values)
+        } catch (error) {
+          console.error('Failed to parse measurement values:', error)
+          measurement.values = {}
+        }
+      }
+
       return {
         success: true,
         data: {
           ...clientData[0],
-          measurement: measurementData.length > 0 ? measurementData[0] : null,
+          measurement,
         },
       }
     } catch (error) {
@@ -98,8 +110,8 @@ export default defineEventHandler(async event => {
         })
         .where(eq(tables.clients.id, id))
 
-      // Handle tables.measurements
-      if (body.tables.measurements) {
+      // Handle measurements
+      if (body.measurements) {
         // Check if measurement exists for this client
         const existingMeasurement = await db
           .select()
@@ -107,11 +119,11 @@ export default defineEventHandler(async event => {
           .where(eq(tables.measurements.clientId, id))
           .limit(1)
 
-        // Process tables.measurements for the new schema
+        // Process measurements for the new schema
         const processedMeasurements = {
-          // Store all tables.measurements in the values field
-          values: body.tables.measurements.values || {},
-          notes: body.tables.measurements.notes || null,
+          // Store all measurements in the values field
+          values: body.measurements.values || {},
+          notes: body.measurements.notes || null,
           lastUpdated: new Date(),
         }
 
@@ -131,7 +143,7 @@ export default defineEventHandler(async event => {
         }
       }
 
-      // Return updated client with tables.measurements
+      // Return updated client with measurements
       const updatedClient = await db
         .select()
         .from(tables.clients)
@@ -144,11 +156,23 @@ export default defineEventHandler(async event => {
         .where(eq(tables.measurements.clientId, id))
         .limit(1)
 
+      const measurement = updatedMeasurement.length > 0 ? updatedMeasurement[0] : null
+
+      // Parse JSON values if measurement exists
+      if (measurement && measurement.values) {
+        try {
+          measurement.values = JSON.parse(measurement.values)
+        } catch (error) {
+          console.error('Failed to parse measurement values:', error)
+          measurement.values = {}
+        }
+      }
+
       return {
         success: true,
         data: {
           ...updatedClient[0],
-          measurement: updatedMeasurement.length > 0 ? updatedMeasurement[0] : null,
+          measurement,
         },
       }
     } catch (error) {
@@ -164,7 +188,7 @@ export default defineEventHandler(async event => {
   // Handle DELETE request to delete a client
   if (method === 'DELETE') {
     try {
-      // Delete associated tables.measurements first (to maintain referential integrity)
+      // Delete associated measurements first (to maintain referential integrity)
       await db.delete(tables.measurements).where(eq(tables.measurements.clientId, id))
 
       // Delete client

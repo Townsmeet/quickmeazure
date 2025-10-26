@@ -2,6 +2,7 @@ import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
 import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
+import { eq, and , sql  } from 'drizzle-orm'
 
 // Define event handler for style-specific operations
 export default defineEventHandler(async event => {
@@ -65,8 +66,40 @@ export default defineEventHandler(async event => {
       console.log(`API: Found ${relatedOrders.length} related tables.orders`)
       console.log('API: Style data:', styleExists[0])
 
+      // Process timestamps for related orders
+      const processedRelatedOrders = relatedOrders.map(order => ({
+        ...order,
+        createdAt:
+          typeof order.createdAt === 'number'
+            ? order.createdAt
+            : typeof order.createdAt === 'string'
+              ? parseInt(order.createdAt, 10)
+              : Math.floor(new Date(order.createdAt).getTime() / 1000),
+      }))
+
+      // Process timestamps for style
+      const style = styleExists[0]
+      const processedStyle = {
+        ...style,
+        createdAt:
+          typeof style.createdAt === 'number'
+            ? style.createdAt
+            : typeof style.createdAt === 'string'
+              ? parseInt(style.createdAt, 10)
+              : Math.floor(new Date(style.createdAt).getTime() / 1000),
+        updatedAt:
+          typeof style.updatedAt === 'number'
+            ? style.updatedAt
+            : typeof style.updatedAt === 'string'
+              ? parseInt(style.updatedAt, 10)
+              : Math.floor(new Date(style.updatedAt).getTime() / 1000),
+      }
+
       // Return both style and related tables.orders
-      return { success: true, data: { style: styleExists[0], relatedOrders } }
+      return {
+        success: true,
+        data: { style: processedStyle, relatedOrders: processedRelatedOrders },
+      }
     } catch (error) {
       console.error('API Error fetching style:', error)
       throw createError({

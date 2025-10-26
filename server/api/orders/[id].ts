@@ -1,5 +1,7 @@
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
+import { eq, and, sql } from 'drizzle-orm'
+import { processTimestamps } from '../../utils/timestamps'
 
 // Define interfaces for our data structures
 interface OrderDetails {
@@ -82,10 +84,14 @@ export default defineEventHandler(async event => {
     // Extract values from details JSON (stored as text)
     const detailsText = orderWithClient[0].details as unknown as string | null
     const details = (detailsText ? JSON.parse(detailsText) : {}) as OrderDetails
+
+    const order = orderWithClient[0]
     return {
       success: true,
       data: {
-        ...orderWithClient[0],
+        ...order,
+        // Process timestamps to ensure proper formatting
+        ...processTimestamps(order, ['createdAt', 'updatedAt']),
         measurementId: details.measurementId,
         styleId: details.styleId,
         depositAmount: details.depositAmount || 0,
