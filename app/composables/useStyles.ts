@@ -1,21 +1,9 @@
-interface Style {
-  id: number
-  name: string
-  description?: string
-  status: 'active' | 'inactive' | 'draft'
-  price?: number
-  images?: string[]
-  measurements?: Record<string, any>
-  createdAt: string
-  updatedAt: string
-}
+import type { Style } from '~/types/style'
 
 interface CreateStyleData {
   name: string
-  description?: string
-  price?: number
-  images?: string[]
-  measurements?: Record<string, any>
+  description?: string | null
+  type?: string | null
 }
 
 interface StyleResponse {
@@ -32,7 +20,6 @@ interface StylesResponse {
 
 interface StyleFilter {
   search: string
-  status: 'all' | 'active' | 'inactive' | 'draft'
   sortBy: string
   sortOrder: 'asc' | 'desc'
 }
@@ -44,7 +31,6 @@ export const useStyles = () => {
   const error = useState<string | null>('styles_error', () => null)
   const filters = useState<StyleFilter>('styles_filters', () => ({
     search: '',
-    status: 'all',
     sortBy: 'createdAt',
     sortOrder: 'desc',
   }))
@@ -54,11 +40,11 @@ export const useStyles = () => {
     data: stylesData,
     pending: isLoading,
     refresh: refreshStyles,
-  } = useFetch<StylesResponse>('/api/styles', {
+  } = useFetch<any>('/api/styles', {
     server: false,
-    default: () => ({ success: false, data: [] }) as StylesResponse,
+    default: () => ({ success: false, data: [] }),
     onResponse({ response }) {
-      const responseData = response._data as StylesResponse
+      const responseData = response._data
       if (responseData?.success && responseData?.data) {
         styles.value = responseData.data
       }
@@ -76,9 +62,7 @@ export const useStyles = () => {
         style.name.toLowerCase().includes(filters.value.search.toLowerCase()) ||
         style.description?.toLowerCase().includes(filters.value.search.toLowerCase())
 
-      const matchesStatus = filters.value.status === 'all' || style.status === filters.value.status
-
-      return matchesSearch && matchesStatus
+      return matchesSearch
     })
   })
 
@@ -93,15 +77,16 @@ export const useStyles = () => {
     error.value = null
 
     try {
-      const { data } = await useFetch<StyleResponse>(`/api/styles/${id}`, {
+      const { data } = await useFetch<any>(`/api/styles/${id}`, {
         server: false,
-        default: () => ({ success: false, data: null }) as StyleResponse,
+        default: () => ({ success: false, data: null }),
       })
 
-      const responseData = data.value as StyleResponse
+      const responseData = data.value
       if (responseData?.success && responseData?.data) {
-        currentStyle.value = responseData.data
-        return responseData.data
+        const styleData = responseData.data.style || responseData.data
+        currentStyle.value = styleData
+        return styleData
       }
 
       return null
@@ -113,28 +98,32 @@ export const useStyles = () => {
 
   // Create style
   const createStyle = async (data: CreateStyleData): Promise<StyleResponse> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<StyleResponse>('/api/styles', {
+      const response = await $fetch<any>('/api/styles', {
         method: 'POST',
         body: data,
       })
 
-      if (response.success && response.data) {
+      if (response?.success && response?.data) {
         styles.value.push(response.data)
+        return {
+          success: true,
+          data: response.data,
+        }
       }
 
-      return response
+      return {
+        success: false,
+        message: response?.message || 'Failed to create style',
+      }
     } catch (err: any) {
       error.value = err.message || 'Failed to create style'
       return {
         success: false,
-        message: error.value,
+        message: error.value || 'Failed to create style',
       }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -143,16 +132,15 @@ export const useStyles = () => {
     id: number,
     updates: Partial<CreateStyleData>
   ): Promise<StyleResponse> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<StyleResponse>(`/api/styles/${id}`, {
+      const response = await $fetch<any>(`/api/styles/${id}`, {
         method: 'PUT',
         body: updates,
       })
 
-      if (response.success && response.data) {
+      if (response?.success && response?.data) {
         const index = styles.value.findIndex(s => s.id === id)
         if (index !== -1) {
           styles.value[index] = response.data
@@ -162,77 +150,50 @@ export const useStyles = () => {
         if (currentStyle.value?.id === id) {
           currentStyle.value = response.data
         }
+
+        return {
+          success: true,
+          data: response.data,
+        }
       }
 
-      return response
+      return {
+        success: false,
+        message: response?.message || 'Failed to update style',
+      }
     } catch (err: any) {
       error.value = err.message || 'Failed to update style'
       return {
         success: false,
-        message: error.value,
+        message: error.value || 'Failed to update style',
       }
-    } finally {
-      isLoading.value = false
     }
   }
 
   // Delete style
   const deleteStyle = async (id: number): Promise<boolean> => {
-    isLoading.value = true
     error.value = null
 
     try {
-      const response = await $fetch<{ success: boolean }>(`/api/styles/${id}`, {
+      const response = await $fetch<any>(`/api/styles/${id}`, {
         method: 'DELETE',
       })
 
-      if (response.success) {
+      if (response?.success) {
         styles.value = styles.value.filter(s => s.id !== id)
 
         // Clear current style if it's the one being removed
         if (currentStyle.value?.id === id) {
           currentStyle.value = null
         }
+
+        return true
       }
 
-      return response.success
+      return false
     } catch (err: any) {
       error.value = err.message || 'Failed to delete style'
       return false
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Update style status
-  const updateStyleStatus = async (id: number, status: Style['status']): Promise<boolean> => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const response = await $fetch<StyleResponse>(`/api/styles/${id}/status`, {
-        method: 'PUT',
-        body: { status },
-      })
-
-      if (response.success && response.data) {
-        const index = styles.value.findIndex(s => s.id === id)
-        if (index !== -1) {
-          styles.value[index] = response.data
-        }
-
-        // Update current style if it's the one being edited
-        if (currentStyle.value?.id === id) {
-          currentStyle.value = response.data
-        }
-      }
-
-      return response.success
-    } catch (err: any) {
-      error.value = err.message || 'Failed to update style status'
-      return false
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -289,7 +250,6 @@ export const useStyles = () => {
     createStyle,
     updateStyle,
     deleteStyle,
-    updateStyleStatus,
     searchStyles,
 
     // Refresh Actions

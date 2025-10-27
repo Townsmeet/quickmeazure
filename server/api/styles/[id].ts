@@ -1,8 +1,12 @@
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
+import {
+  extractFileFromMultipart,
+  extractFilesFromMultipart,
+  extractFieldsFromMultipart,
+} from '../../utils/multipart'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
-import { eq, and , sql  } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 
 // Define event handler for style-specific operations
 export default defineEventHandler(async event => {
@@ -92,7 +96,9 @@ export default defineEventHandler(async event => {
             ? style.updatedAt
             : typeof style.updatedAt === 'string'
               ? parseInt(style.updatedAt, 10)
-              : Math.floor(new Date(style.updatedAt).getTime() / 1000),
+              : style.updatedAt
+                ? Math.floor(new Date(style.updatedAt).getTime() / 1000)
+                : Math.floor(new Date(style.createdAt).getTime() / 1000),
       }
 
       // Return both style and related tables.orders
@@ -118,29 +124,64 @@ export default defineEventHandler(async event => {
 
       let styleName = ''
       let styleDescription = null
-      let imageUrl = styleExists[0].imageUrl // Keep existing image URL by default
+      let styleType = null
+      let styleCategory = null
+      let styleStatus = null
+      let styleNotes = null
+      let styleMeasurements = null
+      let imageUrls: string[] = []
+      let keepExistingImages = true
 
       if (isMultipart) {
         // Parse multipart form data
         const fields = await extractFieldsFromMultipart(event)
-        const file = await extractFileFromMultipart(event)
+        const files = await extractFilesFromMultipart(event)
 
         styleName = fields.name || ''
         styleDescription = fields.description || null
+        styleType = fields.type || null
+        styleCategory = fields.category || null
+        styleStatus = fields.status || null
+        styleNotes = fields.notes || null
 
-        // Handle file upload to S3 if a file was provided
-        if (file) {
-          const fileExt = getFileExtension(file.filename)
-          const contentType = getContentType(fileExt)
+        // Parse measurements if provided
+        if (fields.measurements) {
+          try {
+            styleMeasurements = JSON.parse(fields.measurements)
+          } catch (e) {
+            console.error('Failed to parse measurements:', e)
+          }
+        }
 
-          // Upload to S3
-          imageUrl = await uploadFileToS3(file.buffer, file.filename, contentType)
+        // Handle multiple file uploads to S3 if files were provided
+        if (files && files.length > 0) {
+          keepExistingImages = false // Replace existing images with new ones
+
+          for (const file of files) {
+            if (file.buffer && file.buffer.length > 0) {
+              const fileExt = getFileExtension(file.filename)
+              const contentType = getContentType(fileExt)
+
+              try {
+                // Upload to S3
+                const uploadedUrl = await uploadFileToS3(file.buffer, file.filename, contentType)
+                imageUrls.push(uploadedUrl)
+              } catch (s3Error: any) {
+                console.error('S3 upload error:', s3Error)
+                throw createError({
+                  statusCode: 500,
+                  statusMessage: `S3 upload failed: ${s3Error.message}`,
+                })
+              }
+            }
+          }
         }
       } else {
         // Regular JSON body
         const body = await readBody(event)
         styleName = body.name
         styleDescription = body.description || null
+        styleType = body.type || null
 
         // If there's a base64 image, handle it
         if (body.imageBase64) {
@@ -153,11 +194,14 @@ export default defineEventHandler(async event => {
             const fileExt = contentType.split('/')[1] || 'jpg'
 
             // Upload to S3
-            imageUrl = await uploadFileToS3(buffer, `image.${fileExt}`, contentType)
+            const uploadedUrl = await uploadFileToS3(buffer, `image.${fileExt}`, contentType)
+            imageUrls.push(uploadedUrl)
+            keepExistingImages = false
           }
-        } else if (body.imageUrl !== undefined) {
-          // If imageUrl is explicitly set, use it (including null to remove image)
-          imageUrl = body.imageUrl
+        } else if (body.imageUrls !== undefined) {
+          // If imageUrls is explicitly set, use it
+          imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls : []
+          keepExistingImages = false
         }
       }
 
@@ -170,11 +214,21 @@ export default defineEventHandler(async event => {
       }
 
       // Update style
-      const updatedStyle = {
+      const updatedStyle: any = {
         name: styleName,
         description: styleDescription,
-        imageUrl: imageUrl,
+        type: styleType,
+        category: styleCategory,
+        status: styleStatus,
+        notes: styleNotes,
+        details: styleMeasurements ? JSON.stringify(styleMeasurements) : null,
         updatedAt: new Date(),
+      }
+
+      // Handle image updates
+      if (!keepExistingImages && imageUrls.length > 0) {
+        updatedStyle.imageUrl = imageUrls[0] // Keep first image for backward compatibility
+        updatedStyle.imageUrls = JSON.stringify(imageUrls)
       }
 
       await db

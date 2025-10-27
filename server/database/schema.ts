@@ -157,9 +157,14 @@ export const styles = sqliteTable('styles', {
     .references(() => user.id),
   name: text('name').notNull(),
   description: text('description'),
-  imageUrl: text('image_url'),
-  details: text('details'),
+  imageUrl: text('image_url'), // Keep for backward compatibility
+  imageUrls: text('image_urls'), // JSON array of image URLs
+  type: text('type'),
+  tags: text('tags'), // JSON array of tags
+  status: text('status').default('draft'),
   category: text('category'),
+  notes: text('notes'),
+  details: text('details'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })

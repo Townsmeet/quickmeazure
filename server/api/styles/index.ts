@@ -1,7 +1,11 @@
-// uuid import removed as it's not being used
 import { db } from '../../utils/drizzle'
+import { and, eq, sql, asc, desc } from 'drizzle-orm'
 import * as tables from '../../database/schema'
-import { extractFileFromMultipart, extractFieldsFromMultipart } from '../../utils/multipart'
+import {
+  extractFileFromMultipart,
+  extractFilesFromMultipart,
+  extractFieldsFromMultipart,
+} from '../../utils/multipart'
 import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 // Define event handler for styles API
@@ -82,6 +86,40 @@ export default defineEventHandler(async event => {
       // Apply sorting, pagination, and execute query
       const stylesData = await stylesQuery.orderBy(orderByClause).limit(limit).offset(offset)
 
+      // Process the styles data to parse measurements, imageUrls, and tags
+      const processedStyles = stylesData.map(style => ({
+        ...style,
+        measurements: style.details
+          ? (() => {
+              try {
+                return JSON.parse(style.details)
+              } catch (e) {
+                return null
+              }
+            })()
+          : null,
+        imageUrls: style.imageUrls
+          ? (() => {
+              try {
+                return JSON.parse(style.imageUrls)
+              } catch (e) {
+                return style.imageUrl ? [style.imageUrl] : []
+              }
+            })()
+          : style.imageUrl
+            ? [style.imageUrl]
+            : [],
+        tags: style.tags
+          ? (() => {
+              try {
+                return JSON.parse(style.tags)
+              } catch (e) {
+                return []
+              }
+            })()
+          : [],
+      }))
+
       // Get total count
       const countResult = await countQuery
       const total = countResult[0]?.count || 0
@@ -92,7 +130,7 @@ export default defineEventHandler(async event => {
       // Return data with pagination info
       return {
         success: true,
-        data: stylesData,
+        data: processedStyles,
         pagination: {
           page,
           limit,
@@ -123,7 +161,13 @@ export default defineEventHandler(async event => {
 
       let styleName = ''
       let styleDescription = null
-      let imageUrl = null
+      let styleType = null
+      let styleTags: string[] = []
+      let styleCategory = null
+      let styleStatus = 'draft'
+      let styleNotes = null
+      let styleMeasurements = null
+      const imageUrls: string[] = []
 
       if (isMultipart) {
         console.log('Processing multipart form data')
@@ -132,49 +176,69 @@ export default defineEventHandler(async event => {
           const fields = await extractFieldsFromMultipart(event)
           console.log('Extracted fields:', fields)
 
-          const file = await extractFileFromMultipart(event)
-          console.log(
-            'Extracted file:',
-            file
-              ? {
-                  filename: file.filename,
-                  contentType: file.contentType,
-                  bufferSize: file.buffer?.length || 0,
-                }
-              : 'No file found'
-          )
+          const files = await extractFilesFromMultipart(event)
+          console.log(`Extracted ${files.length} files`)
 
           styleName = fields.name || ''
           styleDescription = fields.description || null
+          styleType = fields.type || null
+          styleCategory = fields.category || null
+          styleStatus = fields.status || 'draft'
+          styleNotes = fields.notes || null
 
-          // Handle file upload to S3 if a file was provided
-          if (file && file.buffer && file.buffer.length > 0) {
-            const fileExt = getFileExtension(file.filename)
-            const contentType = getContentType(fileExt)
-
-            console.log('Uploading file to S3:', {
-              filename: file.filename,
-              fileExt,
-              contentType,
-              bufferSize: file.buffer.length,
-            })
-
+          // Parse tags if provided
+          if (fields.tags) {
             try {
-              // Upload to S3
-              imageUrl = await uploadFileToS3(file.buffer, file.filename, contentType)
-              console.log('Successfully uploaded to S3, imageUrl:', imageUrl)
-            } catch (s3Error: any) {
-              console.error('S3 upload error:', s3Error)
-              throw createError({
-                statusCode: 500,
-                statusMessage: `S3 upload failed: ${s3Error.message}`,
-              })
+              styleTags = JSON.parse(fields.tags)
+            } catch (e) {
+              console.error('Failed to parse tags:', e)
+            }
+          }
+
+          // Parse measurements if provided
+          if (fields.measurements) {
+            try {
+              styleMeasurements = JSON.parse(fields.measurements)
+            } catch (e) {
+              console.error('Failed to parse measurements:', e)
+            }
+          }
+
+          // Handle multiple file uploads to S3
+          if (files && files.length > 0) {
+            console.log(`Processing ${files.length} files for upload`)
+
+            for (const file of files) {
+              if (file.buffer && file.buffer.length > 0) {
+                const fileExt = getFileExtension(file.filename)
+                const contentType = getContentType(fileExt)
+
+                console.log('Uploading file to S3:', {
+                  filename: file.filename,
+                  fileExt,
+                  contentType,
+                  bufferSize: file.buffer.length,
+                })
+
+                try {
+                  // Upload to S3
+                  const uploadedUrl = await uploadFileToS3(file.buffer, file.filename, contentType)
+                  imageUrls.push(uploadedUrl)
+                  console.log('Successfully uploaded to S3, imageUrl:', uploadedUrl)
+                } catch (s3Error: any) {
+                  console.error('S3 upload error:', s3Error)
+                  throw createError({
+                    statusCode: 500,
+                    statusMessage: `S3 upload failed: ${s3Error.message}`,
+                  })
+                }
+              }
             }
           } else {
-            console.error('No valid file found in multipart data')
+            console.error('No valid files found in multipart data')
             throw createError({
               statusCode: 400,
-              statusMessage: 'Image is required',
+              statusMessage: 'At least one image is required',
             })
           }
         } catch (multipartError: any) {
@@ -191,6 +255,7 @@ export default defineEventHandler(async event => {
 
         styleName = body.name
         styleDescription = body.description || null
+        styleType = body.type || null
 
         // If there's a base64 image, handle it
         if (body.imageBase64) {
@@ -211,8 +276,9 @@ export default defineEventHandler(async event => {
 
             try {
               // Upload to S3
-              imageUrl = await uploadFileToS3(buffer, `image.${fileExt}`, contentType)
-              console.log('Successfully uploaded base64 image to S3, imageUrl:', imageUrl)
+              const uploadedUrl = await uploadFileToS3(buffer, `image.${fileExt}`, contentType)
+              imageUrls.push(uploadedUrl)
+              console.log('Successfully uploaded base64 image to S3, imageUrl:', uploadedUrl)
             } catch (s3Error: any) {
               console.error('S3 upload error for base64 image:', s3Error)
               throw createError({
@@ -245,18 +311,18 @@ export default defineEventHandler(async event => {
         })
       }
 
-      if (!imageUrl) {
-        console.error('Image URL is missing after processing')
+      if (imageUrls.length === 0) {
+        console.error('No images uploaded')
         throw createError({
           statusCode: 400,
-          statusMessage: 'Image upload failed',
+          statusMessage: 'At least one image is required',
         })
       }
 
       console.log('Creating new style in database:', {
         name: styleName,
         description: styleDescription ? 'provided' : 'not provided',
-        imageUrl: imageUrl,
+        imageCount: imageUrls.length,
       })
 
       // Create new style - noting the id field is a serial in the schema, not a UUID
@@ -265,7 +331,14 @@ export default defineEventHandler(async event => {
         userId: String(userId),
         name: styleName,
         description: styleDescription,
-        imageUrl: imageUrl,
+        imageUrl: imageUrls.length > 0 ? imageUrls[0] : null, // Keep first image for backward compatibility
+        imageUrls: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+        type: styleType,
+        tags: styleTags.length > 0 ? JSON.stringify(styleTags) : null,
+        category: styleCategory,
+        status: styleStatus,
+        notes: styleNotes,
+        details: styleMeasurements ? JSON.stringify(styleMeasurements) : null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }

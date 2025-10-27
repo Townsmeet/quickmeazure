@@ -1,0 +1,1 @@
+ALTER TABLE `styles` ADD `image_urls` text;

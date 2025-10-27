@@ -22,6 +22,34 @@
       "when": 1760783325331,
       "tag": "0002_first_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1761492116539,
+      "tag": "0003_mute_vance_astro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1761495697631,
+      "tag": "0004_wild_mentor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1761501718583,
+      "tag": "0005_chilly_dormammu",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1761530685376,
+      "tag": "0006_kind_princess_powerful",
+      "breakpoints": true
     }
   ]
 }

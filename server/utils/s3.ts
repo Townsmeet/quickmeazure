@@ -2,10 +2,10 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
 // Initialize S3 client with credentials and with proper follow redirect settings
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.NUXT_AWS_REGION,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    accessKeyId: process.env.NUXT_AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.NUXT_AWS_SECRET_ACCESS_KEY || '',
   },
   endpoint: process.env.AWS_ENDPOINT_URL,
   forcePathStyle: true, // Required for some S3-compatible services
@@ -13,17 +13,12 @@ const s3Client = new S3Client({
 })
 
 // Bucket name for image storage
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'quickmeazure-styles'
+const BUCKET_NAME = process.env.NUXT_AWS_S3_BUCKET || 'quickmeazure-styles'
 
 // URL construction based on bucket settings
 const getS3Url = (key: string) => {
-  // If an endpoint URL is provided, use that as the base URL
-  if (process.env.AWS_ENDPOINT_URL) {
-    return `${process.env.AWS_ENDPOINT_URL}/${BUCKET_NAME}/${key}`
-  }
-
   // Standard AWS S3 URL pattern
-  const region = process.env.AWS_REGION || 'us-east-1'
+  const region = process.env.NUXT_AWS_REGION
 
   // If the region is us-east-1, the URL doesn't include the region
   if (region === 'us-east-1') {
@@ -51,7 +46,7 @@ export async function uploadFileToS3(
 
   // Log S3 configuration details (without secrets)
   console.log('S3 Upload Config:', {
-    region: process.env.AWS_REGION,
+    region: process.env.NUXT_AWS_REGION,
     bucket: BUCKET_NAME,
     endpoint: process.env.AWS_ENDPOINT_URL || 'default AWS endpoint',
     fileName: uniqueFileName,
