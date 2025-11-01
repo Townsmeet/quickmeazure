@@ -221,8 +221,10 @@ required>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { API_ENDPOINTS } from '~/constants/api'
+import { API_ENDPOINTS as _API_ENDPOINTS } from '~/constants/api'
 import type { CreateOrderInput, OrderItem } from '~/types/order'
+import OrderForm from '~/components/orders/OrderForm.vue'
+import OrderDetails from '~/components/orders/OrderDetails.vue'
 
 // Composables
 const routes = useAppRoutes()
@@ -230,7 +232,7 @@ const router = useRouter()
 const { createOrder } = useOrders()
 const { clients, fetchClients } = useClients()
 const { styles, fetchStyles } = useStyles()
-const { user } = useAuth()
+const { user: _user } = useAuth()
 const toast = useToast()
 
 // Constants

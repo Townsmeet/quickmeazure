@@ -30,7 +30,9 @@ export default defineEventHandler(async event => {
       const QuerySchema = z.object({
         page: z.coerce.number().int().min(1).default(1),
         limit: z.coerce.number().int().min(1).max(100).default(10),
-        sortField: z.enum(['name', 'email', 'createdAt', 'updatedAt']).default('name'),
+        sortField: z
+          .enum(['name', 'email', 'createdAt', 'updatedAt', 'orderCount'])
+          .default('name'),
         sortOrder: z.enum(['asc', 'desc']).default('asc'),
         search: z.string().trim().optional(),
         hasOrders: z.union([z.literal('true'), z.literal('false')]).optional(),
@@ -134,6 +136,10 @@ export default defineEventHandler(async event => {
         case 'updatedAt':
           orderByClause = sortDirection(tables.clients.createdAt)
           break
+        case 'orderCount':
+          // For orderCount, we'll sort after getting the data since it's calculated
+          orderByClause = sortDirection(tables.clients.createdAt)
+          break
         default:
           orderByClause = sortDirection(tables.clients.name)
           break
@@ -144,10 +150,47 @@ export default defineEventHandler(async event => {
       console.log('Query result - clients data:', clientsData)
       console.log('Number of clients found:', clientsData.length)
 
-      // Process the data to ensure proper timestamp formatting
-      const processedClientsData = clientsData.map(client =>
-        processTimestamps(client, ['createdAt'])
-      )
+      // Get order statistics for each client
+      const clientIds = clientsData.map(client => client.id)
+      let orderStats: Record<number, { orderCount: number; totalRevenue: number }> = {}
+
+      if (clientIds.length > 0) {
+        const orderStatsQuery = await db
+          .select({
+            clientId: tables.orders.clientId,
+            orderCount: count(tables.orders.id),
+            totalRevenue: sql<number>`COALESCE(SUM(${tables.orders.totalAmount}), 0)`,
+          })
+          .from(tables.orders)
+          .where(sql`${tables.orders.clientId} IN (${clientIds.join(',')})`)
+          .groupBy(tables.orders.clientId)
+
+        orderStats = orderStatsQuery.reduce(
+          (acc, stat) => {
+            acc[stat.clientId] = {
+              orderCount: stat.orderCount,
+              totalRevenue: Number(stat.totalRevenue) || 0,
+            }
+            return acc
+          },
+          {} as Record<number, { orderCount: number; totalRevenue: number }>
+        )
+      }
+
+      // Process the data to ensure proper timestamp formatting and add order stats
+      const processedClientsData = clientsData.map(client => ({
+        ...processTimestamps(client, ['createdAt']),
+        orderCount: orderStats[client.id]?.orderCount || 0,
+        totalRevenue: orderStats[client.id]?.totalRevenue || 0,
+      }))
+
+      // Apply orderCount sorting if needed
+      if (sortField === 'orderCount') {
+        processedClientsData.sort((a, b) => {
+          const direction = sortOrder === 'desc' ? -1 : 1
+          return (a.orderCount - b.orderCount) * direction
+        })
+      }
 
       // Get total count
       const totalCountResult = await countQuery
@@ -233,12 +276,17 @@ export default defineEventHandler(async event => {
         // Handle legacy format where measurements are sent as individual fields
         else {
           // Remove non-measurement fields
-          const { notes: _notes, templateId: _templateId, ...measurementData } = body.measurements
+          const { notes: _notes, ...measurementData } = body.measurements as any
 
           // Process each measurement field
-          Object.entries(measurementData).forEach(([key, value]) => {
+          Object.entries(measurementData as Record<string, any>).forEach(([key, value]) => {
             // Skip empty values and non-measurement fields
-            if (value === null || value === '' || typeof value === 'object' || value === undefined)
+            if (
+              value === null ||
+              value === '' ||
+              (typeof value === 'object' && value !== null) ||
+              value === undefined
+            )
               return
 
             // Add to values with basic metadata

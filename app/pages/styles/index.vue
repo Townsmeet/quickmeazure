@@ -241,15 +241,30 @@
         />
       </div>
       <!-- Loading State -->
-      <div v-else class="flex items-center justify-center py-20">
-        <div class="text-center">
-          <div
-            class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-primary-600" />
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <UCard v-for="i in 8" :key="i" class="border-0 shadow-md overflow-hidden">
+          <template #header>
+            <div class="p-0">
+              <USkeleton class="h-48 w-full" />
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <div>
+              <USkeleton class="h-6 w-3/4 mb-2" />
+              <USkeleton class="h-4 w-full" />
+              <USkeleton class="h-4 w-2/3" />
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="flex items-center space-x-2">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-16" />
+              </div>
+              <USkeleton class="h-8 w-8 rounded" />
+            </div>
           </div>
-          <p class="text-gray-600 text-lg font-medium">Loading your styles...</p>
-        </div>
+        </UCard>
       </div>
     </div>
 
@@ -391,7 +406,7 @@ const handleSearch = (value: string) => {
   currentPage.value = 1
 }
 
-const handleSort = (value: string) => {
+const _handleSort = (value: string) => {
   sortBy.value = value
   currentPage.value = 1
 }
@@ -473,7 +488,7 @@ const confirmDelete = (style: Style) => {
   showDeleteModal.value = true
 }
 
-const saveStyle = async (style: Style, imageFiles?: File[]) => {
+const _updateStyle = (style: Style, imageFiles?: File[]) => {
   if (!style) return
 
   try {
@@ -621,7 +636,7 @@ const getImageCount = (style: any) => {
   return style.imageUrl ? 1 : 0
 }
 
-const formatStatus = (status: string | undefined) => {
+const _formatStatus = (status: string | undefined) => {
   if (!status) return 'Draft'
   return status
     .split('_')
@@ -629,7 +644,7 @@ const formatStatus = (status: string | undefined) => {
     .join(' ')
 }
 
-const getStatusColor = (status: string | undefined) => {
+const _getStatusColor = (status: string | undefined) => {
   switch (status) {
     case 'active':
       return 'success'
@@ -643,7 +658,7 @@ const getStatusColor = (status: string | undefined) => {
   }
 }
 
-const formatDate = (dateString: string | Date | number) => {
+const _formatDate = (dateString: string | Date | number) => {
   let date: Date
 
   if (typeof dateString === 'number') {

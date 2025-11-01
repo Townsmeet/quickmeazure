@@ -63,8 +63,22 @@ icon="i-heroicons-funnel"
     </UCard>
 
     <UCard class="bg-white">
-      <div v-if="isLoading" class="flex items-center justify-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-primary-500 h-8 w-8" />
+      <div v-if="isLoading" class="space-y-4">
+        <div
+          v-for="i in 5"
+          :key="i"
+          class="flex items-start space-x-4 p-4 border-b border-gray-100 last:border-b-0"
+        >
+          <USkeleton class="h-10 w-10 rounded-full flex-shrink-0" />
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center justify-between">
+              <USkeleton class="h-4 w-48" />
+              <USkeleton class="h-3 w-20" />
+            </div>
+            <USkeleton class="h-3 w-full" />
+            <USkeleton class="h-3 w-3/4" />
+          </div>
+        </div>
       </div>
 
       <div v-else-if="error" class="text-center py-12">
@@ -178,7 +192,7 @@ useHead({
 })
 
 // Get auth composable for API calls
-const { user } = useAuth()
+const _user = useAuth()
 
 // Activity data
 const activities = ref<ActivityItem[]>([])

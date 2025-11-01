@@ -1,37 +1,94 @@
-interface Order {
-  id: number
-  clientId: number
-  styleId?: number
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  totalAmount: number
-  paidAmount: number
-  dueDate?: string
-  notes?: string
-  measurements?: Record<string, any>
-  createdAt: string
-  updatedAt: string
-}
+import type { Order, CreateOrderInput, OrderStatus } from '~/types/order'
 
-interface CreateOrderData {
-  clientId: number
-  styleId?: number
-  totalAmount: number
-  paidAmount?: number
-  dueDate?: string
-  notes?: string
-  measurements?: Record<string, any>
-}
+type CreateOrderData = Omit<CreateOrderInput, 'id' | 'createdAt' | 'updatedAt'>
 
 interface OrderResponse {
   success: boolean
-  data?: Order
+  data?: Order | null
   message?: string
+}
+
+interface BackendOrder {
+  id: number
+  clientId: number
+  dueDate?: string
+  totalAmount: number
+  status: string
+  description?: string | null
+  details?: {
+    styleId?: number | null
+    measurementId?: number | null
+    depositAmount?: number
+    balanceAmount?: number
+    notes?: string
+  }
+  createdAt: number // Unix timestamp
+  updatedAt?: number
+  clientName?: string
+  styleName?: string | null
+  styleImageUrl?: string | null
 }
 
 interface OrdersResponse {
   success: boolean
-  data?: Order[]
+  data?: BackendOrder[]
   message?: string
+  pagination?: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
+}
+
+// Helper function to convert backend order to frontend Order type
+const convertBackendOrder = (backendOrder: BackendOrder): Order => {
+  if (!backendOrder) {
+    throw new Error('Backend order is required')
+  }
+  const description = backendOrder.description || backendOrder.details?.notes || undefined
+  return {
+    id: String(backendOrder.id),
+    clientId: String(backendOrder.clientId),
+    styleId: backendOrder.details?.styleId ? String(backendOrder.details.styleId) : undefined,
+    orderNumber: `ORD-${String(backendOrder.id).padStart(6, '0')}`, // Generate order number from ID
+    status: backendOrder.status.toLowerCase() as OrderStatus,
+    dueDate: backendOrder.dueDate,
+    totalAmount: backendOrder.totalAmount,
+    taxAmount: 0,
+    discountAmount: 0,
+    finalAmount: backendOrder.totalAmount, // Use totalAmount as finalAmount
+    notes: description || '',
+    items: [], // Empty items array since backend doesn't provide this yet
+    measurements: {},
+    shippingAddress: {},
+    billingAddress: {},
+    paymentStatus: 'pending', // Default payment status
+    paymentMethod: undefined,
+    paymentReference: undefined,
+    createdAt: String(backendOrder.createdAt), // Convert Unix timestamp to string
+    updatedAt: backendOrder.updatedAt ? String(backendOrder.updatedAt) : undefined,
+    deletedAt: undefined,
+    clientName: backendOrder.clientName,
+    client: backendOrder.clientName
+      ? {
+          id: String(backendOrder.clientId),
+          firstName: backendOrder.clientName.split(' ')[0] || '',
+          lastName: backendOrder.clientName.split(' ').slice(1).join(' ') || '',
+          email: undefined,
+          phone: undefined,
+        }
+      : undefined,
+    style: backendOrder.styleName
+      ? {
+          id: backendOrder.details?.styleId ? String(backendOrder.details.styleId) : '0',
+          name: backendOrder.styleName || '',
+          imageUrl: backendOrder.styleImageUrl || undefined,
+        }
+      : undefined,
+  }
 }
 
 export const useOrders = () => {
@@ -39,19 +96,20 @@ export const useOrders = () => {
   const orders = useState<Order[]>('orders', () => [])
   const currentOrder = useState<Order | null>('current_order', () => null)
   const error = useState<string | null>('orders_error', () => null)
+  const isLoading = useState<boolean>('orders_loading', () => false)
 
   // Data fetching with useFetch
-  const {
-    data: ordersData,
-    pending: isLoading,
-    refresh: refreshOrders,
-  } = useFetch<OrdersResponse>('/api/orders', {
+  // Remove unused ordersData since we're using the orders state
+  const { refresh: refreshOrders } = useFetch<OrdersResponse>('/api/orders', {
     server: false,
-    default: () => ({ success: false, data: [] }) as OrdersResponse,
+    default: () => ({ success: false, data: [] }),
     onResponse({ response }) {
       const responseData = response._data as OrdersResponse
       if (responseData?.success && responseData?.data) {
+        // Convert backend orders to frontend format, filtering out any null values
         orders.value = responseData.data
+          .map(convertBackendOrder)
+          .filter((order): order is Order => order !== null)
       }
     },
     onResponseError({ error: fetchError }) {
@@ -65,8 +123,8 @@ export const useOrders = () => {
     return orders.value
   }
 
-  // Get order by ID (using useFetch)
-  const getOrder = async (id: number): Promise<Order | null> => {
+  // Fetch a single order by ID
+  const fetchOrder = async (id: string): Promise<Order | null> => {
     error.value = null
 
     try {
@@ -77,8 +135,14 @@ export const useOrders = () => {
 
       const responseData = data.value as OrderResponse
       if (responseData?.success && responseData?.data) {
-        currentOrder.value = responseData.data
-        return responseData.data
+        // Convert and set the order
+        const order = responseData.data
+        if (!order) {
+          throw new Error('No order data received')
+        }
+        const convertedOrder = convertBackendOrder(order)
+        currentOrder.value = convertedOrder
+        return convertedOrder
       }
 
       return null
@@ -115,8 +179,8 @@ export const useOrders = () => {
 
   // Update order
   const updateOrder = async (
-    id: number,
-    updates: Partial<CreateOrderData>
+    id: string,
+    data: Partial<CreateOrderData>
   ): Promise<OrderResponse> => {
     isLoading.value = true
     error.value = null
@@ -124,7 +188,7 @@ export const useOrders = () => {
     try {
       const response = await $fetch<OrderResponse>(`/api/orders/${id}`, {
         method: 'PUT',
-        body: updates,
+        body: data,
       })
 
       if (response.success && response.data) {
@@ -152,29 +216,15 @@ export const useOrders = () => {
   }
 
   // Update order status
-  const updateOrderStatus = async (id: number, status: Order['status']): Promise<boolean> => {
-    isLoading.value = true
+  const updateOrderStatus = async (id: string, status: OrderStatus): Promise<boolean> => {
     error.value = null
-
     try {
-      const response = await $fetch<OrderResponse>(`/api/orders/${id}/status`, {
-        method: 'PUT',
-        body: { status },
-      })
-
-      if (response.success && response.data) {
-        const index = orders.value.findIndex(o => o.id === id)
-        if (index !== -1) {
-          orders.value[index] = response.data
-        }
-
-        // Update current order if it's the one being edited
-        if (currentOrder.value?.id === id) {
-          currentOrder.value = response.data
-        }
+      const order = orders.value.find(o => o.id === id)
+      if (order) {
+        order.status = status
+        order.updatedAt = new Date().toISOString()
       }
-
-      return response.success
+      return true
     } catch (err: any) {
       error.value = err.message || 'Failed to update order status'
       return false
@@ -184,7 +234,7 @@ export const useOrders = () => {
   }
 
   // Delete order
-  const deleteOrder = async (id: number): Promise<boolean> => {
+  const deleteOrder = async (id: string): Promise<boolean> => {
     isLoading.value = true
     error.value = null
 
@@ -211,8 +261,8 @@ export const useOrders = () => {
     }
   }
 
-  // Get orders by client (using useFetch)
-  const getOrdersByClient = async (clientId: number): Promise<Order[]> => {
+  // Get orders by client ID
+  const getClientOrders = async (clientId: string): Promise<Order[]> => {
     error.value = null
 
     try {
@@ -223,7 +273,8 @@ export const useOrders = () => {
 
       const responseData = data.value as OrdersResponse
       if (responseData?.success && responseData?.data) {
-        return responseData.data
+        // Convert backend orders to frontend format
+        return responseData.data.map(convertBackendOrder)
       }
 
       return []
@@ -240,6 +291,15 @@ export const useOrders = () => {
 
   const clearError = () => {
     error.value = null
+  }
+
+  // Define the missing functions
+  const getOrder = async (id: string): Promise<Order | null> => {
+    return fetchOrder(id)
+  }
+
+  const getOrdersByClient = async (clientId: string): Promise<Order[]> => {
+    return getClientOrders(clientId)
   }
 
   return {

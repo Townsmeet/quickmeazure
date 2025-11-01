@@ -265,15 +265,45 @@
       </div>
 
       <!-- Loading State -->
-      <div v-else class="flex items-center justify-center py-20">
-        <div class="text-center">
-          <div
-            class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin h-8 w-8 text-primary-600" />
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <UCard v-for="i in 6" :key="i" class="border-0 shadow-md">
+          <template #header>
+            <div class="flex items-start justify-between">
+              <div class="flex items-center space-x-4">
+                <USkeleton class="h-16 w-16 rounded-full" />
+                <div class="flex-1 space-y-2">
+                  <USkeleton class="h-5 w-32" />
+                  <USkeleton class="h-4 w-20" />
+                </div>
+              </div>
+              <USkeleton class="h-8 w-8 rounded" />
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <div class="space-y-3">
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-48" />
+              </div>
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-32" />
+              </div>
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-24" />
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100">
+              <div class="flex items-center gap-4">
+                <USkeleton class="h-4 w-16" />
+                <USkeleton class="h-4 w-20" />
+              </div>
+            </div>
           </div>
-          <p class="text-gray-600 text-lg font-medium">Loading your clients...</p>
-        </div>
+        </UCard>
       </div>
     </div>
 

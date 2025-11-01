@@ -255,6 +255,8 @@ required>
 import { ref, onMounted } from 'vue'
 import { useOrderApi } from '~/composables/useOrderApi'
 import type { Order, OrderItem } from '~/types/order'
+import _OrderForm from '~/components/orders/OrderForm.vue'
+import _OrderDetails from '~/components/orders/OrderDetails.vue'
 
 // Using _ prefix to indicate it's used in template
 const _UpdateOrderInput = {} as any // Type used in saveOrder function

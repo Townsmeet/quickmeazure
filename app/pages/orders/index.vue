@@ -6,7 +6,9 @@
         <h1 class="text-2xl font-bold text-gray-900">Orders</h1>
         <p class="mt-1 text-sm text-gray-500">Manage your orders and track their status</p>
       </div>
-      <UButton to="/orders/new" icon="i-heroicons-plus" color="primary"> Add Order </UButton>
+      <UButton icon="i-heroicons-plus" color="primary" @click="openCreateOrderSlideover">
+        Add Order
+      </UButton>
     </div>
 
     <!-- Filters -->
@@ -20,9 +22,7 @@
       />
       <USelect
         v-model="sortBy"
-        :options="sortOptions"
-        option-attribute="label"
-        value-attribute="value"
+        :items="sortOptions"
         placeholder="Sort by"
         class="w-48"
         @update:model-value="handleSort"
@@ -125,39 +125,162 @@ icon="i-heroicons-funnel"
     </Transition>
 
     <!-- Desktop Table View -->
-    <div class="hidden md:block">
-      <UTable
-        :rows="paginatedOrders"
-        :columns="columns"
-        :loading="isLoading"
-        :empty-state="{
-          icon: 'i-heroicons-document-text',
-          label: 'No orders found',
-          description:
-            search || hasActiveFilters
-              ? 'Try adjusting your search or filters'
-              : 'Create your first order to get started',
-        }"
-        :sort="{ column: sortBy, direction: sortBy.endsWith('_desc') ? 'desc' : 'asc' }"
-        class="w-full"
-        @sort="handleSort"
-      />
+    <div class="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        v-for="order in paginatedOrders"
+        :key="order.id"
+        class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 relative"
+      >
+        <!-- Status indicator bar -->
+        <div
+          class="h-1.5 w-full"
+          :class="{
+            'bg-green-500': order.status === 'completed',
+            'bg-blue-500': order.status === 'in_progress',
+            'bg-yellow-500': order.status === 'pending',
+            'bg-red-500': order.status === 'cancelled',
+            'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
+              order.status
+            ),
+          }"
+        ></div>
 
-      <!-- Pagination -->
-      <div class="mt-6 flex items-center justify-between">
-        <div class="text-sm text-gray-500">
-          Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> to
-          <span class="font-medium">{{
-            Math.min(currentPage * itemsPerPage, filteredOrders.length)
-          }}</span>
-          of <span class="font-medium">{{ filteredOrders.length }}</span> results
+        <div class="p-5 flex flex-col h-full">
+          <!-- Header with order number and status -->
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center">
+              <span
+                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-sm mr-3"
+              >
+                #{{ order.orderNumber }}
+              </span>
+              <UBadge
+                :color="getStatusColor(order.status)"
+                variant="subtle"
+                size="sm"
+                class="capitalize font-medium"
+              >
+                {{ formatStatus(order.status) }}
+              </UBadge>
+            </div>
+            <div class="text-xs text-gray-400">
+              {{ order.createdAt ? dayjs.unix(order.createdAt).format('MMM D, YYYY') : 'No date' }}
+            </div>
+          </div>
+
+          <!-- Client and amount -->
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+              <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+              <span class="truncate">{{ order.clientName || 'No client' }}</span>
+            </h3>
+            <div class="mt-2 flex items-center justify-between">
+              <div class="flex items-center text-gray-500 text-sm">
+                <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
+                <span class="font-medium">Amount:</span>
+              </div>
+              <span class="text-lg font-bold text-gray-900">
+                ₦{{ order.totalAmount?.toLocaleString() }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Due date and progress -->
+          <div class="mt-auto">
+            <div class="flex items-center justify-between text-sm mb-1">
+              <span class="text-gray-500 flex items-center">
+                <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
+                Due Date:
+              </span>
+              <span
+                :class="{
+                  'text-red-500 font-medium':
+                    order.dueDate &&
+                    dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
+                    order.status !== 'completed',
+                  'text-gray-700':
+                    !order.dueDate ||
+                    dayjs(order.dueDate).isSameOrAfter(dayjs()) ||
+                    order.status === 'completed',
+                }"
+              >
+                {{ order.dueDate ? dayjs(order.dueDate).format('MMM D, YYYY') : 'No date' }}
+                <span
+                  v-if="
+                    order.dueDate &&
+                    dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
+                    order.status !== 'completed'
+                  "
+                  class="ml-1"
+                >
+                  (Overdue)
+                </span>
+              </span>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+              <div
+                class="h-2 rounded-full transition-all duration-500 ease-in-out"
+                :class="{
+                  'bg-green-500': order.status === 'completed',
+                  'bg-blue-500': order.status === 'in_progress',
+                  'bg-yellow-500': order.status === 'pending',
+                  'bg-red-500': order.status === 'cancelled',
+                  'w-full': order.status === 'completed',
+                  'w-2/3': order.status === 'in_progress',
+                  'w-1/3': order.status === 'pending' || order.status === 'cancelled',
+                }"
+              ></div>
+            </div>
+          </div>
         </div>
-        <UPagination
-          v-model="currentPage"
-          :page-count="itemsPerPage"
-          :total="filteredOrders.length"
-          :ui="{ rounded: 'first-of-type:rounded-s-md last-of-type:rounded-e-md' }"
-        />
+
+        <!-- Actions -->
+        <div
+          class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        >
+          <UDropdownMenu
+            :items="[
+              [
+                {
+                  label: 'View Details',
+                  icon: 'i-heroicons-eye',
+                  click: () => openOrderDetails(order),
+                  ui: { icon: { base: 'text-gray-500' } },
+                },
+                {
+                  label: 'Edit Order',
+                  icon: 'i-heroicons-pencil',
+                  click: () => openEditOrderSlideover(order),
+                  ui: { icon: { base: 'text-blue-500' } },
+                },
+              ],
+              [
+                {
+                  label: 'Delete',
+                  icon: 'i-heroicons-trash',
+                  click: () => confirmDelete(order),
+                  ui: {
+                    icon: { base: 'text-red-500' },
+                    active: 'bg-red-50 text-red-700',
+                    inactive: 'text-red-600 hover:bg-red-50 hover:text-red-700',
+                  },
+                },
+              ],
+            ]"
+            :ui="{ item: { disabled: 'cursor-text select-text' }, width: 'w-48' }"
+            :popper="{ placement: 'bottom-end' }"
+          >
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-ellipsis-horizontal"
+              size="sm"
+              class="text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            />
+          </UDropdownMenu>
+        </div>
       </div>
     </div>
 
@@ -166,56 +289,154 @@ icon="i-heroicons-funnel"
       <div
         v-for="order in paginatedOrders"
         :key="order.id"
-        class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 p-5 hover:border-gray-300"
+        class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group"
       >
-        <div class="flex items-start justify-between">
-          <div>
-            <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium text-gray-900">#{{ order.orderNumber }}</span>
-              <UBadge
-                :color="getStatusColor(order.status)"
-                variant="subtle"
-                size="sm"
-                class="capitalize"
-              >
-                {{ formatStatus(order.status) }}
-              </UBadge>
+        <!-- Status indicator bar -->
+        <div
+          class="h-1.5 w-full"
+          :class="{
+            'bg-green-500': order.status === 'completed',
+            'bg-blue-500': order.status === 'in_progress',
+            'bg-yellow-500': order.status === 'pending',
+            'bg-red-500': order.status === 'cancelled',
+            'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
+              order.status
+            ),
+          }"
+        ></div>
+
+        <div class="p-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-xs mr-2"
+                  >
+                    #{{ order.orderNumber }}
+                  </span>
+                  <UBadge
+                    :color="getStatusColor(order.status)"
+                    variant="subtle"
+                    size="xs"
+                    class="capitalize font-medium"
+                  >
+                    {{ formatStatus(order.status) }}
+                  </UBadge>
+                </div>
+                <div class="text-xs text-gray-400">
+                  {{
+                    order.createdAt ? dayjs.unix(order.createdAt).format('MMM D, YYYY') : 'No date'
+                  }}
+                </div>
+              </div>
+
+              <h3 class="mt-2 text-base font-semibold text-gray-900 flex items-center">
+                <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                <span class="truncate">{{ order.clientName || 'No client' }}</span>
+              </h3>
+
+              <div class="mt-2 flex items-center justify-between">
+                <div class="flex items-center text-gray-500 text-sm">
+                  <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
+                  <span>Amount:</span>
+                </div>
+                <span class="text-base font-bold text-gray-900">
+                  ₦{{ order.totalAmount?.toLocaleString() }}
+                </span>
+              </div>
+
+              <div class="mt-2 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-500 flex items-center">
+                    <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
+                    Due:
+                  </span>
+                  <span
+                    :class="{
+                      'text-red-500 font-medium':
+                        order.dueDate &&
+                        dayjs(order.dueDate).isBefore(dayjs().startOf('day')) &&
+                        order.status !== 'completed',
+                      'text-gray-700':
+                        !order.dueDate ||
+                        dayjs(order.dueDate).isAfter(dayjs().subtract(1, 'day')) ||
+                        order.status === 'completed',
+                    }"
+                  >
+                    {{ order.dueDate ? dayjs(order.dueDate).format('MMM D, YYYY') : 'No date' }}
+                    <span
+                      v-if="
+                        order.dueDate &&
+                        dayjs(order.dueDate).isBefore(dayjs().startOf('day')) &&
+                        order.status !== 'completed'
+                      "
+                      class="ml-1"
+                    >
+                      (Overdue)
+                    </span>
+                  </span>
+                </div>
+
+                <!-- Progress bar for mobile -->
+                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div
+                    class="h-1.5 rounded-full transition-all duration-500 ease-in-out"
+                    :class="{
+                      'bg-green-500': order.status === 'completed',
+                      'bg-blue-500': order.status === 'processing',
+                      'bg-yellow-500': order.status === 'pending',
+                      'bg-red-500': order.status === 'cancelled',
+                      'w-full': order.status === 'completed',
+                      'w-2/3': order.status === 'processing',
+                      'w-1/3': order.status === 'pending' || order.status === 'cancelled',
+                    }"
+                  ></div>
+                </div>
+              </div>
             </div>
-            <p class="mt-1 text-sm text-gray-500">
-              {{ order.client?.firstName }} {{ order.client?.lastName }}
-            </p>
-            <p class="mt-1 text-sm font-medium text-gray-900">
-              ₦{{ order.totalAmount?.toLocaleString() }}
-            </p>
-            <p v-if="order.dueDate" class="mt-1 flex items-center text-sm text-gray-500">
-              <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
-              Due {{ formatDate(order.dueDate) }}
-            </p>
+            <div class="flex justify-end mt-3">
+              <UDropdownMenu
+                :items="[
+                  [
+                    {
+                      label: 'View Details',
+                      icon: 'i-heroicons-eye',
+                      click: () => openOrderDetails(order),
+                      ui: { icon: { base: 'text-gray-500' } },
+                    },
+                    {
+                      label: 'Edit Order',
+                      icon: 'i-heroicons-pencil',
+                      click: () => openEditOrderSlideover(order),
+                      ui: { icon: { base: 'text-blue-500' } },
+                    },
+                  ],
+                  [
+                    {
+                      label: 'Delete',
+                      icon: 'i-heroicons-trash',
+                      click: () => confirmDelete(order),
+                      ui: {
+                        icon: { base: 'text-red-500' },
+                        active: 'bg-red-50 text-red-700',
+                        inactive: 'text-red-600 hover:bg-red-50 hover:text-red-700',
+                      },
+                    },
+                  ],
+                ]"
+                :popper="{ placement: 'bottom-end' }"
+              >
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-heroicons-ellipsis-horizontal"
+                  size="sm"
+                  class="text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                />
+              </UDropdownMenu>
+            </div>
           </div>
-          <UDropdownMenu
-            :items="[
-              [
-                {
-                  label: 'View',
-                  icon: 'i-heroicons-eye',
-                  click: () => navigateTo(getOrderPath(order.id)),
-                },
-                {
-                  label: 'Edit',
-                  icon: 'i-heroicons-pencil',
-                  click: () => navigateTo(getOrderPath(order.id)),
-                },
-              ],
-              [{ label: 'Delete', icon: 'i-heroicons-trash', click: () => confirmDelete(order) }],
-            ]"
-          >
-            <UButton
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-ellipsis-horizontal"
-              size="sm"
-            />
-          </UDropdownMenu>
         </div>
       </div>
 
@@ -231,7 +452,9 @@ icon="i-heroicons-funnel"
           }}
         </p>
         <div class="mt-6">
-          <UButton to="/orders/new" icon="i-heroicons-plus" color="primary"> New Order </UButton>
+          <UButton icon="i-heroicons-plus" color="primary" @click="openCreateOrderSlideover">
+            New Order
+          </UButton>
         </div>
       </div>
 
@@ -241,54 +464,52 @@ icon="i-heroicons-funnel"
           v-model="currentPage"
           :page-count="itemsPerPage"
           :total="filteredOrders.length"
-          :ui="{ rounded: 'first-of-type:rounded-s-md last-of-type:rounded-e-md' }"
         />
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <UModal v-model:open="showDeleteModal">
-      <template #content>
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-medium text-gray-900">Delete Order</h3>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                icon="i-heroicons-x-mark"
-                @click="showDeleteModal = false"
-              />
-            </div>
-          </template>
+    <!-- Create/Edit Order Slideover -->
+    <OrderAdd
+      :is-open="showOrderSlideover && slideoverMode === 'create'"
+      @close="closeOrderSlideover"
+      @success="handleOrderAddSuccess"
+    />
 
-          <p class="text-sm text-gray-500">
-            Are you sure you want to delete order
-            <span class="font-medium">#{{ orderToDelete?.orderNumber }}</span
-            >? This action cannot be undone.
-          </p>
+    <OrderEdit
+      :is-open="showOrderSlideover && slideoverMode === 'edit'"
+      :order="selectedOrder"
+      @close="closeOrderSlideover"
+      @save="handleOrderEditSave"
+    />
 
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                :disabled="isDeleting"
-                @click="showDeleteModal = false"
-              >
-                Cancel
-              </UButton>
-              <UButton color="error" :loading="isDeleting" @click="deleteOrder"> Delete </UButton>
-            </div>
-          </template>
-        </UCard>
+    <!-- Order Details Slideover -->
+    <USlideover v-model:open="showDetailsSlideover" :title="detailsTitle" side="right">
+      <template #body>
+        <OrderDetail v-if="selectedOrder" :order="selectedOrder" @close="closeDetailsSlideover" />
       </template>
-    </UModal>
+    </USlideover>
+
+    <!-- Delete Confirmation Modal -->
+    <OrderDelete
+      v-if="orderToDelete"
+      :is-open="showDeleteModal"
+      :order="orderToDelete"
+      :is-deleting="isDeleting"
+      @close="showDeleteModal = false"
+      @confirm="deleteOrder"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Order } from '~/types/order'
+import type { Order, OrderStatus, OrderItem as _OrderItem } from '~/types/order'
+import OrderAdd from '~/components/orders/OrderAdd.vue'
+import OrderEdit from '~/components/orders/OrderEdit.vue'
+import OrderDetail from '~/components/orders/OrderDetail.vue'
+import OrderDelete from '~/components/orders/OrderDelete.vue'
+
+// Import dayjs
+import dayjs from 'dayjs'
 
 definePageMeta({
   middleware: ['auth', 'setup-required'],
@@ -296,7 +517,7 @@ definePageMeta({
 })
 
 // Use the orders composable
-const { orders, isLoading, deleteOrder: _deleteOrderApi, sort, search: searchTerm } = useOrders()
+const { orders, isLoading, deleteOrder: _deleteOrderApi, createOrder, updateOrder } = useOrders()
 
 // Local state
 const search = ref('')
@@ -305,23 +526,29 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const isFilterOpen = ref(false)
 
-// Sync local search with composable
-watch(search, newVal => {
-  searchTerm.value = newVal
-  currentPage.value = 1
-})
+// Slideover state
+const showOrderSlideover = ref(false)
+const showDetailsSlideover = ref(false)
+const selectedOrder = ref<Order | null>(null)
+const slideoverMode = ref<'create' | 'edit'>('create')
 
-// Sync sort with composable
-watch(sortBy, newVal => {
-  const [field, direction] = newVal.split('_')
-  sort.value = { field, direction: direction as 'asc' | 'desc' }
-  currentPage.value = 1
-})
-const statusFilter = ref('all')
-const paymentStatusFilter = ref('any')
+// Modal state
 const showDeleteModal = ref(false)
 const orderToDelete = ref<Order | null>(null)
 const isDeleting = ref(false)
+
+// Filter state
+const statusFilter = ref('all')
+const paymentStatusFilter = ref('any')
+
+// Computed titles
+const _slideoverTitle = computed(() => {
+  return slideoverMode.value === 'create' ? 'Create Order' : 'Edit Order'
+})
+
+const detailsTitle = computed(() => {
+  return selectedOrder.value ? `Order #${selectedOrder.value.orderNumber}` : 'Order Details'
+})
 
 // Sort options
 const sortOptions = [
@@ -385,13 +612,17 @@ const filteredOrders = computed(() => {
     const direction = sortDirection === 'desc' ? -1 : 1
 
     if (sortField === 'createdAt') {
-      return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction
+      // Handle createdAt as a Unix timestamp (seconds since epoch)
+      const timeA =
+        typeof a.createdAt === 'number' ? a.createdAt * 1000 : new Date(a.createdAt).getTime()
+      const timeB =
+        typeof b.createdAt === 'number' ? b.createdAt * 1000 : new Date(b.createdAt).getTime()
+      return (timeA - timeB) * direction
     } else if (sortField === 'dueDate') {
-      return (
-        ((a.dueDate ? new Date(a.dueDate).getTime() : 0) -
-          (b.dueDate ? new Date(b.dueDate).getTime() : 0)) *
-        direction
-      )
+      // Handle dueDate as a date string (YYYY-MM-DD)
+      const timeA = a.dueDate ? dayjs(a.dueDate).valueOf() : 0
+      const timeB = b.dueDate ? dayjs(b.dueDate).valueOf() : 0
+      return (timeA - timeB) * direction
     } else if (sortField === 'totalAmount') {
       return ((a.totalAmount || 0) - (b.totalAmount || 0)) * direction
     }
@@ -411,94 +642,140 @@ const hasActiveFilters = computed(() => {
   return statusFilter.value !== 'all' || paymentStatusFilter.value !== 'any' || search.value !== ''
 })
 
-// Table columns
-const columns = [
-  {
-    id: 'orderNumber',
-    key: 'orderNumber',
-    label: 'Order ID',
-    sortable: true,
-  },
-  {
-    id: 'clientName',
-    key: 'clientName',
-    label: 'Client',
-    sortable: true,
-    render: (row: Order) => `${row.client?.firstName} ${row.client?.lastName}`,
-  },
-  {
-    id: 'totalAmount',
-    key: 'totalAmount',
-    label: 'Total',
-    sortable: true,
-    format: (value: number) =>
-      `₦${(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-  },
-  {
-    id: 'status',
-    key: 'status',
-    label: 'Status',
-    sortable: true,
-    render: (row: Order) =>
-      h(
-        UBadge,
-        {
-          color: getStatusColor(row.status),
-          variant: 'subtle',
-          class: 'capitalize',
-        },
-        () => formatStatus(row.status)
-      ),
-  },
-  {
-    id: 'dueDate',
-    key: 'dueDate',
-    label: 'Due Date',
-    sortable: true,
-    format: (value: string) => (value ? formatDate(value) : 'N/A'),
-  },
-  {
-    id: 'actions',
-    key: 'actions',
-    label: '',
-    sortable: false,
-    render: (row: Order) =>
-      h(
-        UDropdownMenu,
-        {
-          items: [
-            [
-              {
-                label: 'View',
-                icon: 'i-heroicons-eye',
-                click: () => navigateTo(getOrderPath(row.id)),
-              },
-              {
-                label: 'Edit',
-                icon: 'i-heroicons-pencil',
-                click: () => navigateTo(getOrderPath(row.id)),
-              },
-            ],
-            [
-              {
-                label: 'Delete',
-                icon: 'i-heroicons-trash',
-                click: () => confirmDelete(row),
-              },
-            ],
-          ],
-        },
-        {
-          default: () =>
-            h(UButton, {
-              color: 'gray',
-              variant: 'ghost',
-              icon: 'i-heroicons-ellipsis-horizontal-20-solid',
-            }),
-        }
-      ),
-  },
-]
+// Slideover actions
+const openCreateOrderSlideover = () => {
+  selectedOrder.value = null
+  slideoverMode.value = 'create'
+  showOrderSlideover.value = true
+}
+
+// Make a more flexible order type that matches the data structure from the API
+interface BaseOrder {
+  id: string | number
+  clientId: string | number
+  styleId?: string | number
+  orderNumber: string
+  status: OrderStatus
+  dueDate?: string
+  totalAmount: number
+  taxAmount?: number
+  discountAmount?: number
+  finalAmount: number
+  notes?: string
+  items?: Array<{
+    id?: number | string
+    styleId: number | string
+    quantity: number
+    price: number
+    measurements?: Record<string, any>
+    notes?: string
+    createdAt?: string
+    updatedAt?: string
+  }>
+  measurements?: Record<string, any>
+  shippingAddress?: Record<string, any>
+  billingAddress?: Record<string, any>
+  paymentStatus?: string
+  paymentMethod?: string
+  paymentReference?: string
+  createdAt: string
+  updatedAt?: string
+  deletedAt?: string
+  clientName?: string
+  style?: {
+    id: string | number
+    name: string
+    image?: string
+  }
+  [key: string]: any
+}
+
+// Helper function to safely convert any order-like object to Order
+const _toOrder = (order: any): Order => ({
+  ...order,
+  items: order.items ? [...order.items] : [],
+})
+
+const openEditOrderSlideover = (order: BaseOrder) => {
+  // Convert the order to the expected format
+  const processedOrder: Order = {
+    ...order,
+    id: String(order.id),
+    clientId: String(order.clientId),
+    styleId: order.styleId ? String(order.styleId) : undefined,
+    items: (order.items || []).map(item => ({
+      ...item,
+      id: item.id ? Number(item.id) : undefined,
+      styleId: Number(item.styleId) || 0,
+      quantity: Number(item.quantity) || 0,
+      price: Number(item.price) || 0,
+    })),
+  }
+
+  selectedOrder.value = processedOrder
+  slideoverMode.value = 'edit'
+  showOrderSlideover.value = true
+}
+
+const openOrderDetails = (order: BaseOrder) => {
+  // Convert the order to the expected format
+  const processedOrder: Order = {
+    ...order,
+    id: String(order.id),
+    clientId: String(order.clientId),
+    styleId: order.styleId ? String(order.styleId) : undefined,
+    items: (order.items || []).map(item => ({
+      ...item,
+      id: item.id ? Number(item.id) : undefined,
+      styleId: Number(item.styleId) || 0,
+      quantity: Number(item.quantity) || 0,
+      price: Number(item.price) || 0,
+    })),
+  }
+
+  selectedOrder.value = processedOrder
+  showDetailsSlideover.value = true
+}
+
+const closeOrderSlideover = () => {
+  showOrderSlideover.value = false
+  selectedOrder.value = null
+}
+
+const closeDetailsSlideover = () => {
+  showDetailsSlideover.value = false
+  selectedOrder.value = null
+}
+
+const _handleEditOrder = (order: Order | OrderWithOptionalItems) => {
+  closeDetailsSlideover()
+  openEditOrderSlideover(order)
+}
+
+const handleOrderAddSuccess = async (orderData: any) => {
+  try {
+    await createOrder(orderData)
+    closeOrderSlideover()
+  } catch (error) {
+    console.error('Failed to create order:', error)
+  }
+}
+
+const handleOrderEditSave = async (orderData: any) => {
+  try {
+    if (selectedOrder.value) {
+      await updateOrder(Number(selectedOrder.value.id), orderData)
+    }
+    closeOrderSlideover()
+  } catch (error) {
+    console.error('Failed to update order:', error)
+  }
+}
+
+// Filter and sort handlers
+const handleSearch = () => {
+  currentPage.value = 1
+}
 
 const handleSort = (value: string) => {
   sortBy.value = value
@@ -515,8 +792,16 @@ const toggleFilter = () => {
   isFilterOpen.value = !isFilterOpen.value
 }
 
-const confirmDelete = (order: Order) => {
-  orderToDelete.value = order
+// Delete handlers
+const confirmDelete = (order: Order | { id: string | number; [key: string]: any }) => {
+  orderToDelete.value = {
+    ...order,
+    items:
+      order.items?.map((item: any) => ({
+        ...item,
+        styleId: Number(item.styleId) || 0,
+      })) || [],
+  } as Order
   showDeleteModal.value = true
 }
 
@@ -525,15 +810,7 @@ const deleteOrder = async () => {
 
   try {
     isDeleting.value = true
-    // Replace with your actual API call
-    // await $fetch(`/api/orders/${orderToDelete.value.id}`, { method: 'DELETE' })
-
-    // Remove the order from the list
-    const index = orders.value.findIndex(o => o.id === orderToDelete.value?.id)
-    if (index !== -1) {
-      orders.value.splice(index, 1)
-    }
-
+    await _deleteOrderApi(parseInt(orderToDelete.value.id))
     showDeleteModal.value = false
     orderToDelete.value = null
   } catch (error) {
@@ -543,23 +820,14 @@ const deleteOrder = async () => {
   }
 }
 
-// Helper functions
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-const formatStatus = (status: string) => {
+const formatStatus = (status: OrderStatus) => {
   return status
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: OrderStatus) => {
   switch (status) {
     case 'completed':
       return 'success'
@@ -574,9 +842,5 @@ const getStatusColor = (status: string) => {
     default:
       return 'neutral'
   }
-}
-
-const getOrderPath = (id: string) => {
-  return `/orders/${id}`
 }
 </script>
