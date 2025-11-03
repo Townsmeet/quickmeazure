@@ -3,7 +3,7 @@
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "build": "pnpm run db:migrate && NODE_OPTIONS='--no-deprecation' nuxt build",
+    "build": "NODE_OPTIONS='--no-deprecation' nuxt build",
     "dev": "NODE_OPTIONS='--no-deprecation' nuxt dev",
     "generate": "NODE_OPTIONS='--no-deprecation' nuxt generate",
     "preview": "NODE_OPTIONS='--no-deprecation' nuxt preview",
@@ -22,7 +22,6 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate": "tsx server/scripts/run-migrations.ts",
     "db:seed": "tsx server/scripts/seed-plans.ts",
     "lint": "eslint . --ext .js,.ts,.vue",
     "lint:fix": "eslint . --ext .js,.ts,.vue --fix",
