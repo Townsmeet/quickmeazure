@@ -3,7 +3,7 @@
     <HeroSection />
     <FeaturesSection />
     <PricingSection />
-    <TestimonialsSection />
+    <!-- <TestimonialsSection /> -->
     <CtaSection />
   </div>
 </template>

@@ -43,7 +43,6 @@ class="ml-2">
           :description="plan.description"
           :price="formatPrice(plan.price)"
           :billing-cycle="formatBillingCycle(plan.interval)"
-          :billing-period="formatBillingPeriod(plan.interval)"
           :badge="plan.isPopular ? 'Most Popular' : undefined"
           :features="plan.features"
           :button="getButtonProps(plan)"
@@ -51,13 +50,6 @@ class="ml-2">
           :highlight="plan.isPopular"
         />
       </UPricingPlans>
-
-      <!-- Additional Info -->
-      <div class="text-center mt-12">
-        <p class="text-sm text-gray-500">
-          All plans include a 14-day free trial. No credit card required.
-        </p>
-      </div>
     </div>
   </section>
 </template>

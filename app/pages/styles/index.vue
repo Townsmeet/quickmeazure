@@ -282,7 +282,7 @@
       :is-open="showEditSlideover"
       :style="selectedStyle"
       @close="showEditSlideover = false"
-      @save="saveStyle"
+      @save="_updateStyle"
     />
 
     <!-- Style Delete Component -->
@@ -306,6 +306,9 @@
 <script setup lang="ts">
 import type { Style } from '~/types/style'
 import dayjs from 'dayjs'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
+
+dayjs.extend(isSameOrAfter)
 
 definePageMeta({
   middleware: ['auth', 'setup-required'],
@@ -488,7 +491,7 @@ const confirmDelete = (style: Style) => {
   showDeleteModal.value = true
 }
 
-const _updateStyle = (style: Style, imageFiles?: File[]) => {
+const _updateStyle = async (style: Style, imageFiles?: File[]) => {
   if (!style) return
 
   try {

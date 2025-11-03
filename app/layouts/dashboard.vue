@@ -375,7 +375,7 @@ const navigationItems: NavigationMenuItem[][] = [
     {
       label: 'Help & Support',
       icon: 'i-heroicons-question-mark-circle',
-      to: '/help',
+      to: '/',
     },
   ],
 ]
