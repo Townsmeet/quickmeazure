@@ -3,7 +3,7 @@
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "build": "NODE_OPTIONS='--no-deprecation' nuxt build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096 --no-deprecation' nuxt build --modern",
     "dev": "NODE_OPTIONS='--no-deprecation' nuxt dev",
     "generate": "NODE_OPTIONS='--no-deprecation' nuxt generate",
     "preview": "NODE_OPTIONS='--no-deprecation' nuxt preview",
