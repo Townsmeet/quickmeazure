@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/nuxt'
 // Only initialize Sentry in production mode
 if (process.env.NODE_ENV === 'production') {
   Sentry.init({
-    dsn: process.env.SENTRY_DSN || 'https://examplePublicKey@o0.ingest.sentry.io/0',
+    dsn: process.env.NUXT_SENTRY_DSN || 'https://examplePublicKey@o0.ingest.sentry.io/0',
     tracesSampleRate: 1.0,
     integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0.1,
