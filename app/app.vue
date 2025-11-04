@@ -21,11 +21,13 @@
     <ClientOnly>
       <InstallPrompt v-if="!isDev" />
     </ClientOnly>
+    <Analytics />
   </UApp>
 </template>
 
 <script setup>
 import InstallPrompt from '~/components/InstallPrompt.vue'
+import { Analytics } from '@vercel/analytics/nuxt'
 
 // Check if we're in development mode
 const isDev = import.meta.dev
