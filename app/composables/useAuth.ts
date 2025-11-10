@@ -77,7 +77,7 @@ export const useAuth = () => {
     // Check if browser is offline first
     if (!isOnline.value) {
       isLoading.value = false
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     try {
@@ -116,7 +116,7 @@ export const useAuth = () => {
     // Check if browser is offline first
     if (!isOnline.value) {
       isLoading.value = false
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     const { error } = await authClient.signUp.email({
@@ -163,7 +163,7 @@ export const useAuth = () => {
     // Check if browser is offline first
     if (!isOnline.value) {
       isLoading.value = false
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     const { error } = await authClient.forgetPassword({
@@ -188,7 +188,7 @@ export const useAuth = () => {
     // Check if browser is offline first
     if (!isOnline.value) {
       isLoading.value = false
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     const { error } = await authClient.resetPassword({
@@ -213,7 +213,7 @@ export const useAuth = () => {
     // Check if browser is offline first
     if (!isOnline.value) {
       isLoading.value = false
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     const { error } = await authClient.sendVerificationEmail({
@@ -235,7 +235,7 @@ export const useAuth = () => {
   const signInWithGoogle = async () => {
     // Check if browser is offline first
     if (!isOnline.value) {
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     try {
@@ -258,7 +258,7 @@ export const useAuth = () => {
   const signUpWithGoogle = async () => {
     // Check if browser is offline first
     if (!isOnline.value) {
-      return { error: getNetworkError() }
+      return { error: String(getNetworkError()) }
     }
 
     try {
@@ -295,6 +295,35 @@ export const useAuth = () => {
   // Helper function to check if user can access a path
   const canUserAccessPath = (path: string) => canAccessPath(user.value, path)
 
+  // Change password with Better Auth
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    revokeOtherSessions: boolean = true
+  ): Promise<{ success: boolean; error?: string }> => {
+    isLoading.value = true
+
+    try {
+      if (!isOnline.value) {
+        isLoading.value = false
+        return { success: false, error: String(getNetworkError()) }
+      }
+      const { data, error } = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions,
+      })
+      isLoading.value = false
+      if (error) {
+        return { success: false, error: error.message }
+      }
+      return { success: true }
+    } catch (err: any) {
+      isLoading.value = false
+      return { success: false, error: err?.message || 'Failed to change password' }
+    }
+  }
+
   return {
     user,
     isAuthenticated,
@@ -315,5 +344,6 @@ export const useAuth = () => {
     onboardingStatusMessage,
     isFullyOnboarded,
     canUserAccessPath,
+    changePassword, // <-- add here
   }
 }

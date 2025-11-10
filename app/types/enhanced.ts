@@ -27,6 +27,14 @@ export interface ApiError extends ErrorWithMessage {
   }
 }
 
+export interface NetworkError extends ErrorWithMessage {
+  code?: string
+  name?: string
+  cause?: unknown
+  // Network errors typically don't have a statusCode, or have statusCode 0
+  statusCode?: number
+}
+
 // Generic data structures
 export interface KeyValuePair<T = string> {
   [key: string]: T

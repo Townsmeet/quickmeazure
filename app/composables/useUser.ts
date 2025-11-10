@@ -45,7 +45,7 @@ export const useUser = () => {
     refresh: refreshProfile,
   } = useFetch<UserResponse>('/api/user/profile', {
     server: false,
-    default: () => ({ success: false, data: null }) as UserResponse,
+    default: () => ({ success: false, data: null }) as unknown as UserResponse,
     onResponse({ response }) {
       const responseData = response._data as UserResponse
       if (responseData?.success && responseData?.data) {
@@ -75,31 +75,6 @@ export const useUser = () => {
       return response
     } catch (err: any) {
       error.value = err.message || 'Failed to update profile'
-      return {
-        success: false,
-        message: error.value || undefined,
-      }
-    }
-  }
-
-  // Change password (mutation with $fetch)
-  const changePassword = async (
-    data: PasswordChangeData
-  ): Promise<{ success: boolean; message?: string }> => {
-    error.value = null
-
-    try {
-      const response = await $fetch<{ success: boolean; message?: string }>(
-        '/api/user/change-password',
-        {
-          method: 'POST',
-          body: data,
-        }
-      )
-
-      return response
-    } catch (err: any) {
-      error.value = err.message || 'Failed to change password'
       return {
         success: false,
         message: error.value || undefined,
@@ -242,7 +217,6 @@ export const useUser = () => {
 
     // API Actions
     updateProfile,
-    changePassword,
     uploadAvatar,
     deleteAvatar,
     updatePreferences,

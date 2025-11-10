@@ -1,7 +1,7 @@
 import { defineEventHandler, createError, readBody } from 'h3'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { ok } from '../../validators'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { generateToken } from '../../utils/jwt'
 
@@ -43,6 +43,10 @@ export default defineEventHandler(async event => {
       await readBody(event)
     )
 
+    // Normalize the billing interval for internal use
+    const normalizedInterval =
+      billingInterval === 'year' || billingInterval === 'annual' ? 'annual' : 'monthly'
+
     if (!planId) {
       throw createError({
         statusCode: 400,
@@ -68,6 +72,12 @@ export default defineEventHandler(async event => {
     // Find the requested plan
     // Ensure planId is converted to a number for database query
     const planIdNum = typeof planId === 'string' && !isNaN(Number(planId)) ? Number(planId) : planId
+    if (typeof planIdNum !== 'number' || isNaN(planIdNum)) {
+      throw createError({
+        statusCode: 400,
+        message: 'Invalid plan id',
+      })
+    }
     console.log('Looking for plan with ID:', planIdNum, 'Original value:', planId)
 
     const plan = await db.query.plans.findFirst({
@@ -81,9 +91,9 @@ export default defineEventHandler(async event => {
       })
     }
 
-    // Calculate the new price based on the billing interval
+    // Calculate the new price based on the normalized interval
     const price =
-      billingInterval === 'year' || billingInterval === 'annual'
+      normalizedInterval === 'annual'
         ? plan.price * 12 * 0.85 // 15% discount for annual billing
         : plan.price
 
@@ -92,7 +102,7 @@ export default defineEventHandler(async event => {
       .update(tables.subscriptions)
       .set({
         planId: typeof planId === 'string' ? Number(planId) : planId,
-        billingPeriod: billingInterval === 'year' ? 'annual' : 'monthly',
+        billingPeriod: normalizedInterval,
         amount: price,
         updatedAt: new Date(),
         metadata: JSON.stringify({
@@ -106,13 +116,13 @@ export default defineEventHandler(async event => {
 
     // Get the plan details for the token
     const planDetails = await db.query.plans.findFirst({
-      where: eq(tables.plans.id, planId),
+      where: eq(tables.plans.id, planIdNum),
     })
 
-    // Calculate expiry date based on billing interval
+    // Calculate expiry date based on normalized interval
     const now = new Date()
     const expiryDate = new Date(now)
-    if (billingInterval === 'year') {
+    if (normalizedInterval === 'annual') {
       expiryDate.setFullYear(expiryDate.getFullYear() + 1)
     } else {
       expiryDate.setMonth(expiryDate.getMonth() + 1)
@@ -142,12 +152,12 @@ export default defineEventHandler(async event => {
             currency: 'NGN',
             status: 'successful',
             reference: reference,
-            description: `Subscription changed to ${plan.name} (${billingInterval === 'year' ? 'yearly' : 'monthly'})`,
+            description: `Subscription changed to ${plan.name} (${normalizedInterval})`,
             provider: 'paystack',
             metadata: JSON.stringify({
               planId: plan.id,
               previousPlanId: subscription.planId,
-              billingInterval: billingInterval,
+              billingInterval: normalizedInterval,
               planChangedAt: new Date().toISOString(),
             }),
           })

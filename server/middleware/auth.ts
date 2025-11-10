@@ -49,37 +49,106 @@ export default defineEventHandler(async event => {
     const name: string | undefined = sessionUser?.name
 
     if (email) {
-      // db is already imported
-      // Resolve or create a local user mapped by email
-      const existing = await db
-        .select()
-        .from(tables.user)
-        .where(eq(tables.user.email, email))
-        .limit(1)
-        .then(r => r[0])
+      try {
+        // db is already imported
+        // Resolve or create a local user mapped by email
+        const existing = await db
+          .select()
+          .from(tables.user)
+          .where(eq(tables.user.email, email))
+          .limit(1)
+          .then(r => r[0])
 
-      let localUser = existing
-      if (!localUser) {
-        // Create a minimal local user; Better Auth manages auth separately
-        const inserted = await db
-          .insert(tables.user)
-          .values({
-            id: randomUUID(),
-            name: name || email.split('@')[0],
-            email,
-            emailVerified: true, // Since they're coming from Better Auth session
+        let localUser = existing
+        if (!localUser) {
+          // Create a minimal local user; Better Auth manages auth separately
+          const inserted = await db
+            .insert(tables.user)
+            .values({
+              id: randomUUID(),
+              name: name || email.split('@')[0],
+              email,
+              emailVerified: true, // Since they're coming from Better Auth session
+            })
+            .returning()
+          localUser = inserted[0]
+        }
+
+        // Populate context
+        event.context.auth = { userId: localUser.id, user: { id: localUser.id, email, name } }
+        event.context.user = { id: localUser.id, email, name }
+        return
+      } catch (dbError: any) {
+        // Database connection or query error - this is an infrastructure issue
+        console.error('Database error during auth check:', dbError)
+
+        // Check if it's a database connection error
+        const errorMessage = dbError?.message || String(dbError)
+        const isConnectionError =
+          errorMessage.includes('SQLITE') ||
+          errorMessage.includes('ECONNREFUSED') ||
+          errorMessage.includes('ENOTFOUND') ||
+          errorMessage.includes('ETIMEDOUT') ||
+          errorMessage.includes('database') ||
+          errorMessage.includes('connection') ||
+          dbError?.code === 'SQLITE_ERROR' ||
+          dbError?.code === 'ECONNREFUSED' ||
+          dbError?.code === 'ENOTFOUND' ||
+          dbError?.code === 'ETIMEDOUT'
+
+        if (isConnectionError) {
+          // Return 503 Service Unavailable for infrastructure errors
+          throw createError({
+            statusCode: 503,
+            statusMessage: 'Service temporarily unavailable - database connection error',
+            message: 'The service is temporarily unavailable. Please try again later.',
           })
-          .returning()
-        localUser = inserted[0]
-      }
+        }
 
-      // Populate context
-      event.context.auth = { userId: localUser.id, user: { id: localUser.id, email, name } }
-      event.context.user = { id: localUser.id, email, name }
-      return
+        // For other database errors, still return 503 but log for investigation
+        throw createError({
+          statusCode: 503,
+          statusMessage: 'Service temporarily unavailable',
+          message: 'The service is temporarily unavailable. Please try again later.',
+        })
+      }
     }
-  } catch {
-    // ignore and continue to JWT fallback
+    // If session exists but no email, or session is null/undefined, continue to JWT fallback
+    // This is normal - not an error, just no Better Auth session
+  } catch (authError: any) {
+    // Check if this is an infrastructure error from Better Auth
+    const errorMessage = authError?.message || String(authError)
+    const isInfrastructureError =
+      errorMessage.includes('ECONNREFUSED') ||
+      errorMessage.includes('ENOTFOUND') ||
+      errorMessage.includes('ETIMEDOUT') ||
+      errorMessage.includes('database') ||
+      errorMessage.includes('connection') ||
+      errorMessage.includes('SQLITE') ||
+      authError?.code === 'ECONNREFUSED' ||
+      authError?.code === 'ENOTFOUND' ||
+      authError?.code === 'ETIMEDOUT' ||
+      authError?.code === 'SQLITE_ERROR' ||
+      authError?.statusCode === 503
+
+    // If it's already a 503 error (from database error above), rethrow it
+    if (authError?.statusCode === 503) {
+      throw authError
+    }
+
+    // If it's an infrastructure error, return 503
+    if (isInfrastructureError) {
+      console.error('Infrastructure error during Better Auth session check:', authError)
+      throw createError({
+        statusCode: 503,
+        statusMessage: 'Service temporarily unavailable - authentication service error',
+        message: 'The authentication service is temporarily unavailable. Please try again later.',
+      })
+    }
+
+    // For other errors (or no session), continue to JWT fallback
+    // Better Auth might throw for various reasons, but if it's not infrastructure-related,
+    // we should try JWT fallback rather than assuming it's an infrastructure issue
   }
 
   // If no valid session, check for Authorization header (JWT token)

@@ -39,30 +39,12 @@
           </p>
         </div>
 
-        <!-- Plan Features -->
-        <div v-if="subscription.plan?.features" class="mt-4">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Plan Features</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div
-              v-for="(feature, key) in subscription.plan.features"
-              :key="String(key)"
-              class="flex items-center text-sm"
-            >
-              <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-green-500 mr-2" />
-              <span class="text-gray-600 dark:text-gray-300">{{
-                formatFeature(String(key), feature)
-              }}</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Action Buttons -->
         <div class="flex flex-wrap gap-3 mt-6">
           <UButton
             v-if="!subscription.canceledAt && subscription.plan?.name !== 'Free'"
             color="error"
             variant="outline"
-            :loading="cancelLoading"
             @click="showCancelModal = true"
           >
             Cancel Subscription
@@ -262,57 +244,28 @@ size="sm" />
 </template>
 
 <script setup lang="ts">
-import type { Plan } from '~/types'
+import type { PaymentExtended } from '~/composables/useBilling'
 
-// Extended types for better type safety
-interface SubscriptionWithPlan {
-  id: number
-  userId: string
-  planId: number
-  status: string
-  startDate: string
-  endDate?: string | null
-  billingPeriod: 'monthly' | 'annual'
-  amount: number
-  nextBillingDate?: string | null
-  canceledAt?: string | null
-  currentPeriodEndsAt?: string | null
-  plan?: Plan | null
-}
+// Use billing composable
+const {
+  subscription,
+  paymentMethods,
+  billingHistory,
+  error: billingError,
+  isLoadingSubscription,
+  isLoadingPaymentMethods,
+  isLoadingBillingHistory,
+  fetchCurrentSubscription,
+  fetchPaymentMethods,
+  fetchBillingHistory,
+  setDefaultPaymentMethod: setDefaultPaymentMethodAPI,
+  removePaymentMethod: removePaymentMethodAPI,
+  downloadInvoice: downloadInvoiceAPI,
+  refreshAll,
+} = useBilling()
 
-interface PaymentMethodExtended {
-  id: number
-  userId: string
-  type: string
-  last4?: string | null
-  expiryMonth?: string | null
-  expiryYear?: string | null
-  brand?: string | null
-  isDefault: boolean
-  provider: string
-  createdAt: string
-  updatedAt?: string | null
-}
-
-interface PaymentExtended {
-  id: number
-  date: string
-  description: string
-  amount: number
-  status: string
-  reference?: string | null
-  metadata?: any
-}
-
-// Reactive state
-const subscription = ref<SubscriptionWithPlan | null>(null)
-const paymentMethods = ref<PaymentMethodExtended[]>([])
-const billingHistory = ref<PaymentExtended[]>([])
-
-// Loading states
+// Loading state
 const loading = ref(true)
-const cancelLoading = ref(false)
-const billingHistoryLoading = ref(false)
 
 // Modal states
 const showCancelModal = ref(false)
@@ -338,101 +291,96 @@ const subscriptionStatusColor = computed(() => {
   }
 })
 
+// Computed for billing history loading
+const billingHistoryLoading = computed(() => isLoadingBillingHistory.value)
+
 // Fetch data on component mount
 onMounted(async () => {
-  await Promise.all([fetchCurrentSubscription(), fetchPaymentMethods(), fetchBillingHistory()])
-  loading.value = false
-})
-
-// API calls
-async function fetchCurrentSubscription() {
   try {
-    const response = (await $fetch('/api/subscriptions/current')) as any
-    if (response.success) {
-      subscription.value = response.data as SubscriptionWithPlan
-    }
-  } catch (_error) {
-    console.error('Error fetching subscription:', error)
+    await refreshAll()
+  } catch (error) {
+    console.error('Error loading billing data:', error)
     toast.add({
       title: 'Error',
-      description: 'Failed to load subscription information',
+      description: 'Failed to load billing information',
+      color: 'error',
+    })
+  } finally {
+    loading.value = false
+  }
+})
+
+// Event handlers
+async function handleSubscriptionCanceled() {
+  showCancelModal.value = false
+  try {
+    await fetchCurrentSubscription()
+    toast.add({
+      title: 'Success',
+      description: 'Subscription canceled successfully',
+      color: 'success',
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: billingError.value || 'Failed to update subscription',
       color: 'error',
     })
   }
 }
 
-async function fetchPaymentMethods() {
-  try {
-    const _response = (await $fetch('/api/subscriptions/payment-methods')) as any
-    if (_response.success) {
-      paymentMethods.value = _response.data as PaymentMethodExtended[]
-    }
-  } catch (_error) {
-    console.error('Error fetching payment methods:', _error)
-  }
-}
-
-async function fetchBillingHistory() {
-  billingHistoryLoading.value = true
-  try {
-    const response = (await $fetch('/api/subscriptions/billing-history')) as any
-    if (response.success) {
-      billingHistory.value = response.data as PaymentExtended[]
-    }
-  } catch (_error) {
-    console.error('Error fetching billing history:', _error)
-  } finally {
-    billingHistoryLoading.value = false
-  }
-}
-
-// Event handlers
-async function handleSubscriptionCanceled() {
-  showCancelModal.value = false
-  await fetchCurrentSubscription()
-  toast.add({
-    title: 'Success',
-    description: 'Subscription canceled successfully',
-    color: 'success',
-  })
-}
-
 async function handlePlanUpgraded() {
   showUpgradeModal.value = false
-  await Promise.all([fetchCurrentSubscription(), fetchBillingHistory()])
-  toast.add({
-    title: 'Success',
-    description: 'Plan updated successfully',
-    color: 'success',
-  })
+  try {
+    await Promise.all([fetchCurrentSubscription(), fetchBillingHistory()])
+    toast.add({
+      title: 'Success',
+      description: 'Plan updated successfully',
+      color: 'success',
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: billingError.value || 'Failed to update plan',
+      color: 'error',
+    })
+  }
 }
 
 async function handlePaymentMethodAdded() {
   showAddPaymentModal.value = false
-  await fetchPaymentMethods()
-  toast.add({
-    title: 'Success',
-    description: 'Payment method added successfully',
-    color: 'success',
-  })
+  try {
+    await fetchPaymentMethods()
+    toast.add({
+      title: 'Success',
+      description: 'Payment method added successfully',
+      color: 'success',
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: billingError.value || 'Failed to refresh payment methods',
+      color: 'error',
+    })
+  }
 }
 
 async function setDefaultPaymentMethod(methodId: number) {
   try {
-    await $fetch('/api/subscriptions/payment-methods/set-default', {
-      method: 'POST',
-      body: { paymentMethodId: methodId },
-    })
-    await fetchPaymentMethods()
-    toast.add({
-      title: 'Success',
-      description: 'Default payment method updated',
-      color: 'success',
-    })
-  } catch (_error) {
+    const success = await setDefaultPaymentMethodAPI(methodId)
+    if (success) {
+      toast.add({
+        title: 'Success',
+        description: 'Default payment method updated',
+        color: 'success',
+      })
+    } else {
+      throw new Error(billingError.value || 'Failed to update default payment method')
+    }
+  } catch (error) {
     toast.add({
       title: 'Error',
-      description: 'Failed to update default payment method',
+      description: billingError.value || 'Failed to update default payment method',
       color: 'error',
     })
   }
@@ -440,43 +388,53 @@ async function setDefaultPaymentMethod(methodId: number) {
 
 async function removePaymentMethod(methodId: number) {
   try {
-    await $fetch(`/api/subscriptions/payment-methods/${methodId}`, {
-      method: 'DELETE',
-    })
-    await fetchPaymentMethods()
-    toast.add({
-      title: 'Success',
-      description: 'Payment method removed',
-      color: 'success',
-    })
-  } catch (_error) {
+    const success = await removePaymentMethodAPI(methodId)
+    if (success) {
+      toast.add({
+        title: 'Success',
+        description: 'Payment method removed',
+        color: 'success',
+      })
+    } else {
+      throw new Error(billingError.value || 'Failed to remove payment method')
+    }
+  } catch (error) {
     toast.add({
       title: 'Error',
-      description: 'Failed to remove payment method',
+      description: billingError.value || 'Failed to remove payment method',
       color: 'error',
     })
   }
 }
 
 async function refreshBillingHistory() {
-  await fetchBillingHistory()
+  try {
+    await fetchBillingHistory()
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: billingError.value || 'Failed to refresh billing history',
+      color: 'error',
+    })
+  }
 }
 
 async function downloadInvoice(payment: PaymentExtended) {
   try {
-    const response = await $fetch(`/api/subscriptions/invoice/${payment.id}`, {
-      method: 'GET',
-    })
-    // Handle invoice download
-    toast.add({
-      title: 'Success',
-      description: 'Invoice downloaded',
-      color: 'success',
-    })
-  } catch (_error) {
+    const success = await downloadInvoiceAPI(payment.id)
+    if (success) {
+      toast.add({
+        title: 'Success',
+        description: 'Invoice downloaded',
+        color: 'success',
+      })
+    } else {
+      throw new Error(billingError.value || 'Failed to download invoice')
+    }
+  } catch (error) {
     toast.add({
       title: 'Error',
-      description: 'Failed to download invoice',
+      description: billingError.value || 'Failed to download invoice',
       color: 'error',
     })
   }

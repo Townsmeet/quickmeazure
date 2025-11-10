@@ -116,6 +116,7 @@
               v-model="cancelReason"
               placeholder="Help us improve by telling us why you're canceling..."
               :rows="3"
+              class="w-full"
             />
           </div>
         </div>
