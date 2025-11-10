@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { ok, validateBody } from '../../validators'
+import { validateBody } from '../../validators'
 import { BusinessUpdateSchema, type BusinessUpdateInput } from '../../validators/business'
 
 export default defineEventHandler(async event => {
@@ -20,8 +20,7 @@ export default defineEventHandler(async event => {
     .then(r => r[0])
 
   const updateData: any = {
-    ...('shopName' in input ? { shopName: input.shopName ?? null } : {}),
-    ...('businessType' in input ? { businessType: input.businessType ?? null } : {}),
+    ...('businessName' in input ? { businessName: input.businessName ?? null } : {}),
     ...('yearsInBusiness' in input ? { yearsInBusiness: input.yearsInBusiness ?? null } : {}),
     ...('businessDescription' in input
       ? { businessDescription: input.businessDescription ?? null }
@@ -31,7 +30,7 @@ export default defineEventHandler(async event => {
     ...('city' in input ? { city: input.city ?? null } : {}),
     ...('state' in input ? { state: input.state ?? null } : {}),
     ...('specializations' in input ? { specializations: input.specializations ?? null } : {}),
-    ...('services' in input ? { services: input.services ?? null } : {}),
+    ...('image' in input ? { image: input.image ?? null } : {}),
     updatedAt: new Date(),
   }
 

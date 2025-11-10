@@ -19,9 +19,20 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Get database connection
 
-    // Get business info for user
+    // Get business info for user with only the fields we need
     const business = await db
-      .select()
+      .select({
+        businessName: tables.businesses.businessName,
+        yearsInBusiness: tables.businesses.yearsInBusiness,
+        businessDescription: tables.businesses.businessDescription,
+        phone: tables.businesses.phone,
+        address: tables.businesses.address,
+        city: tables.businesses.city,
+        state: tables.businesses.state,
+        specializations: tables.businesses.specializations,
+        image: tables.businesses.image,
+        updatedAt: tables.businesses.updatedAt,
+      })
       .from(tables.businesses)
       .where(eq(tables.businesses.userId, userId))
       .limit(1)

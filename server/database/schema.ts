@@ -63,18 +63,13 @@ export const businesses = sqliteTable('businesses', {
     .references(() => user.id, { onDelete: 'cascade' }),
   image: text('image'),
   businessName: text('business_name'),
-  businessType: text('business_type'),
   yearsInBusiness: integer('years_in_business'),
   businessDescription: text('business_description'),
   phone: text('phone'),
   address: text('address'),
   city: text('city'),
   state: text('state'),
-  location: text('location'),
-  bio: text('bio'),
   specializations: text('specializations'), // JSON string
-  services: text('services'), // JSON string
-  hasCompletedSetup: integer('has_completed_setup', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 })
