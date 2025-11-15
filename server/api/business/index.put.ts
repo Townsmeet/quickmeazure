@@ -1,8 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { validateBody } from '../../validators'
+import { validateBody, validate } from '../../validators'
 import { BusinessUpdateSchema, type BusinessUpdateInput } from '../../validators/business'
+import { extractFieldsFromMultipart, extractFileFromMultipart } from '../../utils/multipart'
+import { uploadFileToS3, getFileExtension, getContentType } from '../../utils/s3'
 
 export default defineEventHandler(async event => {
   const auth = event.context.auth
@@ -10,7 +12,42 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const input: BusinessUpdateInput = await validateBody(event, BusinessUpdateSchema)
+  // Support multipart/form-data for image upload from the profile form
+  const contentType = (event.node.req.headers['content-type'] || '').toString()
+  let input: BusinessUpdateInput
+
+  if (contentType.includes('multipart/form-data')) {
+    // Extract text fields from multipart form data
+    const fields = await extractFieldsFromMultipart(event)
+
+    // Coerce numeric fields where applicable
+    const coerced: any = {
+      ...fields,
+    }
+
+    if (coerced.yearsInBusiness !== undefined && coerced.yearsInBusiness !== null) {
+      const n = Number(coerced.yearsInBusiness)
+      coerced.yearsInBusiness = Number.isNaN(n) ? undefined : n
+    }
+
+    // If there's a file part, upload it and set image field
+    const filePart = await extractFileFromMultipart(event)
+    if (filePart && filePart.buffer) {
+      try {
+        const fileExt = getFileExtension(filePart.filename)
+        const contentType = getContentType(fileExt)
+        const uploadedUrl = await uploadFileToS3(filePart.buffer, filePart.filename, contentType)
+        coerced.image = uploadedUrl
+      } catch (err) {
+        console.error('Failed to upload business image:', err)
+      }
+    }
+
+    // Validate coerced object against Zod schema
+    input = validate(BusinessUpdateSchema, coerced, 'Invalid request body')
+  } else {
+    input = await validateBody(event, BusinessUpdateSchema)
+  }
 
   const existing = await db
     .select()

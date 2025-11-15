@@ -6,7 +6,7 @@
       <p class="text-lg text-gray-600">
         Select the perfect plan to start your tailoring business journey
         {{
-          billingInterval === 'annually'
+          billingInterval === 'annual'
             ? ` Save ${getSavingsPercentage()}% with annual billing.`
             : ''
         }}
@@ -19,27 +19,27 @@
       <div class="flex justify-center items-center gap-4 mb-12">
         <span
           :class="{
-            'font-semibold text-gray-900': billingInterval === 'monthly',
-            'text-gray-500': billingInterval === 'annually',
+            'font-semibold text-gray-900': billingInterval === 'month',
+            'text-gray-500': billingInterval === 'annual',
           }"
         >
           Monthly
         </span>
         <USwitch
-          :model-value="billingInterval === 'annually'"
+          :model-value="billingInterval === 'annual'"
           size="lg"
           @update:model-value="toggleBilling"
         />
         <span
           :class="{
-            'font-semibold text-gray-900': billingInterval === 'annually',
-            'text-gray-500': billingInterval === 'monthly',
+            'font-semibold text-gray-900': billingInterval === 'annual',
+            'text-gray-500': billingInterval === 'month',
           }"
         >
           Annual
         </span>
         <UBadge
-v-if="billingInterval === 'annually'"
+v-if="billingInterval === 'annual'"
 color="primary"
 variant="subtle"
 class="ml-2">
@@ -55,7 +55,6 @@ class="ml-2">
           :description="plan.description"
           :price="formatPrice(plan.price)"
           :billing-cycle="formatBillingCycle(plan.interval)"
-          :billing-period="formatBillingPeriod(plan.interval)"
           :badge="plan.isPopular ? 'Most Popular' : undefined"
           :features="plan.features"
           :button="getButtonProps(plan)"
@@ -69,7 +68,7 @@ class="ml-2">
       <div class="text-center">
         <UButton
           v-if="selectedPlan === 'free'"
-          size="xl"
+          size="lg"
           color="primary"
           :loading="isProcessing"
           class="px-12 py-4 text-lg font-semibold"
@@ -137,7 +136,7 @@ const toast = useToast()
 // State
 const selectedPlan = ref<string>('')
 const isProcessing = ref(false)
-const billingInterval = ref<'monthly' | 'annually'>('monthly')
+const billingInterval = ref<'month' | 'annual'>('month')
 
 // Get plans based on billing interval
 const displayedPlans = computed(() => {
@@ -166,7 +165,7 @@ const getButtonProps = (plan: Plan) => {
 
 // Toggle billing interval
 const toggleBilling = (isAnnual: boolean) => {
-  billingInterval.value = isAnnual ? 'annually' : 'monthly'
+  billingInterval.value = isAnnual ? 'annual' : 'month'
 }
 
 // Get pre-selected plan from query params (from home page)
@@ -175,8 +174,8 @@ onMounted(() => {
   const billingFromQuery = route.query.billing as string
 
   // Set billing interval
-  if (billingFromQuery === 'annually') {
-    billingInterval.value = 'annually'
+  if (billingFromQuery === 'annual') {
+    billingInterval.value = 'annual'
   }
 
   // Set selected plan
@@ -215,9 +214,9 @@ const createFreeSubscription = async () => {
         color: 'success',
       })
 
-      // Update user's setup status
+      // Force refresh to get updated onboarding status from server
       const { init } = useAuth()
-      await init()
+      await init(true)
 
       await navigateTo('/dashboard')
     } else {
@@ -242,9 +241,9 @@ const handlePaymentSuccess = async () => {
     color: 'success',
   })
 
-  // Update user's setup status
+  // Force refresh to get updated onboarding status from server
   const { init } = useAuth()
-  await init()
+  await init(true)
 
   // Redirect to dashboard
   await navigateTo('/dashboard')

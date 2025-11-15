@@ -19,6 +19,13 @@ class="space-y-6"
             :multiple="false"
             @update:model-value="onLogoChange"
           />
+          <!-- Show existing logo preview if available -->
+          <div v-if="logoPreview" class="mt-3">
+            <div class="text-sm text-gray-600">Current Logo:</div>
+            <div class="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden mt-2">
+              <img :src="logoPreview" alt="Business logo" class="w-full h-full object-cover" />
+            </div>
+          </div>
           <template #error>
             <span v-if="logoError" class="text-red-500 text-sm">{{ logoError }}</span>
           </template>
@@ -256,6 +263,7 @@ onMounted(async () => {
     if (data) {
       Object.assign(formState, data)
       if (data.image) {
+        // Set preview from URL
         logoPreview.value = data.image
       }
     }
@@ -269,24 +277,4 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
-try {
-  const res = await updateBusiness(formState)
-  if (res?.success) {
-    toast.add({
-      title: 'Saved',
-      description: 'Profile updated!',
-      color: 'success',
-    })
-  } else {
-    throw new Error(res?.error || res?.message || 'Failed to update')
-  }
-} catch (err: any) {
-  toast.add({
-    title: 'Error',
-    description: err.message || 'Update failed',
-    color: 'error',
-  })
-} finally {
-  isLoading.value = false
-}
 </script>

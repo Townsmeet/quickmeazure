@@ -1,7 +1,14 @@
 <template>
   <UModal :open="isOpen" :ui="{ content: 'max-w-7xl' }" @update:open="value => (isOpen = value)">
     <template #content>
-      <UCard>
+      <UCard
+        :ui="{
+          body: 'flex-1 overflow-y-auto max-h-[calc(100vh-8rem)]',
+          header: 'sticky top-0 z-10 bg-white dark:bg-gray-900',
+          footer: 'sticky bottom-0 z-10 bg-white dark:bg-gray-900',
+        }"
+        class="flex flex-col max-h-[calc(100vh-4rem)]"
+      >
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -22,31 +29,30 @@
           <div class="flex justify-center items-center gap-4">
             <span
               :class="{
-                'font-semibold text-gray-900 dark:text-white': billingPeriod === 'monthly',
-                'text-gray-500 dark:text-gray-400': billingPeriod === 'annually',
+                'font-semibold text-gray-900 dark:text-white': billingPeriod === 'month',
+                'text-gray-500 dark:text-gray-400': billingPeriod === 'annual',
               }"
             >
               Monthly
             </span>
             <USwitch
-              :model-value="billingPeriod === 'annually'"
+              :model-value="billingPeriod === 'annual'"
               size="lg"
-              @update:model-value="billingPeriod = $event ? 'annually' : 'monthly'"
+              @update:model-value="billingPeriod = $event ? 'annual' : 'month'"
             />
             <span
               :class="{
-                'font-semibold text-gray-900 dark:text-white': billingPeriod === 'annually',
-                'text-gray-500 dark:text-gray-400': billingPeriod === 'monthly',
+                'font-semibold text-gray-900 dark:text-white': billingPeriod === 'annual',
+                'text-gray-500 dark:text-gray-400': billingPeriod === 'month',
               }"
             >
               Annual
             </span>
             <UBadge
-              v-if="billingPeriod === 'annually'"
-              color="primary"
-              variant="subtle"
-              class="ml-2"
-            >
+v-if="billingPeriod === 'annual'"
+color="primary"
+variant="subtle"
+class="ml-2">
               Save {{ getSavingsPercentage() }}%
             </UBadge>
           </div>
@@ -121,11 +127,14 @@ const emit = defineEmits<Emits>()
 
 // Reactive state
 const selectedPlanId = ref<string>('')
-const billingPeriod = ref<'monthly' | 'annually'>('monthly')
+const billingPeriod = ref<'month' | 'annual'>('month')
 const upgradeLoading = ref(false)
 
 // Toast for notifications
 const toast = useToast()
+
+// Paystack composable
+const { processPayment } = usePaystack()
 
 // Computed
 const isOpen = computed({
@@ -169,7 +178,7 @@ function isCurrentPlan(plan: SubscriptionPlan): boolean {
   }
 
   const planId = planNameMap[props.currentPlan.name] || props.currentPlan.name.toLowerCase()
-  const interval = props.currentPlan.interval === 'annual' ? 'annually' : 'monthly'
+  const interval = props.currentPlan.interval === 'annual' ? 'annual' : 'month'
 
   return plan.id === planId && plan.interval === interval
 }
@@ -203,7 +212,7 @@ watch(isOpen, newValue => {
   if (newValue) {
     // Set billing period based on current plan if available
     if (props.currentPlan) {
-      const interval = props.currentPlan.interval === 'annual' ? 'annually' : 'monthly'
+      const interval = props.currentPlan.interval === 'annual' ? 'annual' : 'month'
       billingPeriod.value = interval
 
       // Set current plan ID
@@ -221,7 +230,6 @@ watch(isOpen, newValue => {
 watch(billingPeriod, () => {
   const currentPlanId = getCurrentPlanId()
   if (currentPlanId && selectedPlanId.value === currentPlanId) {
-    // Keep the current plan selected if it exists in the new billing period
     const planExists = displayedPlans.value.some(p => p.id === currentPlanId)
     if (planExists) {
       selectedPlanId.value = currentPlanId
@@ -234,69 +242,117 @@ watch(billingPeriod, () => {
 async function upgradePlan() {
   if (!selectedPlan.value) return
 
+  // Check if the plan is free (no payment required)
+  if (selectedPlan.value.price === 0) {
+    // For free plan, upgrade directly without payment
+    upgradeLoading.value = true
+    try {
+      const response = await $fetch<{ success: boolean; message?: string }>(
+        '/api/subscriptions/change-plan',
+        {
+          method: 'POST',
+          body: {
+            planId: selectedPlan.value.id, // should be 'free'
+            billingInterval: 'month',
+          },
+        }
+      )
+      if (response.success) {
+        emit('upgraded')
+        toast.add({
+          title: 'Success',
+          description: 'Plan updated successfully',
+          color: 'success',
+        })
+        isOpen.value = false
+      } else {
+        throw new Error(response.message || 'Failed to update plan')
+      }
+    } catch (error) {
+      console.error('Error upgrading plan:', error)
+      toast.add({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update plan',
+        color: 'error',
+      })
+    } finally {
+      upgradeLoading.value = false
+    }
+    return
+  }
+
+  // For paid plans, process payment through Paystack first
   upgradeLoading.value = true
 
   try {
-    // Fetch the plan list from the server
-    const plansResponse = await $fetch('/api/subscriptions/plans')
-    if (!plansResponse.success || !plansResponse.data) {
-      throw new Error('Could not fetch subscription plans.')
-    }
-    // Map client static id to name for matching
-    const staticToNameMap = {
-      free: 'Free',
-      standard: 'Standard',
-      premium: 'Premium',
-    }
-    const selectedPlanName = staticToNameMap[selectedPlan.value.id] || selectedPlan.value.name
-    const apiInterval = billingPeriod.value === 'annually' ? 'annual' : 'monthly'
-    // Find the matching plan from the server (by name and interval)
-    const numericPlan = plansResponse.data.find(
-      p =>
-        p.name?.toLowerCase() === selectedPlanName.toLowerCase() &&
-        (p.interval === apiInterval || (p.interval === 'year' && apiInterval === 'annual'))
-    )
-    if (!numericPlan) {
-      toast.add({
-        title: 'Error',
-        description: 'Unable to find a matching subscription plan on the server.',
-        color: 'error',
-      })
-      upgradeLoading.value = false
-      return
-    }
+    // Convert billing period to API format
+    const apiInterval = billingPeriod.value
 
-    // Send only the numeric id
-    const planIdToSend = numericPlan.id
+    // Close the modal before opening Paystack to avoid z-index conflicts
+    // The modal overlay can block the Paystack iframe
+    const wasModalOpen = isOpen.value
+    isOpen.value = false
 
-    const response = await $fetch('/api/subscriptions/change-plan', {
-      method: 'POST',
-      body: {
-        planId: planIdToSend,
-        billingInterval: apiInterval,
+    // Small delay to ensure modal is fully closed before opening Paystack
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Use Paystack payment - the plan slug (id) is used for payment verification
+    // The payment verification endpoint will automatically update the subscription
+    processPayment({
+      amount: selectedPlan.value.price,
+      planId: selectedPlan.value.id, // Use the slug (free, standard, premium)
+      planName: selectedPlan.value.name,
+      billingPeriod: apiInterval,
+      onSuccess: () => {
+        upgradeLoading.value = false
+        emit('upgraded')
+        toast.add({
+          title: 'Payment Successful',
+          description: 'Your plan has been upgraded successfully!',
+          color: 'success',
+        })
+        // Modal is already closed, no need to close again
+      },
+      onError: error => {
+        upgradeLoading.value = false
+        console.error('Payment error:', error)
+        toast.add({
+          title: 'Payment Failed',
+          description:
+            error instanceof Error
+              ? error.message
+              : 'The payment was not successful. Please try again.',
+          color: 'error',
+        })
+        // Reopen the modal if payment failed
+        if (wasModalOpen) {
+          setTimeout(() => {
+            isOpen.value = true
+          }, 500)
+        }
+      },
+      onClose: () => {
+        upgradeLoading.value = false
+        // Reopen the modal if user closed the payment window
+        if (wasModalOpen) {
+          setTimeout(() => {
+            isOpen.value = true
+          }, 500)
+        }
       },
     })
-
-    if (response.success) {
-      emit('upgraded')
-      toast.add({
-        title: 'Success',
-        description: 'Plan updated successfully',
-        color: 'success',
-      })
-      isOpen.value = false
-    } else {
-      throw new Error(response.message || 'Failed to update plan')
-    }
   } catch (error) {
-    console.error('Error upgrading plan:', error)
+    console.error('Error initiating payment:', error)
+    upgradeLoading.value = false
     toast.add({
       title: 'Error',
-      description: error instanceof Error ? error.message : 'Failed to update plan',
+      description: error instanceof Error ? error.message : 'Failed to initiate payment',
       color: 'error',
     })
-  } finally {
-    upgradeLoading.value = false
+    // Reopen the modal if there was an error
+    setTimeout(() => {
+      isOpen.value = true
+    }, 500)
   }
 }
 </script>

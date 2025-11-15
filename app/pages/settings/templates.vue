@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Page Header -->
     <PageHeader
-      title="Measurement Templates"
+      title="Templates"
       :primary-action="{
         label: 'New Template',
         icon: 'i-heroicons-plus',
@@ -16,16 +16,11 @@
       <p class="mt-2 text-gray-500">Loading templates...</p>
     </div>
 
-    <!-- Empty State -->
-    <div v-else-if="templates.length === 0" class="text-center py-12">
-      <UIcon name="i-heroicons-document-text" class="w-12 h-12 text-gray-300 mx-auto" />
-      <h3 class="mt-2 text-lg font-medium text-gray-900">No templates yet</h3>
-      <p class="mt-1 text-gray-500">Get started by creating your first measurement template.</p>
-      <UButton color="primary" class="mt-4" @click="openCreateDialog"> Create Template </UButton>
-    </div>
-
     <!-- Templates List -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div
+      v-else-if="!isLoading && templates.length > 0"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+    >
       <TemplateCard
         v-for="template in templates"
         :key="template.id"
@@ -36,6 +31,38 @@
         @archive="handleArchive"
         @unarchive="handleUnarchive"
       />
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="flex items-center justify-center min-h-[60vh]">
+      <div class="max-w-xl mx-auto text-center">
+        <UEmpty
+          icon="i-heroicons-document-text"
+          :title="error ? 'Unable to load templates' : 'No templates yet'"
+          :description="
+            error
+              ? 'We encountered an error while loading your templates. Please try refreshing the page.'
+              : 'Get started by creating your first measurement template.'
+          "
+          :actions="
+            error
+              ? [
+                  {
+                    icon: 'i-heroicons-arrow-path',
+                    label: 'Refresh',
+                    onClick: () => refreshTemplates(),
+                  },
+                ]
+              : [
+                  {
+                    icon: 'i-heroicons-plus',
+                    label: 'Create Template',
+                    onClick: openCreateDialog,
+                  },
+                ]
+          "
+        />
+      </div>
     </div>
 
     <!-- Create/Edit Modal -->

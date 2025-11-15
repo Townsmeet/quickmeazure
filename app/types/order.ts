@@ -5,6 +5,7 @@
 export type OrderStatus =
   | 'pending'
   | 'processing'
+  | 'in_progress'
   | 'completed'
   | 'cancelled'
   | 'refunded'
@@ -39,7 +40,7 @@ export interface Order {
   measurements?: Record<string, any>
   shippingAddress?: Record<string, any>
   billingAddress?: Record<string, any>
-  paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded'
+  paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | 'unpaid'
   paymentMethod?: string
   paymentReference?: string
   createdAt: string
@@ -98,7 +99,7 @@ export interface CreateOrderInput {
   measurements?: Record<string, any>
   shippingAddress?: Record<string, any>
   billingAddress?: Record<string, any>
-  paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded'
+  paymentStatus?: 'pending' | 'paid' | 'partially_paid' | 'refunded' | 'unpaid'
   paymentMethod?: string
   paymentReference?: string
 }

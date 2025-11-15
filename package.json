@@ -47,7 +47,7 @@
     "@aws-sdk/client-s3": "^3.529.1",
     "@libsql/client": "^0.15.15",
     "@nuxt/image": "^1.10.0",
-    "@nuxt/ui": "^4.0.1",
+    "@nuxt/ui": "^4.1.0",
     "@nuxtjs/seo": "^3.0.3",
     "@pinia/nuxt": "^0.11.0",
     "@sentry/nuxt": "^9.22.0",

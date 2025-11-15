@@ -1,324 +1,211 @@
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Orders</h1>
-        <p class="mt-1 text-sm text-gray-500">Manage your orders and track their status</p>
-      </div>
-      <UButton icon="i-heroicons-plus" color="primary" @click="openCreateOrderSlideover">
-        Add Order
-      </UButton>
-    </div>
-
-    <!-- Filters -->
-    <div class="flex flex-col sm:flex-row gap-3">
-      <UInput
-        v-model="search"
-        placeholder="Search orders..."
-        icon="i-heroicons-magnifying-glass"
-        class="flex-1"
-        @input="handleSearch"
-      />
-      <USelect
-        v-model="sortBy"
-        :items="sortOptions"
-        placeholder="Sort by"
-        class="w-48"
-        @update:model-value="handleSort"
-      />
-      <UButton
-color="neutral"
-variant="outline"
-icon="i-heroicons-funnel"
-@click="toggleFilter">
-        Filters
-        <template #trailing>
-          <UBadge
-            v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'"
-            color="primary"
-            variant="solid"
-            class="ml-1"
-          >
-            {{ statusFilter !== 'all' && paymentStatusFilter !== 'any' ? '2' : '1' }}
-          </UBadge>
-        </template>
-      </UButton>
-    </div>
-
-    <!-- Filter Panel -->
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="opacity-0 transform -translate-y-2"
-      enter-to-class="opacity-100 transform translate-y-0"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="opacity-100 transform translate-y-0"
-      leave-to-class="opacity-0 transform -translate-y-2"
-    >
-      <div v-if="isFilterOpen" class="bg-white rounded-lg border border-gray-200 p-4 space-y-6">
+  <div class="min-h-screen">
+    <div class="max-w-7xl mx-auto pb-20 md:pb-6">
+      <!-- Header Section -->
+      <div class="mb-8">
         <div class="flex items-center justify-between">
-          <h3 class="text-base font-medium text-gray-900">Filters</h3>
-          <UButton
-            v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            icon="i-heroicons-x-mark"
-            @click="resetFilters"
-          >
-            Clear all
-          </UButton>
-        </div>
-
-        <!-- Status Filter -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <UButton
-              v-for="status in orderStatuses"
-              :key="status.value"
-              :color="statusFilter === status.value ? 'primary' : 'neutral'"
-              :variant="statusFilter === status.value ? 'solid' : 'outline'"
-              size="sm"
-              class="justify-center"
-              @click="statusFilter = status.value"
-            >
-              <UIcon
-                :name="status.icon"
-                class="w-4 h-4 mr-1.5"
-                :class="{
-                  'text-white': statusFilter === status.value,
-                  'text-gray-500': statusFilter !== status.value,
-                }"
-              />
-              {{ status.label }}
-            </UButton>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Orders</h1>
           </div>
-        </div>
-
-        <!-- Payment Status Filter -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <UButton
-              v-for="paymentStatus in paymentStatuses"
-              :key="paymentStatus.value"
-              :color="paymentStatusFilter === paymentStatus.value ? 'primary' : 'neutral'"
-              :variant="paymentStatusFilter === paymentStatus.value ? 'solid' : 'outline'"
-              size="sm"
-              class="justify-center"
-              @click="paymentStatusFilter = paymentStatus.value"
-            >
-              <UIcon
-                :name="paymentStatus.icon"
-                class="w-4 h-4 mr-1.5"
-                :class="{
-                  'text-white': paymentStatusFilter === paymentStatus.value,
-                  'text-gray-500': paymentStatusFilter !== paymentStatus.value,
-                }"
-              />
-              {{ paymentStatus.label }}
+          <div class="flex gap-3">
+            <UButton color="primary" size="lg" @click="openCreateOrderSlideover">
+              Add Order
             </UButton>
           </div>
         </div>
       </div>
-    </Transition>
 
-    <!-- Desktop Table View -->
-    <div class="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        v-for="order in paginatedOrders"
-        :key="order.id"
-        class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 relative"
+      <!-- Search and Filters -->
+      <div class="mb-8">
+        <UCard class="shadow-sm border-0">
+          <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Search -->
+            <div class="flex-1">
+              <UInput
+                v-model="search"
+                placeholder="Search orders..."
+                icon="i-heroicons-magnifying-glass"
+                size="lg"
+                class="w-full"
+                @input="handleSearch"
+              />
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-3">
+              <USelect
+                v-model="sortBy"
+                :items="sortOptions"
+                placeholder="Sort by"
+                size="lg"
+                class="w-48"
+                @update:model-value="handleSort"
+              />
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="lg"
+                icon="i-heroicons-funnel"
+                @click="toggleFilter"
+              >
+                Filters
+                <template #trailing>
+                  <UBadge
+                    v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'"
+                    color="primary"
+                    variant="solid"
+                    class="ml-1"
+                  >
+                    {{ statusFilter !== 'all' && paymentStatusFilter !== 'any' ? '2' : '1' }}
+                  </UBadge>
+                </template>
+              </UButton>
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <!-- Filter Panel -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 transform -translate-y-2"
+        enter-to-class="opacity-100 transform translate-y-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 transform translate-y-0"
+        leave-to-class="opacity-0 transform -translate-y-2"
       >
-        <!-- Status indicator bar -->
-        <div
-          class="h-1.5 w-full"
-          :class="{
-            'bg-green-500': order.status === 'completed',
-            'bg-blue-500': order.status === 'in_progress',
-            'bg-yellow-500': order.status === 'pending',
-            'bg-red-500': order.status === 'cancelled',
-            'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
-              order.status
-            ),
-          }"
-        ></div>
-
-        <div class="p-5 flex flex-col h-full">
-          <!-- Header with order number and status -->
-          <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center">
-              <span
-                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-sm mr-3"
-              >
-                #{{ order.orderNumber }}
-              </span>
-              <UBadge
-                :color="getStatusColor(order.status)"
-                variant="subtle"
-                size="sm"
-                class="capitalize font-medium"
-              >
-                {{ formatStatus(order.status) }}
-              </UBadge>
-            </div>
-            <div class="text-xs text-gray-400">
-              {{ order.createdAt ? dayjs.unix(order.createdAt).format('MMM D, YYYY') : 'No date' }}
-            </div>
-          </div>
-
-          <!-- Client and amount -->
-          <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-              <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-              <span class="truncate">{{ order.clientName || 'No client' }}</span>
-            </h3>
-            <div class="mt-2 flex items-center justify-between">
-              <div class="flex items-center text-gray-500 text-sm">
-                <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
-                <span class="font-medium">Amount:</span>
-              </div>
-              <span class="text-lg font-bold text-gray-900">
-                ₦{{ order.totalAmount?.toLocaleString() }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Due date and progress -->
-          <div class="mt-auto">
-            <div class="flex items-center justify-between text-sm mb-1">
-              <span class="text-gray-500 flex items-center">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
-                Due Date:
-              </span>
-              <span
-                :class="{
-                  'text-red-500 font-medium':
-                    order.dueDate &&
-                    dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
-                    order.status !== 'completed',
-                  'text-gray-700':
-                    !order.dueDate ||
-                    dayjs(order.dueDate).isSameOrAfter(dayjs()) ||
-                    order.status === 'completed',
-                }"
-              >
-                {{ order.dueDate ? dayjs(order.dueDate).format('MMM D, YYYY') : 'No date' }}
-                <span
-                  v-if="
-                    order.dueDate &&
-                    dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
-                    order.status !== 'completed'
-                  "
-                  class="ml-1"
-                >
-                  (Overdue)
-                </span>
-              </span>
-            </div>
-
-            <!-- Progress bar -->
-            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-              <div
-                class="h-2 rounded-full transition-all duration-500 ease-in-out"
-                :class="{
-                  'bg-green-500': order.status === 'completed',
-                  'bg-blue-500': order.status === 'in_progress',
-                  'bg-yellow-500': order.status === 'pending',
-                  'bg-red-500': order.status === 'cancelled',
-                  'w-full': order.status === 'completed',
-                  'w-2/3': order.status === 'in_progress',
-                  'w-1/3': order.status === 'pending' || order.status === 'cancelled',
-                }"
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div
-          class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-        >
-          <UDropdownMenu
-            :items="[
-              [
-                {
-                  label: 'View Details',
-                  icon: 'i-heroicons-eye',
-                  click: () => openOrderDetails(order),
-                  ui: { icon: { base: 'text-gray-500' } },
-                },
-                {
-                  label: 'Edit Order',
-                  icon: 'i-heroicons-pencil',
-                  click: () => openEditOrderSlideover(order),
-                  ui: { icon: { base: 'text-blue-500' } },
-                },
-              ],
-              [
-                {
-                  label: 'Delete',
-                  icon: 'i-heroicons-trash',
-                  click: () => confirmDelete(order),
-                  ui: {
-                    icon: { base: 'text-red-500' },
-                    active: 'bg-red-50 text-red-700',
-                    inactive: 'text-red-600 hover:bg-red-50 hover:text-red-700',
-                  },
-                },
-              ],
-            ]"
-            :ui="{ item: { disabled: 'cursor-text select-text' }, width: 'w-48' }"
-            :popper="{ placement: 'bottom-end' }"
-          >
+        <div v-if="isFilterOpen" class="bg-white rounded-lg border border-gray-200 p-4 space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-medium text-gray-900">Filters</h3>
             <UButton
+              v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'"
               color="neutral"
               variant="ghost"
-              icon="i-heroicons-ellipsis-horizontal"
               size="sm"
-              class="text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-            />
-          </UDropdownMenu>
+              icon="i-heroicons-x-mark"
+              @click="resetFilters"
+            >
+              Clear all
+            </UButton>
+          </div>
+
+          <!-- Status Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <UButton
+                v-for="status in orderStatuses"
+                :key="status.value"
+                :color="statusFilter === status.value ? 'primary' : 'neutral'"
+                :variant="statusFilter === status.value ? 'solid' : 'outline'"
+                size="sm"
+                class="justify-center"
+                @click="statusFilter = status.value"
+              >
+                <UIcon
+                  :name="status.icon"
+                  class="w-4 h-4 mr-1.5"
+                  :class="{
+                    'text-white': statusFilter === status.value,
+                    'text-gray-500': statusFilter !== status.value,
+                  }"
+                />
+                {{ status.label }}
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Payment Status Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <UButton
+                v-for="paymentStatus in paymentStatuses"
+                :key="paymentStatus.value"
+                :color="paymentStatusFilter === paymentStatus.value ? 'primary' : 'neutral'"
+                :variant="paymentStatusFilter === paymentStatus.value ? 'solid' : 'outline'"
+                size="sm"
+                class="justify-center"
+                @click="paymentStatusFilter = paymentStatus.value"
+              >
+                <UIcon
+                  :name="paymentStatus.icon"
+                  class="w-4 h-4 mr-1.5"
+                  :class="{
+                    'text-white': paymentStatusFilter === paymentStatus.value,
+                    'text-gray-500': paymentStatusFilter !== paymentStatus.value,
+                  }"
+                />
+                {{ paymentStatus.label }}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Loading State -->
+      <div v-if="isLoading">
+        <!-- Desktop Loading -->
+        <div class="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="i in 6"
+            :key="i"
+            class="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
+          >
+            <USkeleton class="h-32 w-full mb-4" />
+            <USkeleton class="h-6 w-3/4 mb-2" />
+            <USkeleton class="h-4 w-1/2" />
+          </div>
+        </div>
+        <!-- Mobile Loading -->
+        <div class="md:hidden space-y-4">
+          <div
+            v-for="i in 3"
+            :key="i"
+            class="bg-white rounded-xl border border-gray-200 shadow-sm p-4"
+          >
+            <USkeleton class="h-24 w-full mb-3" />
+            <USkeleton class="h-5 w-2/3 mb-2" />
+            <USkeleton class="h-4 w-1/2" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Mobile List View -->
-    <div class="md:hidden space-y-4">
-      <div
-        v-for="order in paginatedOrders"
-        :key="order.id"
-        class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group"
-      >
-        <!-- Status indicator bar -->
-        <div
-          class="h-1.5 w-full"
-          :class="{
-            'bg-green-500': order.status === 'completed',
-            'bg-blue-500': order.status === 'in_progress',
-            'bg-yellow-500': order.status === 'pending',
-            'bg-red-500': order.status === 'cancelled',
-            'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
-              order.status
-            ),
-          }"
-        ></div>
+      <!-- Orders Grid -->
+      <div v-else-if="!isLoading && paginatedOrders.length > 0">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="order in paginatedOrders"
+            :key="order.id"
+            class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 relative"
+          >
+            <!-- Status indicator bar -->
+            <div
+              class="h-1.5 w-full"
+              :class="{
+                'bg-green-500': order.status === 'completed',
+                'bg-blue-500': order.status === 'in_progress',
+                'bg-yellow-500': order.status === 'pending',
+                'bg-red-500': order.status === 'cancelled',
+                'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
+                  order.status
+                ),
+              }"
+            ></div>
 
-        <div class="p-4">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
+            <div class="p-4 md:p-5 flex flex-col h-full">
+              <!-- Header with order number and status -->
+              <div class="flex justify-between items-start mb-3">
                 <div class="flex items-center">
                   <span
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-xs mr-2"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-xs md:text-sm mr-2 md:mr-3"
                   >
                     #{{ order.orderNumber }}
                   </span>
                   <UBadge
                     :color="getStatusColor(order.status)"
                     variant="subtle"
-                    size="xs"
+                    :size="'xs'"
                     class="capitalize font-medium"
                   >
                     {{ formatStatus(order.status) }}
@@ -326,41 +213,47 @@ icon="i-heroicons-funnel"
                 </div>
                 <div class="text-xs text-gray-400">
                   {{
-                    order.createdAt ? dayjs.unix(order.createdAt).format('MMM D, YYYY') : 'No date'
+                    order.createdAt
+                      ? dayjs.unix(Number(order.createdAt)).format('MMM D, YYYY')
+                      : 'No date'
                   }}
                 </div>
               </div>
 
-              <h3 class="mt-2 text-base font-semibold text-gray-900 flex items-center">
-                <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                <span class="truncate">{{ order.clientName || 'No client' }}</span>
-              </h3>
-
-              <div class="mt-2 flex items-center justify-between">
-                <div class="flex items-center text-gray-500 text-sm">
-                  <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
-                  <span>Amount:</span>
+              <!-- Client and amount -->
+              <div class="mb-4">
+                <h3 class="text-base md:text-lg font-semibold text-gray-900 flex items-center">
+                  <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <span class="truncate">{{ order.clientName || 'No client' }}</span>
+                </h3>
+                <div class="mt-2 flex items-center justify-between">
+                  <div class="flex items-center text-gray-500 text-sm">
+                    <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
+                    <span class="font-medium">Amount:</span>
+                  </div>
+                  <span class="text-base md:text-lg font-bold text-gray-900">
+                    ₦{{ order.totalAmount?.toLocaleString() }}
+                  </span>
                 </div>
-                <span class="text-base font-bold text-gray-900">
-                  ₦{{ order.totalAmount?.toLocaleString() }}
-                </span>
               </div>
 
-              <div class="mt-2 text-sm">
-                <div class="flex items-center justify-between">
+              <!-- Due date and progress -->
+              <div class="mt-auto">
+                <div class="flex items-center justify-between text-sm mb-1">
                   <span class="text-gray-500 flex items-center">
                     <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
-                    Due:
+                    <span class="hidden md:inline">Due Date:</span>
+                    <span class="md:hidden">Due:</span>
                   </span>
                   <span
                     :class="{
                       'text-red-500 font-medium':
                         order.dueDate &&
-                        dayjs(order.dueDate).isBefore(dayjs().startOf('day')) &&
+                        dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
                         order.status !== 'completed',
                       'text-gray-700':
                         !order.dueDate ||
-                        dayjs(order.dueDate).isAfter(dayjs().subtract(1, 'day')) ||
+                        dayjs(order.dueDate).isSameOrAfter(dayjs()) ||
                         order.status === 'completed',
                     }"
                   >
@@ -368,7 +261,7 @@ icon="i-heroicons-funnel"
                     <span
                       v-if="
                         order.dueDate &&
-                        dayjs(order.dueDate).isBefore(dayjs().startOf('day')) &&
+                        dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
                         order.status !== 'completed'
                       "
                       class="ml-1"
@@ -378,24 +271,29 @@ icon="i-heroicons-funnel"
                   </span>
                 </div>
 
-                <!-- Progress bar for mobile -->
-                <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                <!-- Progress bar -->
+                <div class="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
                   <div
-                    class="h-1.5 rounded-full transition-all duration-500 ease-in-out"
+                    class="h-1.5 md:h-2 rounded-full transition-all duration-500 ease-in-out"
                     :class="{
                       'bg-green-500': order.status === 'completed',
-                      'bg-blue-500': order.status === 'processing',
+                      'bg-blue-500':
+                        order.status === 'in_progress' || order.status === 'processing',
                       'bg-yellow-500': order.status === 'pending',
                       'bg-red-500': order.status === 'cancelled',
                       'w-full': order.status === 'completed',
-                      'w-2/3': order.status === 'processing',
+                      'w-2/3': order.status === 'in_progress' || order.status === 'processing',
                       'w-1/3': order.status === 'pending' || order.status === 'cancelled',
                     }"
                   ></div>
                 </div>
               </div>
             </div>
-            <div class="flex justify-end mt-3">
+
+            <!-- Actions -->
+            <div
+              class="absolute top-3 right-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
+            >
               <UDropdownMenu
                 :items="[
                   [
@@ -438,66 +336,102 @@ icon="i-heroicons-funnel"
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Empty state for mobile -->
-      <div v-if="!isLoading && paginatedOrders.length === 0" class="text-center py-12">
-        <UIcon name="i-heroicons-document-text" class="mx-auto h-12 w-12 text-gray-400" />
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No orders</h3>
-        <p class="mt-1 text-sm text-gray-500">
-          {{
-            search || hasActiveFilters
-              ? 'Try adjusting your search or filters'
-              : 'Get started by creating a new order'
-          }}
-        </p>
-        <div class="mt-6">
-          <UButton icon="i-heroicons-plus" color="primary" @click="openCreateOrderSlideover">
-            New Order
-          </UButton>
+        <!-- Pagination -->
+        <div
+          v-if="filteredOrders.length > itemsPerPage"
+          class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div class="text-sm text-gray-600 text-center sm:text-left">
+            Showing
+            <span class="font-semibold text-gray-900">{{
+              (currentPage - 1) * itemsPerPage + 1
+            }}</span>
+            to
+            <span class="font-semibold text-gray-900">{{
+              Math.min(currentPage * itemsPerPage, filteredOrders.length)
+            }}</span>
+            of <span class="font-semibold text-gray-900">{{ filteredOrders.length }}</span> orders
+          </div>
+          <UPagination
+            v-model="currentPage"
+            :page-count="itemsPerPage"
+            :total="filteredOrders.length"
+          />
         </div>
       </div>
 
-      <!-- Pagination for mobile -->
-      <div class="mt-6">
-        <UPagination
-          v-model="currentPage"
-          :page-count="itemsPerPage"
-          :total="filteredOrders.length"
-        />
+      <!-- Empty State -->
+      <div v-else class="flex items-center justify-center min-h-[60vh]">
+        <div class="max-w-xl mx-auto text-center">
+          <UEmpty
+            icon="i-heroicons-document-text"
+            :title="
+              error
+                ? 'Unable to load orders'
+                : search || hasActiveFilters
+                  ? 'No orders found'
+                  : 'No orders yet'
+            "
+            :description="
+              error
+                ? 'We encountered an error while loading your orders. Please try refreshing the page.'
+                : search || hasActiveFilters
+                  ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                  : 'Get started by creating your first order to begin managing client measurements and deliveries.'
+            "
+            :actions="
+              error
+                ? [
+                    {
+                      icon: 'i-heroicons-arrow-path',
+                      label: 'Refresh',
+                      onClick: () => refreshOrders(),
+                    },
+                  ]
+                : [
+                    {
+                      icon: 'i-heroicons-plus',
+                      label: 'New Order',
+                      onClick: openCreateOrderSlideover,
+                    },
+                  ]
+            "
+          />
+        </div>
       </div>
+
+      <!-- Create/Edit Order Slideover -->
+      <OrderAdd
+        :is-open="showOrderSlideover && slideoverMode === 'create'"
+        @close="closeOrderSlideover"
+        @success="handleOrderAddSuccess"
+      />
+
+      <OrderEdit
+        :is-open="showOrderSlideover && slideoverMode === 'edit'"
+        :order="selectedOrder"
+        @close="closeOrderSlideover"
+        @save="handleOrderEditSave"
+      />
+
+      <!-- Order Details Slideover -->
+      <USlideover v-model:open="showDetailsSlideover" :title="detailsTitle" side="right">
+        <template #body>
+          <OrderDetail v-if="selectedOrder" :order="selectedOrder" @close="closeDetailsSlideover" />
+        </template>
+      </USlideover>
+
+      <!-- Delete Confirmation Modal -->
+      <OrderDelete
+        v-if="orderToDelete"
+        :is-open="showDeleteModal"
+        :order="orderToDelete"
+        :is-deleting="isDeleting"
+        @close="showDeleteModal = false"
+        @confirm="deleteOrder"
+      />
     </div>
-
-    <!-- Create/Edit Order Slideover -->
-    <OrderAdd
-      :is-open="showOrderSlideover && slideoverMode === 'create'"
-      @close="closeOrderSlideover"
-      @success="handleOrderAddSuccess"
-    />
-
-    <OrderEdit
-      :is-open="showOrderSlideover && slideoverMode === 'edit'"
-      :order="selectedOrder"
-      @close="closeOrderSlideover"
-      @save="handleOrderEditSave"
-    />
-
-    <!-- Order Details Slideover -->
-    <USlideover v-model:open="showDetailsSlideover" :title="detailsTitle" side="right">
-      <template #body>
-        <OrderDetail v-if="selectedOrder" :order="selectedOrder" @close="closeDetailsSlideover" />
-      </template>
-    </USlideover>
-
-    <!-- Delete Confirmation Modal -->
-    <OrderDelete
-      v-if="orderToDelete"
-      :is-open="showDeleteModal"
-      :order="orderToDelete"
-      :is-deleting="isDeleting"
-      @close="showDeleteModal = false"
-      @confirm="deleteOrder"
-    />
   </div>
 </template>
 
@@ -517,7 +451,15 @@ definePageMeta({
 })
 
 // Use the orders composable
-const { orders, isLoading, deleteOrder: _deleteOrderApi, createOrder, updateOrder } = useOrders()
+const {
+  orders,
+  isLoading,
+  error,
+  deleteOrder: _deleteOrderApi,
+  createOrder,
+  updateOrder,
+  refreshOrders,
+} = useOrders()
 
 // Local state
 const search = ref('')
@@ -696,20 +638,25 @@ const _toOrder = (order: any): Order => ({
   items: order.items ? [...order.items] : [],
 })
 
-const openEditOrderSlideover = (order: BaseOrder) => {
+const openEditOrderSlideover = (order: any) => {
   // Convert the order to the expected format
   const processedOrder: Order = {
     ...order,
     id: String(order.id),
     clientId: String(order.clientId),
     styleId: order.styleId ? String(order.styleId) : undefined,
-    items: (order.items || []).map(item => ({
+    items: (order.items || []).map((item: any) => ({
       ...item,
       id: item.id ? Number(item.id) : undefined,
       styleId: Number(item.styleId) || 0,
       quantity: Number(item.quantity) || 0,
       price: Number(item.price) || 0,
     })),
+    paymentStatus: ['pending', 'paid', 'partially_paid', 'refunded', 'unpaid'].includes(
+      order.paymentStatus
+    )
+      ? (order.paymentStatus as Order['paymentStatus'])
+      : undefined,
   }
 
   selectedOrder.value = processedOrder
@@ -717,20 +664,25 @@ const openEditOrderSlideover = (order: BaseOrder) => {
   showOrderSlideover.value = true
 }
 
-const openOrderDetails = (order: BaseOrder) => {
+const openOrderDetails = (order: any) => {
   // Convert the order to the expected format
   const processedOrder: Order = {
     ...order,
     id: String(order.id),
     clientId: String(order.clientId),
     styleId: order.styleId ? String(order.styleId) : undefined,
-    items: (order.items || []).map(item => ({
+    items: (order.items || []).map((item: any) => ({
       ...item,
       id: item.id ? Number(item.id) : undefined,
       styleId: Number(item.styleId) || 0,
       quantity: Number(item.quantity) || 0,
       price: Number(item.price) || 0,
     })),
+    paymentStatus: ['pending', 'paid', 'partially_paid', 'refunded', 'unpaid'].includes(
+      order.paymentStatus
+    )
+      ? (order.paymentStatus as Order['paymentStatus'])
+      : undefined,
   }
 
   selectedOrder.value = processedOrder
@@ -747,7 +699,7 @@ const closeDetailsSlideover = () => {
   selectedOrder.value = null
 }
 
-const _handleEditOrder = (order: Order | OrderWithOptionalItems) => {
+const _handleEditOrder = (order: any) => {
   closeDetailsSlideover()
   openEditOrderSlideover(order)
 }
@@ -764,7 +716,7 @@ const handleOrderAddSuccess = async (orderData: any) => {
 const handleOrderEditSave = async (orderData: any) => {
   try {
     if (selectedOrder.value) {
-      await updateOrder(Number(selectedOrder.value.id), orderData)
+      await updateOrder(String(selectedOrder.value.id), orderData)
     }
     closeOrderSlideover()
   } catch (error) {
@@ -810,7 +762,7 @@ const deleteOrder = async () => {
 
   try {
     isDeleting.value = true
-    await _deleteOrderApi(parseInt(orderToDelete.value.id))
+    await _deleteOrderApi(String(orderToDelete.value.id))
     showDeleteModal.value = false
     orderToDelete.value = null
   } catch (error) {

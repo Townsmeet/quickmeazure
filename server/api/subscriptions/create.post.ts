@@ -32,7 +32,7 @@ export default defineEventHandler(async event => {
       planId: z.union([z.number().int(), z.string()]),
       planName: z.string().default(''),
       paymentReference: z.string().optional(),
-      billingPeriod: z.enum(['monthly', 'annual']),
+      billingPeriod: z.enum(['month', 'monthly', 'annual']),
       amount: z.number().int().nonnegative().optional(),
       cardDetails: z
         .object({
@@ -55,8 +55,12 @@ export default defineEventHandler(async event => {
       cardDetails,
     } = BodySchema.parse(await readBody(event))
 
+    // Normalize billingPeriod to 'monthly' if it's 'month'
+    let inputBillingPeriodRaw = billingPeriod
+    if (inputBillingPeriodRaw === 'month') inputBillingPeriodRaw = 'monthly'
+
     // Validate required fields - planId and billingPeriod are always required
-    if (!planId || !billingPeriod) {
+    if (!planId || !inputBillingPeriodRaw) {
       throw createError({
         statusCode: 400,
         message: 'Missing required fields: planId and billingPeriod are required',
@@ -94,9 +98,9 @@ export default defineEventHandler(async event => {
     const startDate = new Date()
     const endDate = new Date(startDate)
 
-    if (billingPeriod === 'monthly') {
+    if (inputBillingPeriodRaw === 'monthly') {
       endDate.setMonth(endDate.getMonth() + 1)
-    } else if (billingPeriod === 'annual') {
+    } else if (inputBillingPeriodRaw === 'annual') {
       endDate.setFullYear(endDate.getFullYear() + 1)
     } else {
       throw createError({
@@ -115,7 +119,7 @@ export default defineEventHandler(async event => {
 
     const subscriptionData = {
       planId: plan.id, // Use the database integer ID
-      billingPeriod,
+      billingPeriod: inputBillingPeriodRaw,
       startDate,
       endDate,
       nextBillingDate: endDate,
@@ -143,7 +147,7 @@ export default defineEventHandler(async event => {
         try {
           const { subject, htmlContent } = createSubscriptionConfirmationEmail(
             planName,
-            billingPeriod,
+            inputBillingPeriodRaw,
             amount || 0,
             user.name || undefined
           )
@@ -171,12 +175,12 @@ export default defineEventHandler(async event => {
           planId: plan.id, // Use the database integer ID
           status: 'active',
           startDate: new Date(),
-          billingPeriod,
+          billingPeriod: inputBillingPeriodRaw,
           amount: amount || 0,
           paymentReference: paymentReference || null,
           paymentMethod: paymentReference ? 'paystack' : 'free',
           nextBillingDate:
-            billingPeriod === 'monthly'
+            inputBillingPeriodRaw === 'monthly'
               ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
               : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
         })
@@ -271,7 +275,7 @@ export default defineEventHandler(async event => {
         try {
           const { subject, htmlContent } = createSubscriptionConfirmationEmail(
             planName,
-            billingPeriod,
+            inputBillingPeriodRaw,
             amount || 0,
             user.name || undefined
           )

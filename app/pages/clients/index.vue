@@ -8,12 +8,7 @@
             <h1 class="text-2xl font-bold text-gray-900">Clients</h1>
           </div>
           <div class="flex gap-3">
-            <UButton
-              icon="i-heroicons-plus"
-              color="primary"
-              size="lg"
-              @click="showAddSlideover = true"
-            >
+            <UButton color="primary" size="lg" @click="showAddSlideover = true">
               Add Client
             </UButton>
           </div>
@@ -88,13 +83,52 @@
         </UCard>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <UCard v-for="i in 6" :key="i" class="border-0 shadow-md">
+          <template #header>
+            <div class="flex items-start justify-between">
+              <div class="flex items-center space-x-4">
+                <USkeleton class="h-16 w-16 rounded-full" />
+                <div class="flex-1 space-y-2">
+                  <USkeleton class="h-5 w-32" />
+                  <USkeleton class="h-4 w-20" />
+                </div>
+              </div>
+              <USkeleton class="h-8 w-8 rounded" />
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <div class="space-y-3">
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-48" />
+              </div>
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-32" />
+              </div>
+              <div class="flex items-center space-x-3">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-24" />
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100">
+              <div class="flex items-center gap-4">
+                <USkeleton class="h-4 w-16" />
+                <USkeleton class="h-4 w-20" />
+              </div>
+            </div>
+          </div>
+        </UCard>
+      </div>
+
       <!-- Client Cards -->
-      <div v-if="!isLoading">
+      <div v-else-if="!isLoading && paginatedClients.length > 0">
         <!-- Cards Grid -->
-        <div
-          v-if="paginatedClients.length > 0"
-          class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-        >
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <UCard
             v-for="client in paginatedClients"
             :key="client.id"
@@ -200,52 +234,12 @@
           </UCard>
         </div>
 
-        <!-- Empty State -->
-        <div v-else class="text-center py-20">
-          <div
-            class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8"
-          >
-            <UIcon name="i-heroicons-user-group" class="w-16 h-16 text-gray-400" />
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-3">
-            {{ hasActiveFilters ? 'No clients found' : 'No clients yet' }}
-          </h3>
-          <p class="text-gray-600 mb-8 max-w-md mx-auto text-lg">
-            {{
-              hasActiveFilters
-                ? "Try adjusting your search or filters to find what you're looking for."
-                : 'Get started by adding your first client to begin managing measurements and orders.'
-            }}
-          </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <UButton
-              v-if="hasActiveFilters"
-              color="neutral"
-              variant="outline"
-              icon="i-heroicons-x-mark"
-              size="lg"
-              @click="resetFilters"
-            >
-              Clear Filters
-            </UButton>
-            <UButton
-              icon="i-heroicons-plus"
-              color="primary"
-              size="lg"
-              class="shadow-lg"
-              @click="showAddSlideover = true"
-            >
-              Add Your First Client
-            </UButton>
-          </div>
-        </div>
-
         <!-- Pagination -->
         <div
           v-if="filteredClients.length > itemsPerPage"
-          class="mt-12 flex items-center justify-between"
+          class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <div class="text-sm text-gray-600">
+          <div class="text-sm text-gray-600 text-center sm:text-left">
             Showing
             <span class="font-semibold text-gray-900">{{
               (currentPage - 1) * itemsPerPage + 1
@@ -264,46 +258,38 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <UCard v-for="i in 6" :key="i" class="border-0 shadow-md">
-          <template #header>
-            <div class="flex items-start justify-between">
-              <div class="flex items-center space-x-4">
-                <USkeleton class="h-16 w-16 rounded-full" />
-                <div class="flex-1 space-y-2">
-                  <USkeleton class="h-5 w-32" />
-                  <USkeleton class="h-4 w-20" />
-                </div>
-              </div>
-              <USkeleton class="h-8 w-8 rounded" />
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div class="space-y-3">
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-48" />
-              </div>
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-32" />
-              </div>
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-24" />
-              </div>
-            </div>
-
-            <div class="pt-4 border-t border-gray-100">
-              <div class="flex items-center gap-4">
-                <USkeleton class="h-4 w-16" />
-                <USkeleton class="h-4 w-20" />
-              </div>
-            </div>
-          </div>
-        </UCard>
+      <!-- Empty State -->
+      <div v-else class="flex items-center justify-center min-h-[60vh]">
+        <div class="max-w-xl mx-auto text-center">
+          <UEmpty
+            icon="i-heroicons-user-group"
+            :title="
+              error
+                ? 'Unable to load clients'
+                : hasActiveFilters
+                  ? 'No clients found'
+                  : 'No clients yet'
+            "
+            :description="
+              error
+                ? 'We encountered an error while loading your clients. Please try refreshing the page.'
+                : hasActiveFilters
+                  ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                  : 'Get started by adding your first client to begin managing measurements and orders.'
+            "
+            :actions="
+              error
+                ? [
+                    {
+                      icon: 'i-heroicons-arrow-path',
+                      label: 'Refresh',
+                      onClick: () => refreshClients(),
+                    },
+                  ]
+                : clientEmptyActions
+            "
+          />
+        </div>
       </div>
     </div>
 
@@ -354,6 +340,7 @@ definePageMeta({
 const {
   clients,
   isLoading,
+  error,
   getClient,
   updateClient,
   deleteClient: _deleteClientApi,
@@ -441,6 +428,17 @@ const paginatedClients = computed(() => {
 const hasActiveFilters = computed(() => {
   return hasOrdersFilter.value !== 'all' || search.value !== ''
 })
+
+// Empty state actions for clients
+const clientEmptyActions = computed(() => [
+  {
+    icon: 'i-heroicons-plus',
+    label: hasActiveFilters.value ? 'Add Client' : 'Add Your First Client',
+    onClick: () => {
+      showAddSlideover.value = true
+    },
+  },
+])
 
 const clientsWithOrders = computed(() => {
   return clients.value.filter(client => (client.orderCount || 0) > 0).length

@@ -78,17 +78,29 @@ export default defineEventHandler(async event => {
         // planIdRaw can be either a slug (string) or numeric ID
         const planSlug = typeof planIdRaw === 'string' ? planIdRaw : String(planIdRaw)
 
+        // Normalize billing interval for DB ('monthly'|'month' => 'month', 'annually'|'annual'|'year' => 'annual')
+        const normalizedInterval =
+          billingPeriodRaw === 'annual' ||
+          billingPeriodRaw === 'annually' ||
+          billingPeriodRaw === 'year'
+            ? 'annual'
+            : 'month'
         if (!planSlug) {
           console.warn('No planId provided in verify payload; skipping subscription update')
         }
 
-        // Find the plan by slug
+        // Find the plan by slug AND interval!
         const plan = planSlug
-          ? await db.query.plans.findFirst({ where: eq(tables.plans.slug, planSlug) })
+          ? await db.query.plans.findFirst({
+              where: and(
+                eq(tables.plans.slug, planSlug),
+                eq(tables.plans.interval, normalizedInterval)
+              ),
+            })
           : null
 
         if (planSlug && !plan) {
-          console.error('Plan not found:', planSlug)
+          console.error('Plan not found:', planSlug, 'interval:', normalizedInterval)
           return {
             success: false,
             error: 'Selected plan not found',
@@ -100,9 +112,7 @@ export default defineEventHandler(async event => {
         const startDate = new Date()
         const endDate = new Date(startDate)
 
-        const normalizedBilling =
-          billingPeriodRaw === 'month' || billingPeriodRaw === 'monthly' ? 'monthly' : 'annual'
-        if (normalizedBilling === 'monthly') {
+        if (normalizedInterval === 'month') {
           endDate.setMonth(endDate.getMonth() + 1)
         } else {
           endDate.setFullYear(endDate.getFullYear() + 1)
@@ -124,7 +134,7 @@ export default defineEventHandler(async event => {
             .update(tables.subscriptions)
             .set({
               planId: plan.id,
-              billingPeriod: normalizedBilling,
+              billingPeriod: normalizedInterval,
               startDate,
               endDate,
               nextBillingDate: endDate,
@@ -146,7 +156,7 @@ export default defineEventHandler(async event => {
               status: 'active',
               startDate,
               endDate,
-              billingPeriod: normalizedBilling,
+              billingPeriod: normalizedInterval,
               amount: data.data.amount / 100, // Convert from kobo to naira
               paymentReference: reference,
               paymentMethod: 'paystack',
@@ -157,9 +167,50 @@ export default defineEventHandler(async event => {
           console.log('Created new subscription:', subscriptionResult[0]?.id)
         }
 
-        console.log('Subscription created/updated successfully')
+        // --- SAVE PAYMENT METHOD (extract authorization) ---
+        const authz = data.data.authorization
+        if (authz?.authorization_code) {
+          // Save (or update) payment method
+          const existingMethod = await db.query.paymentMethods.findFirst({
+            where: eq(tables.paymentMethods.userId, userId),
+          })
+          const cardObj = {
+            type: 'card',
+            last4: authz.last4 || null,
+            expiryMonth: authz.exp_month || null,
+            expiryYear: authz.exp_year || null,
+            brand: authz.brand || authz.bank || null,
+            isDefault: true,
+            provider: 'paystack',
+            providerId: authz.authorization_code,
+            metadata: JSON.stringify({
+              authorizationCode: authz.authorization_code,
+              cardType: authz.card_type,
+              bank: authz.bank,
+              countryCode: authz.country_code,
+              signature: authz.signature,
+              reusable: authz.reusable,
+              channel: authz.channel,
+            }),
+            updatedAt: new Date(),
+          }
+          if (existingMethod) {
+            // Update
+            await db
+              .update(tables.paymentMethods)
+              .set(cardObj)
+              .where(eq(tables.paymentMethods.id, existingMethod.id))
+          } else {
+            // Insert new default
+            await db.insert(tables.paymentMethods).values({
+              ...cardObj,
+              userId,
+              createdAt: new Date(),
+            })
+          }
+        }
 
-        // Return success with subscription data
+        // Return success with subscription data + billing period
         return {
           success: true,
           data: {
@@ -167,6 +218,8 @@ export default defineEventHandler(async event => {
             reference: data.data.reference,
             plan_id: plan?.id,
             subscription: subscriptionResult?.[0] || null,
+            billingPeriod: normalizedInterval,
+            planSlug: plan?.slug,
           },
         }
       } catch (subscriptionError) {

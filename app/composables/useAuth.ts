@@ -40,11 +40,11 @@ export const useAuth = () => {
   const isFullyOnboarded = computed(() => currentOnboardingStep.value === 'complete')
 
   // Initialize auth state once with Better Auth best practices
-  const init = async () => {
-    if (initialized.value) return
+  const init = async (forceRefresh = false) => {
+    if (initialized.value && !forceRefresh) return
 
-    // If we already have a user (e.g., just logged in), mark initialized and skip network
-    if (user.value) {
+    // If we already have a user and not forcing refresh, mark initialized and skip network
+    if (user.value && !forceRefresh) {
       initialized.value = true
       return
     }

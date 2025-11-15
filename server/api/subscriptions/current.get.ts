@@ -40,12 +40,23 @@ export default defineEventHandler(async event => {
 
     // Get the plan details if we found a subscription
     let plan = null
+    let billingPeriod = 'month'
     if (subscription && subscription.length > 0) {
       console.log('Found active subscription:', subscription[0].id)
+      // Look up plan by both id and interval (normalized)
+      const subDetails = subscription[0]
+      billingPeriod =
+        subDetails.billingPeriod === 'annual' ||
+        subDetails.billingPeriod === 'annually' ||
+        subDetails.billingPeriod === 'year'
+          ? 'annual'
+          : 'month'
       plan = await db
         .select()
         .from(tables.plans)
-        .where(eq(tables.plans.id, subscription[0].planId))
+        .where(
+          and(eq(tables.plans.id, subDetails.planId), eq(tables.plans.interval, billingPeriod))
+        )
         .limit(1)
         .execute()
     }
@@ -119,8 +130,8 @@ export default defineEventHandler(async event => {
         currentPeriodEndsAt: sub.currentPeriodEndsAt,
         canceledAt: sub.canceledAt,
         pastDue: sub.pastDue,
-        // Include the complete plan object (as-is)
         plan: planDetails,
+        billingPeriod, // <-- add this
         token: newToken,
       },
     }

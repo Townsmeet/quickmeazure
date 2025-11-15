@@ -4,7 +4,7 @@ export interface Plan {
   name: string
   description: string
   price: number
-  interval: 'monthly' | 'annually'
+  interval: 'month' | 'annual'
   features: string[]
   maxClients: number
   isFeatured?: boolean
@@ -48,13 +48,13 @@ const basePlans = [
 // Monthly plans
 export const monthlyPlans: Plan[] = basePlans.map(plan => ({
   ...plan,
-  interval: 'monthly' as const,
+  interval: 'month' as const,
 }))
 
 // Annual plans (15% discount - equivalent to 2 months free)
 export const annualPlans: Plan[] = basePlans.map(plan => ({
   ...plan,
-  interval: 'annually' as const,
+  interval: 'annual' as const,
   price: plan.price === 0 ? 0 : Math.round(plan.price * 10.2), // 10.2 months instead of 12 (15% discount)
 }))
 
@@ -67,30 +67,30 @@ export const formatPrice = (price: number): string => {
   return `₦${price.toLocaleString()}`
 }
 
-export const formatBillingCycle = (interval: 'monthly' | 'annually'): string => {
-  return interval === 'monthly' ? '/month' : '/year'
+export const formatBillingCycle = (interval: 'month' | 'annual'): string => {
+  return interval === 'month' ? '/month' : '/year'
 }
 
-export const formatBillingPeriod = (interval: 'monthly' | 'annually'): string => {
-  return interval === 'monthly' ? 'billed monthly' : 'billed annually'
+export const formatBillingPeriod = (interval: 'month' | 'annual'): string => {
+  return interval === 'month' ? 'billed monthly' : 'billed annually'
 }
 
 export const getPlanById = (
   id: string,
-  interval: 'monthly' | 'annually' = 'monthly'
+  interval: 'month' | 'annual' = 'month'
 ): Plan | undefined => {
-  const plans = interval === 'monthly' ? monthlyPlans : annualPlans
+  const plans = interval === 'month' ? monthlyPlans : annualPlans
   return plans.find(plan => plan.id === id)
 }
 
-export const getPlans = (interval: 'monthly' | 'annually' = 'monthly'): Plan[] => {
-  return interval === 'monthly' ? monthlyPlans : annualPlans
+export const getPlans = (interval: 'month' | 'annual' = 'month'): Plan[] => {
+  return interval === 'month' ? monthlyPlans : annualPlans
 }
 
 // Calculate savings for annual plans
 export const getAnnualSavings = (planId: string): number => {
-  const monthlyPlan = getPlanById(planId, 'monthly')
-  const annualPlan = getPlanById(planId, 'annually')
+  const monthlyPlan = getPlanById(planId, 'month')
+  const annualPlan = getPlanById(planId, 'annual')
 
   if (!monthlyPlan || !annualPlan || monthlyPlan.price === 0) return 0
 

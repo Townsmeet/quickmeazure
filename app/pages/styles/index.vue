@@ -8,12 +8,7 @@
             <h1 class="text-2xl font-bold text-gray-900">Styles</h1>
           </div>
           <div class="flex gap-3">
-            <UButton
-              icon="i-heroicons-plus"
-              color="primary"
-              size="lg"
-              @click="showAddSlideover = true"
-            >
+            <UButton color="primary" size="lg" @click="showAddSlideover = true">
               Add Style
             </UButton>
           </div>
@@ -74,12 +69,39 @@
         </UCard>
       </div>
 
+      <!-- Loading State -->
+      <div
+        v-if="isLoading"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      >
+        <UCard v-for="i in 8" :key="i" class="border-0 shadow-md overflow-hidden">
+          <template #header>
+            <div class="p-0">
+              <USkeleton class="h-48 w-full" />
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <div>
+              <USkeleton class="h-6 w-3/4 mb-2" />
+              <USkeleton class="h-4 w-full" />
+              <USkeleton class="h-4 w-2/3" />
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="flex items-center space-x-2">
+                <USkeleton class="h-4 w-4" />
+                <USkeleton class="h-4 w-16" />
+              </div>
+              <USkeleton class="h-8 w-8 rounded" />
+            </div>
+          </div>
+        </UCard>
+      </div>
+
       <!-- Style Cards -->
-      <div v-if="!isLoading">
-        <div
-          v-if="paginatedStyles.length > 0"
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
+      <div v-else-if="!isLoading && paginatedStyles.length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           <div
             v-for="style in paginatedStyles"
             :key="style.id"
@@ -176,95 +198,88 @@
             </div>
           </div>
         </div>
+
+        <!-- Pagination -->
+        <div
+          v-if="filteredStyles.length > itemsPerPage"
+          class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
+        >
+          <div class="text-sm text-gray-600 text-center sm:text-left">
+            Showing
+            <span class="font-semibold text-gray-900">{{
+              (currentPage - 1) * itemsPerPage + 1
+            }}</span>
+            to
+            <span class="font-semibold text-gray-900">{{
+              Math.min(currentPage * itemsPerPage, filteredStyles.length)
+            }}</span>
+            of <span class="font-semibold text-gray-900">{{ filteredStyles.length }}</span> styles
+          </div>
+          <UPagination
+            v-model="currentPage"
+            :page-count="itemsPerPage"
+            :total="filteredStyles.length"
+          />
+        </div>
       </div>
 
       <!-- Empty State -->
-      <div v-else class="text-center py-20">
-        <div
-          class="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-8"
-        >
-          <UIcon name="i-heroicons-swatch" class="w-16 h-16 text-gray-400" />
+      <div v-else class="flex items-center justify-center min-h-[60vh]">
+        <div class="max-w-xl mx-auto text-center">
+          <UEmpty
+            icon="i-heroicons-swatch"
+            :title="
+              error
+                ? 'Unable to load styles'
+                : hasActiveFilters
+                  ? 'No styles found'
+                  : 'No styles yet'
+            "
+            :description="
+              error
+                ? 'We encountered an error while loading your styles. Please try refreshing the page.'
+                : hasActiveFilters
+                  ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                  : 'Get started by adding your first style to showcase your designs.'
+            "
+            :actions="
+              error
+                ? [
+                    {
+                      icon: 'i-heroicons-arrow-path',
+                      label: 'Refresh',
+                      onClick: () => refreshStyles(),
+                    },
+                  ]
+                : hasActiveFilters
+                  ? [
+                      {
+                        icon: 'i-heroicons-x-mark',
+                        label: 'Clear Filters',
+                        color: 'neutral',
+                        variant: 'subtle',
+                        onClick: resetFilters,
+                      },
+                      {
+                        icon: 'i-heroicons-plus',
+                        label: 'Add Style',
+                        onClick: () => {
+                          showAddSlideover = true
+                        },
+                      },
+                    ]
+                  : [
+                      {
+                        icon: 'i-heroicons-plus',
+                        label: 'Add Your First Style',
+                        onClick: () => {
+                          showAddSlideover = true
+                        },
+                      },
+                    ]
+            "
+          />
         </div>
-        <h3 class="text-2xl font-bold text-gray-900 mb-3">
-          {{ hasActiveFilters ? 'No styles found' : 'No styles yet' }}
-        </h3>
-        <p class="text-gray-600 mb-8 max-w-md mx-auto text-lg">
-          {{
-            hasActiveFilters
-              ? "Try adjusting your search or filters to find what you're looking for."
-              : 'Get started by adding your first style to showcase your designs.'
-          }}
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <UButton
-            v-if="hasActiveFilters"
-            color="neutral"
-            variant="outline"
-            icon="i-heroicons-x-mark"
-            size="lg"
-            @click="resetFilters"
-          >
-            Clear Filters
-          </UButton>
-          <UButton
-            icon="i-heroicons-plus"
-            color="primary"
-            size="lg"
-            class="shadow-lg"
-            @click="showAddSlideover = true"
-          >
-            Add Your First Style
-          </UButton>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      <div
-        v-if="filteredStyles.length > itemsPerPage"
-        class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
-      >
-        <div class="text-sm text-gray-600 text-center sm:text-left">
-          Showing
-          <span class="font-semibold text-gray-900">{{
-            (currentPage - 1) * itemsPerPage + 1
-          }}</span>
-          to
-          <span class="font-semibold text-gray-900">{{
-            Math.min(currentPage * itemsPerPage, filteredStyles.length)
-          }}</span>
-          of <span class="font-semibold text-gray-900">{{ filteredStyles.length }}</span> styles
-        </div>
-        <UPagination
-          v-model="currentPage"
-          :page-count="itemsPerPage"
-          :total="filteredStyles.length"
-        />
-      </div>
-      <!-- Loading State -->
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <UCard v-for="i in 8" :key="i" class="border-0 shadow-md overflow-hidden">
-          <template #header>
-            <div class="p-0">
-              <USkeleton class="h-48 w-full" />
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div>
-              <USkeleton class="h-6 w-3/4 mb-2" />
-              <USkeleton class="h-4 w-full" />
-              <USkeleton class="h-4 w-2/3" />
-            </div>
-
-            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div class="flex items-center space-x-2">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-16" />
-              </div>
-              <USkeleton class="h-8 w-8 rounded" />
-            </div>
-          </div>
-        </UCard>
       </div>
     </div>
 
@@ -319,6 +334,7 @@ definePageMeta({
 const {
   styles,
   isLoading,
+  error,
   getStyle,
   updateStyle,
   deleteStyle: _deleteStyleApi,
@@ -409,7 +425,7 @@ const handleSearch = (value: string) => {
   currentPage.value = 1
 }
 
-const _handleSort = (value: string) => {
+const handleSort = (value: string) => {
   sortBy.value = value
   currentPage.value = 1
 }

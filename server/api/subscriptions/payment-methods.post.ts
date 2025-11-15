@@ -69,10 +69,12 @@ export default defineEventHandler(async event => {
         expiryMonth: cardDetails?.expiryMonth,
         expiryYear: cardDetails?.expiryYear,
         brand: cardDetails?.brand,
-        isDefault: true,
+        isDefault: true, // set as default if this is the only card
         provider: 'paystack',
         providerId: cardDetails?.providerId || reference,
         ...(metadataValue !== undefined ? { metadata: metadataValue } : {}),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .returning()
   }

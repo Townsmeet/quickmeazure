@@ -70,19 +70,22 @@ export default defineEventHandler(async event => {
     }
 
     // Find the requested plan
-    // Ensure planId is converted to a number for database query
-    const planIdNum = typeof planId === 'string' && !isNaN(Number(planId)) ? Number(planId) : planId
-    if (typeof planIdNum !== 'number' || isNaN(planIdNum)) {
-      throw createError({
-        statusCode: 400,
-        message: 'Invalid plan id',
+    // Accept both slug and numeric planId
+    let plan
+    if (typeof planId === 'string' && isNaN(Number(planId))) {
+      // planId is a slug, match by slug+interval
+      const matchInterval = normalizedInterval === 'annual' ? 'annual' : 'month'
+      plan = await db.query.plans.findFirst({
+        where: and(eq(tables.plans.slug, planId), eq(tables.plans.interval, matchInterval)),
+      })
+    } else {
+      // Numeric fallback
+      const planIdNum =
+        typeof planId === 'string' && !isNaN(Number(planId)) ? Number(planId) : planId
+      plan = await db.query.plans.findFirst({
+        where: eq(tables.plans.id, planIdNum),
       })
     }
-    console.log('Looking for plan with ID:', planIdNum, 'Original value:', planId)
-
-    const plan = await db.query.plans.findFirst({
-      where: eq(tables.plans.id, planIdNum),
-    })
 
     if (!plan) {
       throw createError({
@@ -167,52 +170,35 @@ export default defineEventHandler(async event => {
 
         // Create or update payment method if card details are provided
         if (cardDetails) {
-          console.log('Processing payment method for plan change')
-
-          // Check if the user already has a payment method
-          const existingPaymentMethod = await db.query.paymentMethods.findFirst({
+          // Save (or update) card (same as payments/verify)
+          const existingMethod = await db.query.paymentMethods.findFirst({
             where: eq(tables.paymentMethods.userId, String(userId)),
           })
-
-          if (existingPaymentMethod) {
-            // Update the existing payment method
-            console.log('Updating existing payment method for user ID:', userId)
-
+          const cardObj = {
+            type: cardDetails.type || 'card',
+            last4: cardDetails.last4 || null,
+            expiryMonth: cardDetails.expiryMonth || null,
+            expiryYear: cardDetails.expiryYear || null,
+            brand: cardDetails.brand || null,
+            isDefault: true,
+            provider: 'paystack',
+            providerId: cardDetails.providerId || paymentReference,
+            metadata:
+              typeof cardDetails.metadata === 'string'
+                ? cardDetails.metadata
+                : JSON.stringify(cardDetails.metadata || {}),
+            updatedAt: new Date(),
+          }
+          if (existingMethod) {
             await db
               .update(tables.paymentMethods)
-              .set({
-                type: cardDetails.type || 'card',
-                last4: cardDetails.last4,
-                expiryMonth: cardDetails.expiryMonth,
-                expiryYear: cardDetails.expiryYear,
-                brand: cardDetails.brand,
-                provider: 'paystack',
-                providerId: cardDetails.providerId || reference,
-                metadata:
-                  typeof cardDetails.metadata === 'string'
-                    ? cardDetails.metadata
-                    : JSON.stringify(cardDetails.metadata || {}),
-                updatedAt: new Date(),
-              })
-              .where(eq(tables.paymentMethods.id, existingPaymentMethod.id))
+              .set(cardObj)
+              .where(eq(tables.paymentMethods.id, existingMethod.id))
           } else {
-            // Create a new payment method
-            console.log('Creating new payment method for user ID:', userId)
-
             await db.insert(tables.paymentMethods).values({
+              ...cardObj,
               userId: String(userId),
-              type: cardDetails.type || 'card',
-              last4: cardDetails.last4,
-              expiryMonth: cardDetails.expiryMonth,
-              expiryYear: cardDetails.expiryYear,
-              brand: cardDetails.brand,
-              isDefault: true, // Always true since it's the only one
-              provider: 'paystack',
-              providerId: cardDetails.providerId || reference,
-              metadata:
-                typeof cardDetails.metadata === 'string'
-                  ? cardDetails.metadata
-                  : JSON.stringify(cardDetails.metadata || {}),
+              createdAt: new Date(),
             })
           }
         }
