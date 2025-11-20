@@ -1,5 +1,6 @@
 <template>
   <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+    <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
       <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Create your account</h2>
@@ -199,6 +200,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '#ui/types'
 import { registerSchema, type RegisterData } from '~/schemas/auth'
+import LogoLink from '~/components/common/LogoLink.vue'
 
 definePageMeta({
   layout: 'auth',

@@ -111,11 +111,14 @@ variant="outline"
           Cancel
         </UButton>
         <UButton
-color="primary"
-:loading="isSaving"
-:disabled="!localClient"
-@click="handleSave">
-          Save Changes
+          color="primary"
+          :loading="isSaving"
+          :disabled="!localClient"
+          :trailing-icon="isSaving ? 'i-heroicons-arrow-path' : undefined"
+          @click="handleSave"
+        >
+          <span v-if="!isSaving">Save Changes</span>
+          <span v-else>Saving...</span>
         </UButton>
       </div>
     </template>
@@ -128,6 +131,7 @@ import type { Client } from '~/types/client'
 interface Props {
   isOpen: boolean
   client: Client | null
+  isSaving?: boolean
 }
 
 interface Emits {
@@ -135,11 +139,13 @@ interface Emits {
   (e: 'save', client: Client): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isSaving: false,
+})
 const emit = defineEmits<Emits>()
 
-// Loading state for save button
-const isSaving = ref(false)
+// Loading state exposed to the template
+const isSaving = computed(() => props.isSaving)
 
 // Gender options
 const genderOptions = [
@@ -178,15 +184,7 @@ const clientGender = computed({
 const handleSave = async () => {
   if (!localClient.value) return
 
-  isSaving.value = true
-  try {
-    emit('save', localClient.value)
-  } finally {
-    // Reset loading state after a short delay to show the loading state
-    setTimeout(() => {
-      isSaving.value = false
-    }, 500)
-  }
+  emit('save', localClient.value)
 }
 
 const commonUnitDisplay = computed(() => {

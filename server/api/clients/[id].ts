@@ -61,17 +61,22 @@ export default defineEventHandler(async event => {
       // Parse JSON values if measurement exists
       if (measurement && measurement.values) {
         try {
-          measurement.values = JSON.parse(measurement.values)
+          // Assign parsed object to a new property to avoid type conflict
+          ;(measurement as any).parsedValues = JSON.parse(measurement.values)
         } catch (error) {
-          console.error('Failed to parse measurement values:', error)
-          measurement.values = {}
+          if (typeof console !== 'undefined' && typeof console.error === 'function') {
+            console.error('Failed to parse measurement values:', error)
+          }
+          ;(measurement as any).parsedValues = {}
         }
       }
 
+      // Ensure gender is included in response (even if null)
       return {
         success: true,
         data: {
           ...clientData[0],
+          gender: (clientData[0] as any).gender ?? null,
           measurement,
         },
       }
@@ -121,10 +126,10 @@ export default defineEventHandler(async event => {
 
         // Process measurements for the new schema
         const processedMeasurements = {
-          // Store all measurements in the values field
-          values: body.measurements.values || {},
+          // Store all measurements in the values field as JSON string
+          values: JSON.stringify(body.measurements.values || {}),
           notes: body.measurements.notes || null,
-          lastUpdated: new Date(),
+          updatedAt: new Date(),
         }
 
         // Update or create measurement
@@ -161,10 +166,12 @@ export default defineEventHandler(async event => {
       // Parse JSON values if measurement exists
       if (measurement && measurement.values) {
         try {
-          measurement.values = JSON.parse(measurement.values)
+          ;(measurement as any).parsedValues = JSON.parse(measurement.values)
         } catch (error) {
-          console.error('Failed to parse measurement values:', error)
-          measurement.values = {}
+          if (typeof console !== 'undefined' && typeof console.error === 'function') {
+            console.error('Failed to parse measurement values:', error)
+          }
+          ;(measurement as any).parsedValues = {}
         }
       }
 

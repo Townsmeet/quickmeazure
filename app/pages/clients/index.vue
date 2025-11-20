@@ -1,6 +1,12 @@
 <template>
   <div class="min-h-screen">
     <div class="max-w-7xl mx-auto pb-20 md:pb-6">
+      <!-- Setup Modal (shown if setup is needed) -->
+      <UModal v-model:open="showSetupModal">
+        <template #content>
+          <SetupModal />
+        </template>
+      </UModal>
       <!-- Header Section -->
       <div class="mb-8">
         <div class="flex items-center justify-between">
@@ -85,44 +91,7 @@
 
       <!-- Loading State -->
       <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <UCard v-for="i in 6" :key="i" class="border-0 shadow-md">
-          <template #header>
-            <div class="flex items-start justify-between">
-              <div class="flex items-center space-x-4">
-                <USkeleton class="h-16 w-16 rounded-full" />
-                <div class="flex-1 space-y-2">
-                  <USkeleton class="h-5 w-32" />
-                  <USkeleton class="h-4 w-20" />
-                </div>
-              </div>
-              <USkeleton class="h-8 w-8 rounded" />
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div class="space-y-3">
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-48" />
-              </div>
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-32" />
-              </div>
-              <div class="flex items-center space-x-3">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-24" />
-              </div>
-            </div>
-
-            <div class="pt-4 border-t border-gray-100">
-              <div class="flex items-center gap-4">
-                <USkeleton class="h-4 w-16" />
-                <USkeleton class="h-4 w-20" />
-              </div>
-            </div>
-          </div>
-        </UCard>
+        <ClientCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
       <!-- Client Cards -->
@@ -305,6 +274,7 @@
     <ClientEdit
       :is-open="showEditSlideover"
       :client="selectedClient"
+      :is-saving="isSavingClient"
       @close="showEditSlideover = false"
       @save="saveClient"
     />
@@ -330,6 +300,8 @@
 <script setup lang="ts">
 import type { Client } from '~/types/client'
 import dayjs from 'dayjs'
+import SetupModal from '~/components/measurements/SetupModal.vue'
+import ClientCardSkeleton from '~/components/skeleton/ClientCardSkeleton.vue'
 
 definePageMeta({
   middleware: ['auth', 'setup-required'],
@@ -347,6 +319,33 @@ const {
   refreshClients,
 } = useClients()
 
+// Auth user (for setup status)
+const { user } = useAuth()
+
+// Setup modal state
+const showSetupModal = ref(true)
+
+// Check setup status when component mounts
+const checkSetupStatus = () => {
+  if (user.value?.hasCompletedSetup) {
+    showSetupModal.value = false
+  }
+}
+
+onMounted(() => {
+  checkSetupStatus()
+})
+
+// Watch for changes to hasCompletedSetup and update modal visibility
+watch(
+  () => user.value?.hasCompletedSetup,
+  hasCompletedSetup => {
+    if (hasCompletedSetup) {
+      showSetupModal.value = false
+    }
+  }
+)
+
 // Local state
 const search = ref('')
 const sortBy = ref('createdAt_desc')
@@ -356,6 +355,7 @@ const hasOrdersFilter = ref<'all' | 'true' | 'false'>('all')
 const showDeleteModal = ref(false)
 const clientToDelete = ref<Client | null>(null)
 const isDeleting = ref(false)
+const isSavingClient = ref(false)
 
 // Slideover state
 const showDetailSlideover = ref(false)
@@ -579,12 +579,7 @@ const saveClient = async (client: Client) => {
   if (!client) return
 
   try {
-    // Prepare the measurement values
-    let measurementValues: Record<string, any> = {}
-    if (client.measurement) {
-      measurementValues = { ...client.measurement.values }
-    }
-
+    isSavingClient.value = true
     // Prepare the update data
     const updateData = {
       name: client.name,
@@ -594,7 +589,7 @@ const saveClient = async (client: Client) => {
       notes: client.notes,
       measurements: client.measurement
         ? {
-            values: measurementValues,
+            values: client.measurement.values || {},
             notes: client.measurement.notes || undefined,
           }
         : undefined,
@@ -605,6 +600,10 @@ const saveClient = async (client: Client) => {
 
     if (result.success) {
       showEditSlideover.value = false
+      showDetailSlideover.value = false
+      selectedClient.value = null
+      currentPage.value = 1
+      resetFilters()
       // Refresh the clients list
       await refreshClients()
 
@@ -623,6 +622,8 @@ const saveClient = async (client: Client) => {
       description: 'Failed to update client. Please try again.',
       color: 'error',
     })
+  } finally {
+    isSavingClient.value = false
   }
 }
 

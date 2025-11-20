@@ -8,15 +8,24 @@
     <template #body>
       <div v-if="localStyle" class="space-y-6">
         <UForm :state="localStyle" class="space-y-4">
-          <!-- Current Image -->
-          <div v-if="localStyle.imageUrl" class="space-y-3">
-            <div class="text-sm text-gray-600">Current Image:</div>
-            <div class="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
-              <img
-                :src="localStyle.imageUrl"
-                :alt="localStyle.name"
-                class="w-full h-full object-cover"
-              />
+          <!-- Current Images -->
+          <div v-if="existingImageUrls.length" class="space-y-3">
+            <div class="text-sm text-gray-600">
+              Current Images
+              <span class="text-gray-400">({{ existingImageUrls.length }})</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div
+                v-for="(imageUrl, index) in existingImageUrls"
+                :key="`${imageUrl}-${index}`"
+                class="w-full h-24 sm:h-32 bg-gray-100 rounded-lg overflow-hidden"
+              >
+                <img
+                  :src="imageUrl"
+                  :alt="`${localStyle.name} image ${index + 1}`"
+                  class="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
 
@@ -100,6 +109,7 @@ import type { Style } from '~/types/style'
 interface Props {
   isOpen: boolean
   style: Style | null
+  isSaving?: boolean
 }
 
 interface Emits {
@@ -107,13 +117,27 @@ interface Emits {
   (e: 'save', style: Style, imageFiles?: File[]): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isSaving: false,
+})
 const emit = defineEmits<Emits>()
 
 // Loading state for save button
-const isSaving = ref(false)
+const isSaving = computed(() => props.isSaving)
 const selectedImageFiles = ref<File[]>([])
 const styleTags = ref<string[]>([])
+const existingImageUrls = computed(() => {
+  if (!localStyle.value) return []
+
+  const urls = new Set<string>()
+  parseImageUrls(localStyle.value.imageUrls).forEach(url => urls.add(url))
+
+  if (typeof localStyle.value.imageUrl === 'string' && localStyle.value.imageUrl.trim()) {
+    urls.add(localStyle.value.imageUrl.trim())
+  }
+
+  return Array.from(urls)
+})
 
 // Nigerian/African Fashion Tags
 const tagOptions = [
@@ -293,6 +317,66 @@ const tagOptions = [
 // Local reactive copy of style data to avoid prop mutation
 const localStyle = ref<Style | null>(null)
 
+const normalizeTags = (tags: unknown): string[] => {
+  if (Array.isArray(tags)) {
+    return tags.filter(tag => typeof tag === 'string') as string[]
+  }
+
+  if (typeof tags === 'string') {
+    const trimmed = tags.trim()
+    if (!trimmed) return []
+
+    // Attempt to parse JSON arrays stored as strings
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) {
+          return parsed.filter(tag => typeof tag === 'string')
+        }
+      } catch {
+        // fall through to treating as single tag
+      }
+    }
+
+    return [trimmed]
+  }
+
+  return []
+}
+
+function parseImageUrls(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string' && !!item.trim())
+      .map(item => item.trim())
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return parseImageUrls(parsed)
+      } catch {
+        // fall through to treating as single or comma-separated string
+      }
+    }
+
+    if (trimmed.includes(',')) {
+      return trimmed
+        .split(',')
+        .map(part => part.trim())
+        .filter(Boolean)
+    }
+
+    return [trimmed]
+  }
+
+  return []
+}
+
 // Watch for changes in the style prop and update local copy
 watch(
   () => props.style,
@@ -301,7 +385,7 @@ watch(
       // Create a deep copy to avoid reference issues
       localStyle.value = JSON.parse(JSON.stringify(newStyle))
       // Set tags from the style (create a mutable copy)
-      styleTags.value = [...(newStyle.tags || [])]
+      styleTags.value = normalizeTags(newStyle.tags)
     } else {
       localStyle.value = null
       styleTags.value = []
@@ -347,18 +431,8 @@ const handleCreateTag = (newTag: string) => {
 const handleSave = async () => {
   if (!localStyle.value) return
 
-  isSaving.value = true
-  try {
-    // Update the local style with tags before saving
-    if (localStyle.value) {
-      localStyle.value.tags = styleTags.value
-    }
-    emit('save', localStyle.value, selectedImageFiles.value)
-  } finally {
-    // Reset loading state after a short delay to show the loading state
-    setTimeout(() => {
-      isSaving.value = false
-    }, 500)
-  }
+  // Update the local style with tags before saving
+  localStyle.value.tags = [...styleTags.value]
+  emit('save', localStyle.value, selectedImageFiles.value)
 }
 </script>

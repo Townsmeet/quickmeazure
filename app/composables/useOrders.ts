@@ -96,11 +96,14 @@ export const useOrders = () => {
   const orders = useState<Order[]>('orders', () => [])
   const currentOrder = useState<Order | null>('current_order', () => null)
   const error = useState<string | null>('orders_error', () => null)
-  const isLoading = useState<boolean>('orders_loading', () => false)
 
-  // Data fetching with useFetch
+  // Data fetching with useFetch — use `pending` so loading state is accurate
   // Remove unused ordersData since we're using the orders state
-  const { refresh: refreshOrders } = useFetch<OrdersResponse>('/api/orders', {
+  const {
+    data: ordersData,
+    pending: isLoading,
+    refresh: refreshOrders,
+  } = useFetch<OrdersResponse>('/api/orders', {
     server: false,
     default: () => ({ success: false, data: [] }),
     onResponse({ response }) {
@@ -182,7 +185,6 @@ export const useOrders = () => {
     id: string,
     data: Partial<CreateOrderData>
   ): Promise<OrderResponse> => {
-    isLoading.value = true
     error.value = null
 
     try {
@@ -210,8 +212,6 @@ export const useOrders = () => {
         success: false,
         message: error.value,
       }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -228,14 +228,11 @@ export const useOrders = () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to update order status'
       return false
-    } finally {
-      isLoading.value = false
     }
   }
 
   // Delete order
   const deleteOrder = async (id: string): Promise<boolean> => {
-    isLoading.value = true
     error.value = null
 
     try {
@@ -256,8 +253,6 @@ export const useOrders = () => {
     } catch (err: any) {
       error.value = err.message || 'Failed to delete order'
       return false
-    } finally {
-      isLoading.value = false
     }
   }
 

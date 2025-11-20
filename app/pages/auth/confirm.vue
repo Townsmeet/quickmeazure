@@ -1,5 +1,6 @@
 <template>
   <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6 py-12">
+    <LogoLink />
     <!-- Header -->
     <div class="text-center mb-12 w-full max-w-4xl px-4">
       <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose your plan</h1>
@@ -125,6 +126,7 @@ import {
   getSavingsPercentage,
   type Plan,
 } from '~/data/subscription-plans'
+import LogoLink from '~/components/common/LogoLink.vue'
 
 definePageMeta({
   layout: 'auth',

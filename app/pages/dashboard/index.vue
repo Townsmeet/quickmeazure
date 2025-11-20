@@ -19,10 +19,14 @@
 
     <!-- Dashboard Content -->
     <div class="space-y-6">
-      <div class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
         <div>
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div v-if="_isDashboardLoading" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <DashboardStatSkeleton v-for="i in 4" :key="i" />
+          </div>
+
+          <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <UCard class="bg-white">
               <template #header>
                 <div class="flex justify-between items-center">
@@ -100,81 +104,93 @@
         <div>
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Growth & Recent Activity</h2>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Client Growth Chart -->
-            <UCard class="lg:col-span-2 bg-white">
-              <template #header>
-                <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
-                  <USelect
-                    v-model="chartPeriod"
-                    :items="chartPeriodOptions"
-                    size="sm"
-                    class="w-40"
-                    @update:model-value="updateChartData"
-                  />
-                </div>
-              </template>
-              <div class="h-80">
-                <LineChart
-                  v-if="chartData.length > 0"
-                  :data="chartData"
-                  :categories="chartCategories"
-                  :height="300"
-                  :x-formatter="xFormatter"
-                  x-label="Period"
-                  y-label="New Clients"
-                />
-                <div v-else class="h-full flex items-center justify-center text-gray-400">
-                  No data available for the selected period
-                </div>
+            <template v-if="_isDashboardLoading">
+              <div class="lg:col-span-2">
+                <DashboardCardSkeleton />
               </div>
-            </UCard>
 
-            <!-- Recent Activity -->
-            <UCard class="bg-white">
-              <template #header>
-                <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
-                  <UButton
-                    to="/activity"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    trailing-icon="i-heroicons-arrow-right"
-                  >
-                    View all
-                  </UButton>
-                </div>
-              </template>
-              <div class="space-y-4">
-                <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
-                  No recent activity
-                </div>
-                <div
-                  v-for="activity in recentActivity"
-                  :key="activity.id"
-                  class="flex items-start space-x-3"
-                >
-                  <div
-                    class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
-                  >
-                    <UIcon
-                      :name="getActivityIcon(activity.type)"
-                      class="h-4 w-4 text-primary-600"
+              <div>
+                <DashboardCardSkeleton />
+              </div>
+            </template>
+
+            <template v-else>
+              <!-- Client Growth Chart -->
+              <UCard class="lg:col-span-2 bg-white">
+                <template #header>
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
+                    <USelect
+                      v-model="chartPeriod"
+                      :items="chartPeriodOptions"
+                      size="sm"
+                      class="w-40"
+                      @update:model-value="updateChartData"
                     />
                   </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm font-medium text-gray-900">
-                      {{ activity.title }}
-                    </p>
-                    <p class="text-sm text-gray-500">{{ activity.description }}</p>
-                    <p class="text-xs text-gray-400 mt-1">
-                      {{ formatTimeAgo(activity.timestamp) }}
-                    </p>
+                </template>
+                <div class="h-80">
+                  <LineChart
+                    v-if="chartData.length > 0"
+                    :data="chartData"
+                    :categories="chartCategories"
+                    :height="300"
+                    :x-formatter="xFormatter"
+                    x-label="Period"
+                    y-label="New Clients"
+                  />
+                  <div v-else class="h-full flex items-center justify-center text-gray-400">
+                    No data available for the selected period
                   </div>
                 </div>
-              </div>
-            </UCard>
+              </UCard>
+
+              <!-- Recent Activity -->
+              <UCard class="bg-white">
+                <template #header>
+                  <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
+                    <UButton
+                      to="/activity"
+                      color="neutral"
+                      variant="ghost"
+                      size="xs"
+                      trailing-icon="i-heroicons-arrow-right"
+                    >
+                      View all
+                    </UButton>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
+                    No recent activity
+                  </div>
+                  <div
+                    v-for="activity in recentActivity"
+                    :key="activity.id"
+                    class="flex items-start space-x-3"
+                  >
+                    <div
+                      class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
+                    >
+                      <UIcon
+                        :name="getActivityIcon(activity.type)"
+                        class="h-4 w-4 text-primary-600"
+                      />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-medium text-gray-900">
+                        {{ activity.title }}
+                      </p>
+                      <p class="text-sm text-gray-500">{{ activity.description }}</p>
+                      <p class="text-xs text-gray-400 mt-1">
+                        {{ formatTimeAgo(activity.timestamp) }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </UCard>
+            </template>
           </div>
         </div>
       </div>
@@ -182,7 +198,19 @@
       <div class="space-y-6">
         <div>
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Upcoming Due Orders</h2>
-          <UCard class="bg-white">
+          <UCard v-if="_isDashboardLoading" class="bg-white">
+            <template #header>
+              <USkeleton class="h-4 w-40" />
+            </template>
+            <div class="py-6">
+              <div class="space-y-2">
+                <USkeleton class="h-4 w-3/4" />
+                <USkeleton class="h-4 w-1/2" />
+                <USkeleton class="h-4 w-1/3" />
+              </div>
+            </div>
+          </UCard>
+          <UCard v-else class="bg-white">
             <template #header>
               <div class="flex justify-between items-center">
                 <h3 class="text-sm font-medium text-gray-500">Upcoming Due Orders</h3>
@@ -231,9 +259,18 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-if="dueOrders.length === 0">
+                  <tr v-if="!_isDashboardLoading && dueOrders.length === 0">
                     <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
                       No due orders
+                    </td>
+                  </tr>
+                  <tr v-else-if="_isDashboardLoading">
+                    <td colspan="5" class="px-6 py-4">
+                      <div class="space-y-2">
+                        <USkeleton class="h-4 w-1/4" />
+                        <USkeleton class="h-4 w-1/3" />
+                        <USkeleton class="h-4 w-1/6" />
+                      </div>
                     </td>
                   </tr>
                   <tr v-for="order in dueOrders" :key="order.id" class="hover:bg-gray-50">
@@ -295,6 +332,7 @@
     <ClientEdit
       :is-open="showEditSlideover"
       :client="selectedClient"
+      :is-saving="isSavingClient"
       @close="showEditSlideover = false"
       @save="saveClient"
     />
@@ -304,6 +342,8 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
 import type { ChartPeriod } from '~/types/dashboard'
+import DashboardStatSkeleton from '~/components/skeleton/DashboardStatSkeleton.vue'
+import DashboardCardSkeleton from '~/components/skeleton/DashboardCardSkeleton.vue'
 
 definePageMeta({
   middleware: ['auth', 'setup-required'],
@@ -507,8 +547,19 @@ onMounted(() => {
   checkSetupStatus()
 })
 
+// Watch for changes to hasCompletedSetup and update modal visibility
+watch(
+  () => user.value?.hasCompletedSetup,
+  hasCompletedSetup => {
+    if (hasCompletedSetup) {
+      showSetupModal.value = false
+    }
+  }
+)
+
 // Client management functions
 const { getClient, updateClient } = useClients()
+const isSavingClient = ref(false)
 
 const handleClientAdded = async (client: any) => {
   // Close the add slideover
@@ -557,12 +608,7 @@ const saveClient = async (client: any) => {
   if (!client) return
 
   try {
-    // Prepare the measurement values
-    let measurementValues = {}
-    if (client.measurement) {
-      measurementValues = { ...client.measurement.values }
-    }
-
+    isSavingClient.value = true
     // Prepare the update data
     const updateData = {
       name: client.name,
@@ -572,7 +618,7 @@ const saveClient = async (client: any) => {
       notes: client.notes,
       measurements: client.measurement
         ? {
-            values: measurementValues,
+            values: client.measurement.values || {},
             notes: client.measurement.notes || undefined,
           }
         : undefined,
@@ -601,6 +647,8 @@ const saveClient = async (client: any) => {
       description: 'Failed to update client. Please try again.',
       color: 'error',
     })
+  } finally {
+    isSavingClient.value = false
   }
 }
 </script>

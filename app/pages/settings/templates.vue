@@ -11,9 +11,8 @@
     />
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="text-center py-12">
-      <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 text-gray-400 mx-auto animate-spin" />
-      <p class="mt-2 text-gray-500">Loading templates...</p>
+    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <TemplateCardSkeleton v-for="i in 6" :key="i" />
     </div>
 
     <!-- Templates List -->
@@ -306,6 +305,7 @@ variant="outline"
 <script setup lang="ts">
 import TemplateCard from '~/components/measurements/TemplateCard.vue'
 import PageHeader from '~/components/common/PageHeader.vue'
+import TemplateCardSkeleton from '~/components/skeleton/TemplateCardSkeleton.vue'
 import type { MeasurementTemplate } from '~/types'
 import { ref } from 'vue'
 definePageMeta({ middleware: 'auth', layout: 'dashboard' })
@@ -653,6 +653,14 @@ async function handleTemplateSubmit(templateData: {
         dialogOpen.value = false
         editingTemplate.value = null
         await refreshTemplates()
+
+        // If this was the first template, refresh user session to update hasCompletedSetup
+        const setupCompleted = (response as any).setupCompleted || false
+        if (setupCompleted) {
+          const { init } = useAuth()
+          await init(true)
+        }
+
         toast.add({
           title: 'Template created',
           description: 'Template has been successfully created.',

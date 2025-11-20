@@ -320,8 +320,8 @@ const isActiveRoute = (item: MobileNavItem) => {
   }
 }
 
-// Navigation items structured for UNavigationMenu
-const navigationItems: NavigationMenuItem[][] = [
+// Navigation items structured for UNavigationMenu — make computed so `active` updates
+const navigationItems = computed<NavigationMenuItem[][]>(() => [
   [
     {
       label: 'Dashboard',
@@ -378,11 +378,11 @@ const navigationItems: NavigationMenuItem[][] = [
       to: '/',
     },
   ],
-]
+])
 
 // Title in navbar can be derived from nav or page context
 const navTitle = computed(() => {
-  const mainNavItems = navigationItems[0]
+  const mainNavItems = navigationItems.value[0]
   const found = mainNavItems?.find(item => {
     if (item.to && route.path === item.to) return true
     if (item.children) {

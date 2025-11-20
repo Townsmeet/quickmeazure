@@ -147,27 +147,11 @@
       <div v-if="isLoading">
         <!-- Desktop Loading -->
         <div class="hidden md:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            v-for="i in 6"
-            :key="i"
-            class="bg-white rounded-xl border border-gray-200 shadow-sm p-5"
-          >
-            <USkeleton class="h-32 w-full mb-4" />
-            <USkeleton class="h-6 w-3/4 mb-2" />
-            <USkeleton class="h-4 w-1/2" />
-          </div>
+          <OrderCardSkeleton v-for="i in 6" :key="i" />
         </div>
         <!-- Mobile Loading -->
         <div class="md:hidden space-y-4">
-          <div
-            v-for="i in 3"
-            :key="i"
-            class="bg-white rounded-xl border border-gray-200 shadow-sm p-4"
-          >
-            <USkeleton class="h-24 w-full mb-3" />
-            <USkeleton class="h-5 w-2/3 mb-2" />
-            <USkeleton class="h-4 w-1/2" />
-          </div>
+          <OrderCardSkeleton v-for="i in 3" :key="`m-${i}`" />
         </div>
       </div>
 
@@ -294,43 +278,14 @@
             <div
               class="absolute top-3 right-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
             >
-              <UDropdownMenu
-                :items="[
-                  [
-                    {
-                      label: 'View Details',
-                      icon: 'i-heroicons-eye',
-                      click: () => openOrderDetails(order),
-                      ui: { icon: { base: 'text-gray-500' } },
-                    },
-                    {
-                      label: 'Edit Order',
-                      icon: 'i-heroicons-pencil',
-                      click: () => openEditOrderSlideover(order),
-                      ui: { icon: { base: 'text-blue-500' } },
-                    },
-                  ],
-                  [
-                    {
-                      label: 'Delete',
-                      icon: 'i-heroicons-trash',
-                      click: () => confirmDelete(order),
-                      ui: {
-                        icon: { base: 'text-red-500' },
-                        active: 'bg-red-50 text-red-700',
-                        inactive: 'text-red-600 hover:bg-red-50 hover:text-red-700',
-                      },
-                    },
-                  ],
-                ]"
-                :popper="{ placement: 'bottom-end' }"
-              >
+              <UDropdownMenu :items="getOrderActions(order)" :popper="{ placement: 'bottom-end' }">
                 <UButton
                   color="neutral"
                   variant="ghost"
                   icon="i-heroicons-ellipsis-horizontal"
                   size="sm"
                   class="text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  @click.stop
                 />
               </UDropdownMenu>
             </div>
@@ -441,6 +396,7 @@ import OrderAdd from '~/components/orders/OrderAdd.vue'
 import OrderEdit from '~/components/orders/OrderEdit.vue'
 import OrderDetail from '~/components/orders/OrderDetail.vue'
 import OrderDelete from '~/components/orders/OrderDelete.vue'
+import OrderCardSkeleton from '~/components/skeleton/OrderCardSkeleton.vue'
 
 // Import dayjs
 import dayjs from 'dayjs'
@@ -795,4 +751,27 @@ const getStatusColor = (status: OrderStatus) => {
       return 'neutral'
   }
 }
+
+const getOrderActions = (order: Order) => [
+  [
+    {
+      label: 'View Details',
+      icon: 'i-heroicons-eye',
+      onSelect: () => openOrderDetails(order),
+    },
+    {
+      label: 'Edit Order',
+      icon: 'i-heroicons-pencil',
+      onSelect: () => openEditOrderSlideover(order),
+    },
+  ],
+  [
+    {
+      label: 'Delete',
+      icon: 'i-heroicons-trash',
+      color: 'error' as const,
+      onSelect: () => confirmDelete(order),
+    },
+  ],
+]
 </script>

@@ -97,6 +97,10 @@ export const useMeasurementTemplates = () => {
         } as MeasurementTemplate
         templates.value.push(mutableTemplate)
         await refreshTemplates()
+
+        // Force refresh to get updated setup status from server
+        const { init } = useAuth()
+        await init(true)
       }
       return response
     } catch (err: any) {

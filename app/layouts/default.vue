@@ -4,8 +4,12 @@
       <div class="container mx-auto px-4 py-3 flex justify-between items-center">
         <div class="flex items-center">
           <ULink to="/" class="flex items-center space-x-2">
-            <UIcon name="i-heroicons-scissors" class="text-primary-600 text-2xl" />
-            <span class="text-xl font-bold text-primary-600">QuickMeazure</span>
+            <img
+src="/logo.png"
+alt="QuickMeazure Logo"
+width="40"
+height="40" />
+            <span class="text-xl font-bold text-gray-900">QuickMeazure</span>
           </ULink>
         </div>
 

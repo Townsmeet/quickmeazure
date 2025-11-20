@@ -74,7 +74,7 @@ class="text-xs">
         >
           Edit
         </UButton>
-        <UButton
+        <!-- <UButton
           v-if="!template.isDefault"
           variant="outline"
           color="info"
@@ -83,7 +83,7 @@ class="text-xs">
           @click="emit('set-default', Number(template.id))"
         >
           Set Default
-        </UButton>
+        </UButton> -->
         <UButton
           v-if="!template.isArchived"
           variant="outline"

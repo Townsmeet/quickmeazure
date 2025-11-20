@@ -74,29 +74,7 @@
         v-if="isLoading"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
-        <UCard v-for="i in 8" :key="i" class="border-0 shadow-md overflow-hidden">
-          <template #header>
-            <div class="p-0">
-              <USkeleton class="h-48 w-full" />
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div>
-              <USkeleton class="h-6 w-3/4 mb-2" />
-              <USkeleton class="h-4 w-full" />
-              <USkeleton class="h-4 w-2/3" />
-            </div>
-
-            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div class="flex items-center space-x-2">
-                <USkeleton class="h-4 w-4" />
-                <USkeleton class="h-4 w-16" />
-              </div>
-              <USkeleton class="h-8 w-8 rounded" />
-            </div>
-          </div>
-        </UCard>
+        <StyleCardSkeleton v-for="i in 8" :key="i" />
       </div>
 
       <!-- Style Cards -->
@@ -288,15 +266,16 @@
       :is-open="showDetailSlideover"
       :style="selectedStyle"
       :related-orders="relatedOrders"
-      @close="showDetailSlideover = false"
-      @edit="openEditSlideover"
+      @close="handleDetailClose"
+      @edit="handleDetailEdit"
     />
 
     <!-- Style Edit Component -->
     <StyleEdit
       :is-open="showEditSlideover"
       :style="selectedStyle"
-      @close="showEditSlideover = false"
+      :is-saving="isSavingStyle"
+      @close="handleEditClose"
       @save="_updateStyle"
     />
 
@@ -319,9 +298,11 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import type { Style } from '~/types/style'
 import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
+import StyleCardSkeleton from '~/components/skeleton/StyleCardSkeleton.vue'
 
 dayjs.extend(isSameOrAfter)
 
@@ -357,6 +338,8 @@ const showEditSlideover = ref(false)
 const showAddSlideover = ref(false)
 const selectedStyle = ref<Style | null>(null)
 const relatedOrders = ref<any[]>([])
+const isEditingFromDetail = ref(false)
+const isSavingStyle = ref(false)
 
 // Sort options
 const sortOptions = [
@@ -460,6 +443,8 @@ const getStyleActions = (style: Style) => [
 
 const openDetailSlideover = async (style: Style) => {
   try {
+    selectedStyle.value = style
+    relatedOrders.value = []
     // Fetch full style data with related orders
     const response = await $fetch(`/api/styles/${style.id}`)
 
@@ -502,6 +487,38 @@ const openEditSlideover = async (style: Style) => {
   showEditSlideover.value = true
 }
 
+const closeDetailSlideover = (options?: { preserveSelection?: boolean }) => {
+  showDetailSlideover.value = false
+  if (!options?.preserveSelection) {
+    selectedStyle.value = null
+    relatedOrders.value = []
+  } else {
+    relatedOrders.value = []
+  }
+}
+
+const handleDetailClose = () => {
+  isEditingFromDetail.value = false
+  closeDetailSlideover()
+}
+
+const handleDetailEdit = async (style: Style) => {
+  isEditingFromDetail.value = true
+  closeDetailSlideover({ preserveSelection: true })
+  await nextTick()
+  await openEditSlideover(style)
+}
+
+const closeEditSlideover = () => {
+  showEditSlideover.value = false
+  selectedStyle.value = null
+  isEditingFromDetail.value = false
+}
+
+const handleEditClose = () => {
+  closeEditSlideover()
+}
+
 const confirmDelete = (style: Style) => {
   styleToDelete.value = style
   showDeleteModal.value = true
@@ -511,6 +528,7 @@ const _updateStyle = async (style: Style, imageFiles?: File[]) => {
   if (!style) return
 
   try {
+    isSavingStyle.value = true
     let updateData: any
 
     if (imageFiles && imageFiles.length > 0) {
@@ -565,7 +583,7 @@ const _updateStyle = async (style: Style, imageFiles?: File[]) => {
     })
 
     if (result.success) {
-      showEditSlideover.value = false
+      closeEditSlideover()
       // Refresh the styles list
       await refreshStyles()
 
@@ -584,6 +602,8 @@ const _updateStyle = async (style: Style, imageFiles?: File[]) => {
       description: 'Failed to update style. Please try again.',
       color: 'error',
     })
+  } finally {
+    isSavingStyle.value = false
   }
 }
 

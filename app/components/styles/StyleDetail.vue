@@ -8,81 +8,27 @@
     <template #body>
       <div v-if="style" class="space-y-6">
         <!-- Style Header -->
-        <div class="flex items-center space-x-4 pb-6 border-b border-gray-200">
-          <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-            <img
-              v-if="currentImageUrl"
-              :src="currentImageUrl"
-              :alt="style.name"
-              class="w-full h-full object-cover"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-              <UIcon name="i-heroicons-photo" class="w-8 h-8" />
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-xl font-semibold text-gray-900 truncate">{{ style.name }}</h3>
-            <div class="flex items-center space-x-2 mt-1">
-              <UBadge :color="getStatusColor(style.status)" variant="soft">
-                {{ formatStatus(style.status) }}
-              </UBadge>
-              <span v-if="style.itemCount" class="text-sm text-gray-500">
-                {{ style.itemCount }} {{ style.itemCount === 1 ? 'item' : 'items' }}
-              </span>
-            </div>
-          </div>
+        <div class="pb-4 border-b border-gray-200">
+          <h3 class="text-2xl font-semibold text-gray-900 truncate">{{ style.name }}</h3>
         </div>
 
         <!-- Image Gallery -->
-        <div v-if="imageUrls.length > 0" class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Images</h4>
-          <div class="space-y-4">
-            <!-- Main Image -->
-            <div class="w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
-              <img :src="currentImageUrl" :alt="style.name" class="w-full h-full object-cover" />
-            </div>
+        <div v-if="imageUrls.length > 0" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-lg font-medium text-gray-900">Images</h4>
+            <span class="text-sm text-gray-500">{{ imageUrls.length }} total</span>
+          </div>
 
-            <!-- Image Thumbnails -->
-            <div v-if="imageUrls.length > 1" class="flex gap-2 overflow-x-auto pb-2">
-              <button
-                v-for="(imageUrl, index) in imageUrls"
-                :key="index"
-                class="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden border-2 transition-colors"
-                :class="
-                  currentImageIndex === index
-                    ? 'border-primary-500'
-                    : 'border-transparent hover:border-gray-300'
-                "
-                @click="currentImageIndex = index"
-              >
-                <img
-                  :src="imageUrl"
-                  :alt="`${style.name} ${index + 1}`"
-                  class="w-full h-full object-cover"
-                />
-              </button>
-            </div>
-
-            <!-- Navigation Arrows -->
-            <div v-if="imageUrls.length > 1" class="flex justify-center gap-2">
-              <UButton
-                color="neutral"
-                variant="outline"
-                size="sm"
-                icon="i-heroicons-chevron-left"
-                :disabled="currentImageIndex === 0"
-                @click="previousImage"
-              />
-              <span class="flex items-center text-sm text-gray-500">
-                {{ currentImageIndex + 1 }} / {{ imageUrls.length }}
-              </span>
-              <UButton
-                color="neutral"
-                variant="outline"
-                size="sm"
-                icon="i-heroicons-chevron-right"
-                :disabled="currentImageIndex === imageUrls.length - 1"
-                @click="nextImage"
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div
+              v-for="(imageUrl, index) in imageUrls"
+              :key="`${imageUrl}-${index}`"
+              class="w-full h-32 sm:h-40 lg:h-48 bg-gray-100 rounded-lg overflow-hidden"
+            >
+              <img
+                :src="imageUrl"
+                :alt="`${style.name} image ${index + 1}`"
+                class="w-full h-full object-cover"
               />
             </div>
           </div>
@@ -185,50 +131,22 @@ interface Emits {
 const props = defineProps<Props>()
 defineEmits<Emits>()
 
-// Image gallery state
-const currentImageIndex = ref(0)
-
 // Computed properties for images
 const imageUrls = computed(() => {
   if (!props.style) return []
 
-  // Check if style has imageUrls array (new format)
-  if (props.style.imageUrls && Array.isArray(props.style.imageUrls)) {
-    return props.style.imageUrls
+  const urls = new Set<string>()
+
+  parseImageUrls(props.style.imageUrls).forEach(url => urls.add(url))
+
+  if (typeof props.style.imageUrl === 'string' && props.style.imageUrl.trim()) {
+    urls.add(props.style.imageUrl.trim())
   }
 
-  // Fallback to single imageUrl (backward compatibility)
-  if (props.style.imageUrl) {
-    return [props.style.imageUrl]
-  }
-
-  return []
+  return Array.from(urls)
 })
 
-const currentImageUrl = computed(() => {
-  return imageUrls.value[currentImageIndex.value] || undefined
-})
-
-// Image navigation methods
-const nextImage = () => {
-  if (currentImageIndex.value < imageUrls.value.length - 1) {
-    currentImageIndex.value++
-  }
-}
-
-const previousImage = () => {
-  if (currentImageIndex.value > 0) {
-    currentImageIndex.value--
-  }
-}
-
-// Reset image index when style changes
-watch(
-  () => props.style,
-  () => {
-    currentImageIndex.value = 0
-  }
-)
+const currentImageUrl = computed(() => imageUrls.value[0])
 
 const formatDate = (dateString: string | Date | number) => {
   let date: Date
@@ -277,5 +195,38 @@ const getOrderStatusColor = (status: string) => {
     default:
       return 'neutral'
   }
+}
+
+function parseImageUrls(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === 'string' && !!item.trim())
+      .map(item => item.trim())
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return []
+
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return parseImageUrls(parsed)
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    if (trimmed.includes(',')) {
+      return trimmed
+        .split(',')
+        .map(part => part.trim())
+        .filter(Boolean)
+    }
+
+    return [trimmed]
+  }
+
+  return []
 }
 </script>
