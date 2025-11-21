@@ -70,7 +70,7 @@ icon="i-heroicons-funnel"
       <div v-else-if="error" class="text-center py-12">
         <UIcon name="i-heroicons-exclamation-triangle" class="mx-auto h-12 w-12 text-amber-400" />
         <h3 class="mt-2 text-sm font-semibold text-gray-900">Error loading activity data</h3>
-        <p class="mt-1 text-sm text-gray-500">{{ errorMessage }}</p>
+        <p class="mt-1 text-sm text-gray-500">{{ error }}</p>
         <UButton
 color="primary"
 size="lg"
@@ -133,7 +133,7 @@ class="mt-4"
             v-model="page"
             :total="totalPages"
             :ui="{ base: 'rounded-lg' }"
-            @update:model-value="fetchActivity"
+            @update:model-value="handlePageChange"
           />
         </div>
       </template>
@@ -142,7 +142,7 @@ class="mt-4"
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed } from 'vue'
 import { format, parseISO } from 'date-fns'
 import ActivityCardSkeleton from '~/components/skeleton/ClientCardSkeleton.vue'
 import EmptyState from '~/components/common/EmptyState.vue'
@@ -152,44 +152,31 @@ definePageMeta({
   middleware: 'setup-required',
 })
 
-// Define types for type safety
-type ActivityItem = {
-  id: number | string
-  type: string
-  action?: string
-  entity?: string
-  message: string
-  time?: string
-  timestamp?: string
-  icon?: string
-  metadata?: Record<string, any>
-}
-
-// Type is defined for future use
-type _ActivityApiResponse = {
-  activities: ActivityItem[]
-  total: number
-  page: number
-  totalPages: number
-}
-
 // Set page metadata
 useHead({
   title: 'Activity Log',
 })
 
-// Get auth composable for API calls
-const _user = useAuth()
+// Use activity composable
+const {
+  activities,
+  isLoading,
+  error,
+  totalCount,
+  currentPage,
+  totalPages,
+  perPage,
+  fetchActivity: fetchActivityData,
+  setPage,
+} = useActivity()
 
-// Activity data
-const activities = ref<ActivityItem[]>([])
-const isLoading = ref(false)
-const error = ref(false)
-const errorMessage = ref('')
-const page = ref(1)
-const totalCount = ref(0)
-const totalPages = ref(1)
-const perPage = 10
+// Local page ref for v-model binding (computed to sync with composable)
+const page = computed({
+  get: () => currentPage.value,
+  set: (value: number) => {
+    setPage(value)
+  },
+})
 
 // Filter options
 const activityTypeOptions = [
@@ -214,7 +201,13 @@ const resetFilters = () => {
   filters.type = null
   filters.startDate = null
   filters.endDate = null
-  page.value = 1
+  setPage(1)
+  fetchActivity()
+}
+
+// Handle page change from pagination
+const handlePageChange = (newPage: number) => {
+  setPage(newPage)
   fetchActivity()
 }
 
@@ -309,76 +302,28 @@ const getActivityTypeClass = (type: string) => {
 
 // Fetch activity data
 const fetchActivity = async () => {
-  isLoading.value = true
-  error.value = false
-  errorMessage.value = ''
+  const response = await fetchActivityData({
+    page: page.value,
+    perPage: perPage.value,
+    filters: {
+      type: filters.type,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+    },
+  })
 
-  try {
-    // Prepare query parameters
-    const queryParams = new URLSearchParams()
-
-    // Add pagination parameters
-    queryParams.append('page', page.value.toString())
-    queryParams.append('per_page', perPage.toString())
-
-    // Add filters if they exist
-    if (filters.type) {
-      queryParams.append('type', filters.type)
-    }
-
-    if (filters.startDate && filters.endDate) {
-      const startDate = new Date(filters.startDate)
-      const endDate = new Date(filters.endDate)
-      // Set end date to end of day
-      endDate.setHours(23, 59, 59, 999)
-      queryParams.append('start_date', startDate.toISOString())
-      queryParams.append('end_date', endDate.toISOString())
-    }
-
-    // Use useAsyncData with $fetch for the activity API endpoint
-    const { data, error: fetchError } = await useAsyncData(
-      `activity-${queryParams.toString()}`,
-      () =>
-        $fetch(`/api/activity?${queryParams.toString()}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-    )
-
-    if (fetchError.value) {
-      throw fetchError.value
-    }
-
-    const response = data.value
-
-    if (response && response.success && Array.isArray(response.data)) {
-      activities.value = response.data
-      totalCount.value = response.total || 0
-      totalPages.value = response.totalPages || 1
-
-      // If current page is greater than total pages and total pages > 0, reset to page 1
-      if (page.value > totalPages.value && totalPages.value > 0) {
-        page.value = 1
-        await fetchActivity() // Fetch again with corrected page
-        return
-      }
-    } else {
-      activities.value = []
-      totalCount.value = 0
-      totalPages.value = 1
-    }
-  } catch (err) {
-    console.error('Failed to fetch activity:', err)
-    error.value = true
-    errorMessage.value =
-      err?.data?.message || err?.message || 'Failed to load activity data. Please try again.'
-    activities.value = []
-    totalCount.value = 0
-    totalPages.value = 1
-  } finally {
-    isLoading.value = false
+  // If current page is greater than total pages and total pages > 0, reset to page 1
+  if (response.success && page.value > totalPages.value && totalPages.value > 0) {
+    setPage(1)
+    await fetchActivityData({
+      page: 1,
+      perPage: perPage.value,
+      filters: {
+        type: filters.type,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      },
+    })
   }
 }
 

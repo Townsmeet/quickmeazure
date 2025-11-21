@@ -2,7 +2,6 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../../utils/drizzle'
 import * as tables from '../../database/schema'
-import { ok } from '../../validators'
 import { z } from 'zod'
 
 /**
@@ -79,12 +78,18 @@ export default defineEventHandler(async event => {
         const planSlug = typeof planIdRaw === 'string' ? planIdRaw : String(planIdRaw)
 
         // Normalize billing interval for DB ('monthly'|'month' => 'month', 'annually'|'annual'|'year' => 'annual')
-        const normalizedInterval =
+        let normalizedInterval: string
+        if (
           billingPeriodRaw === 'annual' ||
           billingPeriodRaw === 'annually' ||
           billingPeriodRaw === 'year'
-            ? 'annual'
-            : 'month'
+        ) {
+          normalizedInterval = 'annual'
+        } else if (billingPeriodRaw === 'month' || billingPeriodRaw === 'monthly') {
+          normalizedInterval = 'month'
+        } else {
+          normalizedInterval = String(billingPeriodRaw)
+        }
         if (!planSlug) {
           console.warn('No planId provided in verify payload; skipping subscription update')
         }
@@ -166,6 +171,64 @@ export default defineEventHandler(async event => {
 
           console.log('Created new subscription:', subscriptionResult[0]?.id)
         }
+
+        // Create a payment record for the subscription (billing history)
+        if (plan && subscriptionResult && subscriptionResult[0]) {
+          console.log('Creating subscription payment record for initial subscription')
+          try {
+            const paymentRecord = await db
+              .insert(tables.subscriptionPayments)
+              .values({
+                userId: String(userId),
+                subscriptionId: subscriptionResult[0].id,
+                amount: data.data.amount / 100, // Convert from kobo to naira
+                currency: 'NGN',
+                status: 'successful',
+                reference: reference,
+                description: `Subscription to ${plan.name} (${normalizedInterval})`,
+                provider: 'paystack',
+                metadata: JSON.stringify({
+                  planId: plan.id,
+                  planSlug: plan.slug,
+                  billingInterval: normalizedInterval,
+                  paystackReference: data.data.reference,
+                  transactionDate: new Date().toISOString(),
+                }),
+              })
+              .returning()
+
+            console.log('Created subscription payment record:', paymentRecord[0]?.id)
+          } catch (paymentError) {
+            // Log the error but don't fail the whole operation
+            console.error('Failed to create subscription payment record:', paymentError)
+          }
+        }
+
+        // Ensure business profile exists (same as create.post.ts)
+        const existingBusiness = await db.query.businesses.findFirst({
+          where: eq(tables.businesses.userId, String(userId)),
+        })
+
+        if (!existingBusiness) {
+          await db.insert(tables.businesses).values({
+            userId: String(userId),
+            hasCompletedSetup: false,
+            createdAt: new Date(),
+          })
+          console.log('Created business profile for user:', userId)
+        }
+
+        // Update user subscription status and onboarding step
+        await db
+          .update(tables.user)
+          .set({
+            hasActiveSubscription: true,
+            subscriptionStatus: 'active',
+            onboardingStep: 'complete',
+            onboardingCompletedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(tables.user.id, String(userId)))
 
         // --- SAVE PAYMENT METHOD (extract authorization) ---
         const authz = data.data.authorization

@@ -12,9 +12,10 @@ export async function seedPlans() {
 
   for (const plan of allPlans) {
     try {
-      // Check if plan exists by slug
+      // Check if plan exists by slug AND interval
       const existing = await db.query.plans.findFirst({
-        where: eq(plans.slug, plan.id),
+        where: (fields, { eq, and }) =>
+          and(eq(fields.slug, plan.id), eq(fields.interval, plan.interval)),
       })
 
       const planData = {

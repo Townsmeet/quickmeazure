@@ -122,7 +122,6 @@ import {
   getPlanById,
   formatPrice,
   formatBillingCycle,
-  formatBillingPeriod,
   getSavingsPercentage,
   type Plan,
 } from '~/data/subscription-plans'
@@ -243,12 +242,24 @@ const handlePaymentSuccess = async () => {
     color: 'success',
   })
 
-  // Force refresh to get updated onboarding status from server
-  const { init } = useAuth()
-  await init(true)
+  try {
+    // Small delay to ensure payment verification and subscription creation are complete
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-  // Redirect to dashboard
-  await navigateTo('/dashboard')
+    // Force refresh to get updated onboarding status from server
+    const { init } = useAuth()
+    await init(true)
+
+    // Wait a bit more to ensure the session is updated
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Redirect to dashboard - the middleware will handle onboarding if needed
+    await navigateTo('/dashboard')
+  } catch (error) {
+    console.error('Error during payment success handling:', error)
+    // Still navigate to dashboard even if there's an error
+    await navigateTo('/dashboard')
+  }
 }
 
 // Handle payment error

@@ -32,34 +32,41 @@
       />
     </div>
 
-    <!-- Empty State -->
-    <div v-else class="flex items-center justify-center min-h-[60vh]">
+    <!-- Empty State: no error, just empty -->
+    <div
+      v-else-if="!isLoading && !error && templates.length === 0"
+      class="flex items-center justify-center min-h-[60vh]"
+    >
       <div class="max-w-xl mx-auto text-center">
         <UEmpty
           icon="i-heroicons-document-text"
-          :title="error ? 'Unable to load templates' : 'No templates yet'"
-          :description="
-            error
-              ? 'We encountered an error while loading your templates. Please try refreshing the page.'
-              : 'Get started by creating your first measurement template.'
-          "
-          :actions="
-            error
-              ? [
-                  {
-                    icon: 'i-heroicons-arrow-path',
-                    label: 'Refresh',
-                    onClick: () => refreshTemplates(),
-                  },
-                ]
-              : [
-                  {
-                    icon: 'i-heroicons-plus',
-                    label: 'Create Template',
-                    onClick: openCreateDialog,
-                  },
-                ]
-          "
+          title="No templates yet"
+          description="Get started by creating your first measurement template."
+          :actions="[
+            {
+              icon: 'i-heroicons-plus',
+              label: 'Create Template',
+              onClick: openCreateDialog,
+            },
+          ]"
+        />
+      </div>
+    </div>
+
+    <!-- Error State: actual errors only -->
+    <div v-else-if="!isLoading && error" class="flex items-center justify-center min-h-[60vh]">
+      <div class="max-w-xl mx-auto text-center">
+        <UEmpty
+          icon="i-heroicons-document-text"
+          title="Unable to load templates"
+          description="We encountered an error while loading your templates. Please try refreshing the page."
+          :actions="[
+            {
+              icon: 'i-heroicons-arrow-path',
+              label: 'Refresh',
+              onClick: () => refreshTemplates(),
+            },
+          ]"
         />
       </div>
     </div>
@@ -510,7 +517,7 @@ async function deleteTemplateHandler() {
         color: 'error',
       })
     }
-  } catch (e) {
+  } catch (_e) {
     toast.add({
       title: 'Delete failed',
       description: 'An error occurred while deleting the template.',

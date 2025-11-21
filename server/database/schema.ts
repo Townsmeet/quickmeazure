@@ -75,22 +75,28 @@ export const businesses = sqliteTable('businesses', {
 })
 
 // Plans table
-export const plans = sqliteTable('plans', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  slug: text('slug').notNull().unique(), // Unique identifier like 'free', 'standard', 'premium'
-  name: text('name').notNull(),
-  description: text('description').notNull(),
-  price: real('price').notNull(),
-  interval: text('interval').notNull(), // 'monthly', 'annual', etc.
-  features: text('features'), // JSON string
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
-  maxClients: integer('max_clients'), // Max number of clients allowed
-  maxStyles: integer('max_styles'), // Max number of styles allowed
-  maxStorage: integer('max_storage'), // Storage limit in MB
-  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
-})
+export const plans = sqliteTable(
+  'plans',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    slug: text('slug').notNull(), // Unique identifier like 'free', 'standard', 'premium'
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    price: real('price').notNull(),
+    interval: text('interval').notNull(), // 'monthly', 'annual', etc.
+    features: text('features'), // JSON string
+    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+    maxClients: integer('max_clients'), // Max number of clients allowed
+    maxStyles: integer('max_styles'), // Max number of styles allowed
+    maxStorage: integer('max_storage'), // Storage limit in MB
+    createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+  },
+  table => ({
+    uniqueSlugInterval: uniqueIndex('plans_slug_interval_unique').on(table.slug, table.interval),
+  })
+)
 
 // Subscriptions table to track user subscriptions
 export const subscriptions = sqliteTable('subscriptions', {

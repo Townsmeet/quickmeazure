@@ -9,7 +9,7 @@
 
     <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
       <!-- Google Sign In Button -->
-      <div>
+      <!-- <div>
         <UButton
           block
           size="lg"
@@ -21,17 +21,17 @@
           <UIcon name="i-simple-icons-google" class="mr-2 text-lg" />
           Sign in with Google
         </UButton>
-      </div>
+      </div> -->
 
       <!-- Divider -->
-      <div class="relative my-4">
+      <!-- <div class="relative my-4">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-300" />
         </div>
         <div class="relative flex justify-center text-sm">
           <span class="px-2 bg-white text-gray-500">or continue with email</span>
         </div>
-      </div>
+      </div> -->
 
       <UForm
 :schema="loginSchema"
@@ -116,15 +116,14 @@ class="space-y-6"
 <script setup lang="ts">
 import type { FormSubmitEvent } from '#ui/types'
 import { loginSchema, type LoginData } from '~/schemas/auth'
-import LogoLink from '~/components/common/LogoLink.vue'
 
 definePageMeta({
   layout: 'auth',
   middleware: 'guest-only',
 })
 
-const { login, signInWithGoogle, isLoading } = useAuth()
-const isGoogleLoading = ref(false)
+const { login, isLoading } = useAuth()
+// const isGoogleLoading = ref(false)
 const toast = useToast()
 const route = useRoute()
 
@@ -179,30 +178,30 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
 }
 
 // Google login handler
-const handleGoogleLogin = async () => {
-  isGoogleLoading.value = true
+// const handleGoogleLogin = async () => {
+//   isGoogleLoading.value = true
 
-  try {
-    const { error } = await signInWithGoogle()
+//   try {
+//     const { error } = await signInWithGoogle()
 
-    if (error) {
-      toast.add({
-        title: 'Google Sign-in Failed',
-        description: error.message,
-        color: 'error',
-        icon: 'i-heroicons-exclamation-circle',
-      })
-    }
-    // If successful, Better Auth will redirect to Google OAuth
-  } catch (error: any) {
-    toast.add({
-      title: 'Google Sign-in Failed',
-      description: 'Something went wrong. Please try again.',
-      color: 'error',
-      icon: 'i-heroicons-exclamation-circle',
-    })
-  } finally {
-    isGoogleLoading.value = false
-  }
-}
+//     if (error) {
+//       toast.add({
+//         title: 'Google Sign-in Failed',
+//         description: error.message,
+//         color: 'error',
+//         icon: 'i-heroicons-exclamation-circle',
+//       })
+//     }
+//     // If successful, Better Auth will redirect to Google OAuth
+//   } catch (error: any) {
+//     toast.add({
+//       title: 'Google Sign-in Failed',
+//       description: 'Something went wrong. Please try again.',
+//       color: 'error',
+//       icon: 'i-heroicons-exclamation-circle',
+//     })
+//   } finally {
+//     isGoogleLoading.value = false
+//   }
+// }
 </script>

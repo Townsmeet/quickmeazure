@@ -1,6 +1,6 @@
 <template>
   <section id="pricing" class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="text-center mb-12">
         <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -8,11 +8,6 @@
         </h2>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
           Choose the plan that fits your business needs.
-          {{
-            isAnnual
-              ? `Save ${getSavingsPercentage()}% with annual billing.`
-              : 'Start with our free plan and upgrade as your business grows.'
-          }}
         </p>
       </div>
 
@@ -59,7 +54,6 @@ import {
   getPlans,
   formatPrice,
   formatBillingCycle,
-  formatBillingPeriod,
   getSavingsPercentage,
   type Plan,
 } from '~/data/subscription-plans'
@@ -69,13 +63,14 @@ const isAnnual = ref(false)
 
 // Get plans based on billing period
 const displayedPlans = computed(() => {
-  return getPlans(isAnnual.value ? 'annually' : 'monthly')
+  return getPlans(isAnnual.value ? 'annual' : 'month')
 })
 
 // Get button props for each plan
 const getButtonProps = (plan: Plan) => {
   const planParam = plan.id === 'free' ? '' : `?plan=${plan.id}`
-  const billingParam = isAnnual.value ? `${planParam ? '&' : '?'}billing=annually` : ''
+  // keep the billingParam as 'annually' only if your backend expects it. Otherwise 'annual'.
+  const billingParam = isAnnual.value ? `${planParam ? '&' : '?'}billing=annual` : ''
 
   return {
     label: plan.id === 'free' ? 'Get Started' : `Choose ${plan.name}`,

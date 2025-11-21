@@ -4,29 +4,17 @@
     <UDashboardSidebar collapsible resizable :ui="{ footer: 'border-t border-default' }">
       <template #header="{ collapsed }">
         <div v-if="!collapsed" class="flex items-center gap-3">
-          <UIcon name="i-heroicons-scissors" class="text-primary-600 text-2xl" />
-          <span class="font-bold text-lg">QuickMeazure</span>
+          <img
+src="/logo.png"
+alt="QuickMeazure Logo"
+width="40"
+height="40" />
+          <!-- <span class="font-bold text-lg">QuickMeazure</span> -->
         </div>
         <UIcon v-else name="i-heroicons-scissors" class="size-5 text-primary mx-auto" />
       </template>
 
       <template #default="{ collapsed }">
-        <UButton
-          :label="collapsed ? undefined : 'Search...'"
-          icon="i-heroicons-magnifying-glass"
-          color="neutral"
-          variant="outline"
-          block
-          :square="collapsed"
-        >
-          <template v-if="!collapsed" #trailing>
-            <div class="flex items-center gap-0.5 ms-auto">
-              <UKbd value="meta" variant="subtle" />
-              <UKbd value="K" variant="subtle" />
-            </div>
-          </template>
-        </UButton>
-
         <UNavigationMenu
           :collapsed="collapsed"
           :items="navigationItems[0]"
@@ -54,18 +42,7 @@
             class="w-full"
             :block="collapsed"
             @click="handleUserMenu"
-          >
-            <template v-if="!collapsed" #trailing>
-              <UButton
-                icon="i-heroicons-power"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                aria-label="Logout"
-                @click.stop="handleLogout"
-              />
-            </template>
-          </UButton>
+          />
         </ClientOnly>
       </template>
     </UDashboardSidebar>
@@ -396,15 +373,5 @@ const navTitle = computed(() => {
 const handleUserMenu = () => {
   // Handle user menu click - could open a dropdown or navigate to profile
   navigateTo('/settings')
-}
-
-const handleLogout = async () => {
-  try {
-    const { logout } = useAuth()
-    await logout()
-    await navigateTo('/auth/login')
-  } catch (_error) {
-    if (import.meta.client) localStorage.removeItem('intentionalLogout')
-  }
 }
 </script>

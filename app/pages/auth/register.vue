@@ -9,7 +9,7 @@
 
     <div class="max-w-md w-full space-y-6 bg-white p-4 sm:p-8 rounded-xl shadow">
       <!-- Google Sign Up Button -->
-      <div class="mt-8">
+      <!-- <div class="mt-8">
         <UButton
           block
           size="lg"
@@ -21,17 +21,17 @@
           <UIcon name="i-simple-icons-google" class="mr-2 text-lg" />
           Sign up with Google
         </UButton>
-      </div>
+      </div> -->
 
       <!-- Divider -->
-      <div class="relative my-4">
+      <!-- <div class="relative my-4">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-300" />
         </div>
         <div class="relative flex justify-center text-sm">
           <span class="px-2 bg-white text-gray-500">or sign up with email</span>
         </div>
-      </div>
+      </div> -->
 
       <UForm
         :schema="registerSchema"
@@ -278,7 +278,7 @@ const onSubmit = async (_event: FormSubmitEvent<RegisterData>) => {
 }
 
 // Handle Google registration
-const handleGoogleRegister = async () => {
+const _handleGoogleRegister = async () => {
   isGoogleLoading.value = true
 
   try {
@@ -293,7 +293,7 @@ const handleGoogleRegister = async () => {
       })
     }
     // If successful, Better Auth will redirect to Google OAuth
-  } catch (error: any) {
+  } catch (_error: any) {
     toast.add({
       title: 'Google Sign-up Failed',
       description: 'Something went wrong. Please try again.',

@@ -8,7 +8,8 @@ export default defineNuxtPlugin(() => {
   const route = useRoute()
 
   // Configuration
-  const allowedPages = ['/', '/auth/login', '/auth/register']
+  // const allowedPages = ['/', '/auth/login', '/auth/register']
+  const allowedPages = ['/this-disables-one-tap']
   const delay = 1500 // 1.5 seconds after page load
 
   // Show One Tap conditionally
