@@ -106,58 +106,58 @@ export default defineEventHandler(async (event: H3Event<EventHandlerRequest>) =>
       .select({
         id: tables.clients.id,
         name: tables.clients.name,
-        createdAt: tables.clients.createdAt,
+        createdAt: tables.clients.created_at,
         action: sql<string>`'created'::text`,
       })
       .from(tables.clients)
-      .where(eq(tables.clients.userId, userId))
+      .where(eq(tables.clients.user_id, userId))
 
     // Apply date filtering if provided
     if (startDate && endDate) {
-      clientQuery = clientQuery.where(between(tables.clients.createdAt, startDate, endDate))
+      clientQuery = clientQuery.where(between(tables.clients.created_at, startDate, endDate))
     }
 
-    const recentClients = await clientQuery.orderBy(desc(tables.clients.createdAt)).limit(perPage)
+    const recentClients = await clientQuery.orderBy(desc(tables.clients.created_at)).limit(perPage)
 
     // Get recent orders
     let orderQuery = db
       .select({
         id: tables.orders.id,
-        clientId: tables.orders.clientId,
+        clientId: tables.orders.client_id,
         status: tables.orders.status,
-        createdAt: tables.orders.createdAt,
-        updatedAt: tables.orders.updatedAt,
+        createdAt: tables.orders.created_at,
+        updatedAt: tables.orders.updated_at,
         clientName: tables.clients.name,
       })
       .from(tables.orders)
-      .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
-      .where(eq(tables.clients.userId, userId))
+      .innerJoin(tables.clients, eq(tables.orders.client_id, tables.clients.id))
+      .where(eq(tables.clients.user_id, userId))
 
     // Apply date filtering if provided
     if (startDate && endDate) {
       orderQuery = orderQuery.where(
         or(
-          between(tables.orders.createdAt, startDate, endDate),
-          between(tables.orders.updatedAt, startDate, endDate)
+          between(tables.orders.created_at, startDate, endDate),
+          between(tables.orders.updated_at, startDate, endDate)
         )
       )
     }
 
-    const recentOrders = await orderQuery.orderBy(desc(tables.orders.updatedAt)).limit(perPage)
+    const recentOrders = await orderQuery.orderBy(desc(tables.orders.updated_at)).limit(perPage)
 
     // Get recent payments
     let paymentQuery = db
       .select({
         id: tables.payments.id,
-        orderId: tables.payments.orderId,
+        orderId: tables.payments.order_id,
         amount: tables.payments.amount,
-        paymentDate: tables.payments.paymentDate,
+        paymentDate: tables.payments.payment_date,
         clientName: tables.clients.name,
       })
       .from(tables.payments)
-      .innerJoin(tables.orders, eq(tables.payments.orderId, tables.orders.id))
-      .innerJoin(tables.clients, eq(tables.orders.clientId, tables.clients.id))
-      .where(eq(tables.clients.userId, userId))
+      .innerJoin(tables.orders, eq(tables.payments.order_id, tables.orders.id))
+      .innerJoin(tables.clients, eq(tables.orders.client_id, tables.clients.id))
+      .where(eq(tables.clients.user_id, userId))
 
     // Apply date filtering if provided
     if (startDate && endDate) {
@@ -172,23 +172,23 @@ export default defineEventHandler(async (event: H3Event<EventHandlerRequest>) =>
     let measurementQuery = db
       .select({
         id: tables.measurements.id,
-        clientId: tables.measurements.clientId,
-        lastUpdated: tables.measurements.lastUpdated,
+        clientId: tables.measurements.client_id,
+        lastUpdated: tables.measurements.updated_at,
         clientName: tables.clients.name,
       })
       .from(tables.measurements)
-      .innerJoin(tables.clients, eq(tables.measurements.clientId, tables.clients.id))
-      .where(eq(tables.clients.userId, userId))
+      .innerJoin(tables.clients, eq(tables.measurements.client_id, tables.clients.id))
+      .where(eq(tables.clients.user_id, userId))
 
     // Apply date filtering if provided
     if (startDate && endDate) {
       measurementQuery = measurementQuery.where(
-        between(tables.measurements.lastUpdated, startDate, endDate)
+        between(tables.measurements.updated_at, startDate, endDate)
       )
     }
 
     const recentMeasurements = await measurementQuery
-      .orderBy(desc(tables.measurements.lastUpdated))
+      .orderBy(desc(tables.measurements.updated_at))
       .limit(perPage)
 
     // Now combine and format all activities

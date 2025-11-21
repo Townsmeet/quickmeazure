@@ -64,21 +64,7 @@ icon="i-heroicons-funnel"
 
     <UCard class="bg-white">
       <div v-if="isLoading" class="space-y-4">
-        <div
-          v-for="i in 5"
-          :key="i"
-          class="flex items-start space-x-4 p-4 border-b border-gray-100 last:border-b-0"
-        >
-          <USkeleton class="h-10 w-10 rounded-full flex-shrink-0" />
-          <div class="flex-1 space-y-2">
-            <div class="flex items-center justify-between">
-              <USkeleton class="h-4 w-48" />
-              <USkeleton class="h-3 w-20" />
-            </div>
-            <USkeleton class="h-3 w-full" />
-            <USkeleton class="h-3 w-3/4" />
-          </div>
-        </div>
+        <ActivityCardSkeleton v-for="i in 5" :key="i" />
       </div>
 
       <div v-else-if="error" class="text-center py-12">
@@ -92,14 +78,12 @@ class="mt-4"
 @click="fetchActivity"> Try Again </UButton>
       </div>
 
-      <div v-else-if="activities.length === 0" class="text-center py-12">
-        <UIcon
-          name="i-heroicons-document-magnifying-glass"
-          class="mx-auto h-12 w-12 text-gray-400"
-        />
-        <h3 class="mt-2 text-sm font-semibold text-gray-900">No activity found</h3>
-        <p class="mt-1 text-sm text-gray-500">Try changing your filters or check back later.</p>
-      </div>
+      <EmptyState
+        v-else-if="activities.length === 0"
+        icon="i-heroicons-document-magnifying-glass"
+        title="No activity found"
+        description="Try changing your filters or check back later."
+      />
 
       <template v-else>
         <ul class="divide-y divide-gray-200">
@@ -160,8 +144,11 @@ class="mt-4"
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { format, parseISO } from 'date-fns'
+import ActivityCardSkeleton from '~/components/skeleton/ClientCardSkeleton.vue'
+import EmptyState from '~/components/common/EmptyState.vue'
 
 definePageMeta({
+  layout: 'dashboard',
   middleware: 'setup-required',
 })
 
@@ -366,8 +353,8 @@ const fetchActivity = async () => {
 
     const response = data.value
 
-    if (response && response.activities) {
-      activities.value = response.activities
+    if (response && response.success && Array.isArray(response.data)) {
+      activities.value = response.data
       totalCount.value = response.total || 0
       totalPages.value = response.totalPages || 1
 
