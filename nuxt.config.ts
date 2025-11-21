@@ -17,7 +17,51 @@ export default defineNuxtConfig({
     'nuxt-charts',
   ],
 
+  colorMode: {
+    preference: 'system',
+    fallback: 'light',
+  },
+
   components: [{ path: '~/components', pathPrefix: false }],
+
+  app: {
+    head: {
+      title: 'QuickMeazure - Tailor Business Management',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        {
+          name: 'description',
+          content:
+            'Manage your tailoring business efficiently with QuickMeazure. Track clients, measurements, orders, and payments all in one place.',
+        },
+        // Open Graph / Facebook
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://quickmeazure.com' },
+        { property: 'og:title', content: 'QuickMeazure - Tailor Business Management' },
+        {
+          property: 'og:description',
+          content:
+            'Manage your tailoring business efficiently with QuickMeazure. Track clients, measurements, orders, and payments all in one place.',
+        },
+        { property: 'og:image', content: 'https://quickmeazure.com/logo.png' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { property: 'og:site_name', content: 'QuickMeazure' },
+        // Twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:url', content: 'https://quickmeazure.com' },
+        { name: 'twitter:title', content: 'QuickMeazure - Tailor Business Management' },
+        {
+          name: 'twitter:description',
+          content:
+            'Manage your tailoring business efficiently with QuickMeazure. Track clients, measurements, orders, and payments all in one place.',
+        },
+        { name: 'twitter:image', content: 'https://quickmeazure.com/logo.png' },
+      ],
+      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    },
+  },
 
   runtimeConfig: {
     paystackSecretKey: process.env.NUXT_PAYSTACK_SECRET_KEY,

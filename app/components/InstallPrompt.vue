@@ -18,7 +18,11 @@
           <!-- Icon and text section -->
           <div class="flex items-center space-x-4 w-full sm:w-auto sm:text-left">
             <div class="flex items-center justify-center bg-primary-100 p-3 rounded-full">
-              <LogoLink />
+              <img
+src="/logo.png"
+alt="QuickMeazure Logo"
+width="40"
+height="40" />
             </div>
             <div>
               <p class="font-bold text-gray-800 text-lg">Install QuickMeazure</p>
