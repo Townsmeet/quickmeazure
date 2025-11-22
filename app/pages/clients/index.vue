@@ -11,7 +11,7 @@
       <div class="mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Clients</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Clients</h1>
           </div>
           <div class="flex gap-3">
             <UButton color="primary" size="lg" @click="showAddSlideover = true">
@@ -24,13 +24,13 @@
         <div class="mt-6 flex flex-wrap items-center gap-6">
           <div class="flex items-center">
             <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700"
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
               >{{ filteredClients.length }} Total</span
             >
           </div>
           <div class="flex items-center">
             <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700"
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
               >{{ clientsWithOrders }} With Orders</span
             >
           </div>
@@ -101,7 +101,7 @@
           <UCard
             v-for="client in paginatedClients"
             :key="client.id"
-            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 shadow-md hover:scale-[1.02]"
+            class="group hover:shadow-xl transition-all duration-300 cursor-pointer border-0 shadow-md hover:scale-[1.02] bg-white dark:bg-gray-800"
             @click="openDetailSlideover(client)"
           >
             <!-- Card Header -->
@@ -121,7 +121,7 @@
                   <!-- Client Info -->
                   <div class="flex-1 min-w-0">
                     <h3
-                      class="text-lg font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors"
+                      class="text-lg font-semibold text-gray-900 dark:text-white truncate group-hover:text-primary-600 transition-colors"
                     >
                       {{ client.name }}
                     </h3>
@@ -156,21 +156,27 @@
             <div class="space-y-4">
               <!-- Contact Info -->
               <div class="space-y-3">
-                <div v-if="client.email" class="flex items-center text-sm text-gray-600">
+                <div
+                  v-if="client.email"
+                  class="flex items-center text-sm text-gray-600 dark:text-gray-400"
+                >
                   <UIcon
                     name="i-heroicons-envelope"
                     class="w-4 h-4 mr-3 text-gray-400 flex-shrink-0"
                   />
                   <span class="truncate">{{ client.email }}</span>
                 </div>
-                <div v-if="client.phone" class="flex items-center text-sm text-gray-600">
+                <div
+                  v-if="client.phone"
+                  class="flex items-center text-sm text-gray-600 dark:text-gray-400"
+                >
                   <UIcon
                     name="i-heroicons-phone"
                     class="w-4 h-4 mr-3 text-gray-400 flex-shrink-0"
                   />
                   <span>{{ client.phone }}</span>
                 </div>
-                <div class="flex items-center text-sm text-gray-600">
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
                   <UIcon
                     name="i-heroicons-calendar"
                     class="w-4 h-4 mr-3 text-gray-400 flex-shrink-0"
@@ -180,11 +186,13 @@
               </div>
 
               <!-- Quick Stats -->
-              <div class="pt-4 border-t border-gray-100">
-                <div class="text-sm text-gray-600 flex items-center gap-4">
+              <div class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-4">
                   <span>
                     <span class="font-medium">Orders:</span>
-                    <span class="font-bold text-gray-900 ml-1">{{ client.orderCount || 0 }}</span>
+                    <span class="font-bold text-gray-900 dark:text-white ml-1">{{
+                      client.orderCount || 0
+                    }}</span>
                   </span>
                   <span>
                     <span class="font-medium">Revenue:</span>
@@ -208,7 +216,7 @@
           v-if="filteredClients.length > itemsPerPage"
           class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <div class="text-sm text-gray-600 text-center sm:text-left">
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
             Showing
             <span class="font-semibold text-gray-900">{{
               (currentPage - 1) * itemsPerPage + 1

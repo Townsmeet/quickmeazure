@@ -8,7 +8,7 @@ side="right"
       <div class="space-y-6">
         <form class="space-y-6" @submit.prevent="handleSubmit">
           <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">Basic Information</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Basic Information</h3>
             <UFormField label="Client" name="clientId" required>
               <USelectMenu
                 v-model="form.clientId"
@@ -49,7 +49,7 @@ side="right"
             </UFormField>
           </div>
           <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">Payment Information</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Payment Information</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <UFormField label="Total Amount" name="totalAmount" required>
                 <UInput
@@ -58,6 +58,7 @@ side="right"
                   step="0.01"
                   min="0"
                   placeholder="0.00"
+                  class="w-full"
                 >
                   <template #leading><span class="text-gray-500">₦</span></template>
                 </UInput>
@@ -70,16 +71,18 @@ side="right"
                   min="0"
                   :max="form.totalAmount"
                   placeholder="0.00"
+                  class="w-full"
                 >
                   <template #leading><span class="text-gray-500">₦</span></template>
                 </UInput>
               </UFormField>
               <UFormField label="Balance Payment" name="balanceAmount" class="md:col-span-2">
                 <UInput
-:model-value="balanceAmount"
-type="number"
-disabled
-class="bg-gray-50">
+                  :model-value="balanceAmount"
+                  type="number"
+                  disabled
+                  class="bg-gray-50 w-full"
+                >
                   <template #leading><span class="text-gray-500">₦</span></template>
                 </UInput>
               </UFormField>
@@ -103,7 +106,9 @@ class="bg-gray-50">
             </div>
           </div>
           <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-900">Additional Information</h3>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+              Additional Information
+            </h3>
             <UFormField label="Notes" name="notes">
               <UTextarea
                 v-model="form.notes"
@@ -116,20 +121,17 @@ class="bg-gray-50">
       </div>
     </template>
     <template #footer>
-      <div class="flex justify-end space-x-3 p-4 border-t bg-white sticky bottom-0 left-0 z-10">
+      <div class="flex justify-end space-x-3">
         <UButton
 color="neutral"
 variant="outline"
 :disabled="isSubmitting"
-@click="onClose"
-          >Cancel</UButton
-        >
-        <UButton
-color="primary"
-:loading="isSubmitting"
-@click="handleSubmit"
-          >Save Changes</UButton
-        >
+@click="onClose">
+          Cancel
+        </UButton>
+        <UButton color="primary" :loading="isSubmitting" @click="handleSubmit">
+          Save Changes
+        </UButton>
       </div>
     </template>
   </USlideover>

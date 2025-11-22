@@ -5,10 +5,10 @@
       <div
         class="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left"
       >
-        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
           Manage Your Tailoring Business <span class="text-primary-600">Efficiently</span>
         </h1>
-        <p class="text-xl text-gray-600 mb-8">
+        <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
           QuickMeazure helps you track clients, measurements, orders, and more — all in one place.
         </p>
         <div class="flex flex-row gap-4 justify-center md:justify-start w-full">

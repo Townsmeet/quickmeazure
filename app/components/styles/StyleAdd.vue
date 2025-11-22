@@ -7,6 +7,7 @@
   >
     <template #body>
       <div class="space-y-6 min-h-0">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Images</h4>
         <UFormField label="Upload Images" name="images" required>
           <UFileUpload
             v-model="selectedImageFiles"
@@ -21,6 +22,7 @@
           />
         </UFormField>
 
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Style Details</h4>
         <UFormField label="Style Name" name="name" required>
           <UInput v-model="formData.name" placeholder="Enter style name" class="w-full" />
         </UFormField>

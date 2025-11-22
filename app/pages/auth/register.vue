@@ -1,13 +1,19 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6"
+  >
     <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Create your account</h2>
-      <p class="mt-2 text-gray-600">Start managing your tailor business.</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        Create your account
+      </h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">Start managing your tailor business.</p>
     </div>
 
-    <div class="max-w-md w-full space-y-6 bg-white p-4 sm:p-8 rounded-xl shadow">
+    <div
+      class="max-w-md w-full space-y-6 bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow dark:shadow-gray-700/50"
+    >
       <!-- Google Sign Up Button -->
       <!-- <div class="mt-8">
         <UButton
@@ -98,22 +104,22 @@
               <div class="flex items-center gap-2">
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 1 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 1 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 2 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 2 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 3 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 3 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
               </div>
-              <p class="text-xs mt-1 text-gray-600">
+              <p class="text-xs mt-1 text-gray-600 dark:text-gray-400">
                 Password should be at least 8 characters with uppercase, lowercase, number and
                 special character
               </p>
@@ -158,7 +164,7 @@
               required
               size="lg"
             />
-            <label for="terms" class="ml-2 block text-sm text-gray-700">
+            <label for="terms" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
               I agree to the
               <ULink to="/legal/terms" class="font-medium text-primary-600"> terms </ULink>
               and
@@ -185,7 +191,7 @@
         </div>
 
         <div class="text-center my-4">
-          <p class="text-sm text-gray-600">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?
             <ULink to="/auth/login" class="font-medium text-primary-600 hover:text-primary-500">
               Sign in

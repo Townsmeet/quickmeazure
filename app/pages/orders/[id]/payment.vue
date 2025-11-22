@@ -1,14 +1,24 @@
 <template>
   <div class="space-y-6">
-    <PageHeader
-      title="Record Payment"
-      subtitle="Add a payment for this order"
-      :primary-action="{
-        label: 'Back to Order',
-        icon: 'i-heroicons-arrow-left',
-        to: `/orders/${orderId}/detail`,
-      }"
-    />
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Record Payment</h1>
+          <p class="text-gray-500 dark:text-gray-400">Add a payment for this order</p>
+        </div>
+        <div class="flex gap-3">
+          <UButton
+            color="primary"
+            size="lg"
+            :to="`/orders/${orderId}/detail`"
+            icon="i-heroicons-arrow-left"
+          >
+            Back to Order
+          </UButton>
+        </div>
+      </div>
+    </div>
 
     <div v-if="isLoading" class="flex justify-center py-12">
       <USkeleton class="h-32 w-full" />
@@ -160,8 +170,8 @@ const route = useRoute()
 const orderId = route.params.id
 
 // Initialize composables
-const { getOrder, updateOrder } = useOrders()
-const { user } = useAuth()
+const { getOrder /*, updateOrder*/ } = useOrders()
+// const { user } = useAuth()
 
 // State management
 const order = ref(null)

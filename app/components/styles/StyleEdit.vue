@@ -10,10 +10,10 @@
         <UForm :state="localStyle" class="space-y-4">
           <!-- Current Images -->
           <div v-if="existingImageUrls.length" class="space-y-3">
-            <div class="text-sm text-gray-600">
+            <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Current Images
               <span class="text-gray-400">({{ existingImageUrls.length }})</span>
-            </div>
+            </h4>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div
                 v-for="(imageUrl, index) in existingImageUrls"
@@ -30,6 +30,7 @@
           </div>
 
           <!-- Image Upload -->
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Upload New Images</h4>
           <UFormField label="Upload New Images" name="images">
             <UFileUpload
               v-model="selectedImageFiles"
@@ -44,6 +45,7 @@
             />
           </UFormField>
 
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Style Details</h4>
           <UFormField label="Style Name" name="name" required>
             <UInput v-model="localStyle.name" placeholder="Enter style name" class="w-full" />
           </UFormField>

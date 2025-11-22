@@ -1,13 +1,21 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6"
+  >
     <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Resend Verification</h2>
-      <p class="mt-2 text-gray-600">Enter your email to get a new verification link</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        Resend Verification
+      </h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">
+        Enter your email to get a new verification link
+      </p>
     </div>
 
-    <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
+    <div
+      class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white dark:bg-gray-800 rounded-xl shadow dark:shadow-gray-700/50"
+    >
       <UForm
 :schema="resendSchema"
 :state="state"
@@ -34,13 +42,13 @@ class="w-full justify-center"
       </UForm>
 
       <div class="text-center space-y-2">
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           Don't have an account?
           <NuxtLink to="/auth/register" class="font-medium text-primary-600 hover:text-primary-500">
             Sign up
           </NuxtLink>
         </p>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
           Already verified?
           <NuxtLink to="/auth/login" class="font-medium text-primary-600 hover:text-primary-500">
             Sign in

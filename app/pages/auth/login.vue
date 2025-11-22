@@ -1,13 +1,19 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6"
+  >
     <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Sign in to your account</h2>
-      <p class="mt-2 text-gray-600">to start managing your clients and orders</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        Sign in to your account
+      </h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">to start managing your clients and orders</p>
     </div>
 
-    <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
+    <div
+      class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white dark:bg-gray-800 rounded-xl shadow dark:shadow-gray-700/50"
+    >
       <!-- Google Sign In Button -->
       <!-- <div>
         <UButton
@@ -98,7 +104,7 @@ class="space-y-6"
         </UButton>
 
         <div class="text-center my-4">
-          <p class="mt-4 text-center text-sm text-gray-600">
+          <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?
             <NuxtLink
               to="/auth/register"

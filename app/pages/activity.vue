@@ -2,12 +2,16 @@
   <div class="space-y-6">
     <!-- Page Header -->
     <div class="mb-2">
-      <h1 class="text-2xl font-semibold text-gray-900">Activity Log</h1>
-      <p class="mt-1 text-sm text-gray-500">Track all actions performed in your account.</p>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Activity Log</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        Track all actions performed in your account.
+      </p>
     </div>
 
     <!-- Filter Card -->
-    <UCard class="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm">
+    <UCard
+      class="bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-100 dark:border-gray-700 shadow-sm"
+    >
       <div class="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-end sm:gap-4">
         <UFormField label="Activity Type" class="w-full sm:w-1/3">
           <USelect
@@ -21,7 +25,9 @@
         </UFormField>
 
         <div class="w-full sm:w-2/5">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Date Range</label
+          >
           <div class="flex items-center">
             <UInput
               v-model="filters.startDate"
@@ -30,7 +36,7 @@
               placeholder="Start date"
               class="w-[45%]"
             />
-            <span class="px-2 text-gray-500 font-medium">to</span>
+            <span class="px-2 text-gray-500 dark:text-gray-400 font-medium">to</span>
             <UInput
               v-model="filters.endDate"
               type="date"
@@ -62,15 +68,17 @@ icon="i-heroicons-funnel"
       </div>
     </UCard>
 
-    <UCard class="bg-white">
+    <UCard class="bg-white dark:bg-gray-800">
       <div v-if="isLoading" class="space-y-4">
         <ActivityCardSkeleton v-for="i in 5" :key="i" />
       </div>
 
       <div v-else-if="error" class="text-center py-12">
         <UIcon name="i-heroicons-exclamation-triangle" class="mx-auto h-12 w-12 text-amber-400" />
-        <h3 class="mt-2 text-sm font-semibold text-gray-900">Error loading activity data</h3>
-        <p class="mt-1 text-sm text-gray-500">{{ error }}</p>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+          Error loading activity data
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ error }}</p>
         <UButton
 color="primary"
 size="lg"
@@ -86,25 +94,32 @@ class="mt-4"
       />
 
       <template v-else>
-        <ul class="divide-y divide-gray-200">
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
           <li
             v-for="activity in activities"
             :key="activity.id"
-            class="py-4 px-2 hover:bg-gray-50 transition duration-150"
+            class="py-4 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150"
           >
             <div class="flex items-start space-x-4">
               <div class="flex-shrink-0">
-                <div class="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <div
+                  class="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center"
+                >
                   <UIcon
                     :name="activity.icon || getActivityIcon(activity.type)"
-                    class="text-primary-600"
+                    class="text-primary-600 dark:text-primary-400"
                   />
                 </div>
               </div>
               <div class="flex-1 min-w-0">
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <p class="text-sm font-medium text-gray-900" v-html="activity.message" />
-                <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                <p
+                  class="text-sm font-medium text-gray-900 dark:text-white"
+                  v-html="activity.message"
+                />
+                <div
+                  class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+                >
                   <div class="flex items-center">
                     <UIcon name="i-heroicons-clock" class="mr-1 h-4 w-4 text-gray-400" />
                     <span>{{ formatDateTime(activity.time || activity.timestamp) }}</span>
@@ -115,7 +130,7 @@ class="mt-4"
                   >
                     {{ formatActivityType(activity.type) }}
                   </span>
-                  <span v-if="activity.entity" class="text-xs text-gray-500">
+                  <span v-if="activity.entity" class="text-xs text-gray-500 dark:text-gray-400">
                     {{ activity.entity }}
                   </span>
                 </div>
@@ -125,7 +140,7 @@ class="mt-4"
         </ul>
 
         <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             Showing {{ activities.length }} {{ totalCount ? `of ${totalCount}` : '' }} activities
           </p>
           <UPagination

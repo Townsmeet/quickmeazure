@@ -1,14 +1,19 @@
 <template>
   <div class="space-y-6">
-    <!-- Page Header -->
-    <PageHeader
-      title="Templates"
-      :primary-action="{
-        label: 'New Template',
-        icon: 'i-heroicons-plus',
-        onClick: openCreateDialog,
-      }"
-    />
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Templates</h1>
+        </div>
+        <div class="flex gap-3">
+          <UButton color="primary" size="lg" @click="openCreateDialog">
+            <UIcon name="i-heroicons-plus" class="mr-2" />
+            New Template
+          </UButton>
+        </div>
+      </div>
+    </div>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,11 +166,16 @@
                           <div
                             v-for="field in upperBodyFields"
                             :key="field.id"
-                            class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                            class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/40 dark:border-blue-400"
                           >
                             <div class="flex items-center gap-2">
-                              <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
-                              <span class="text-sm font-medium">{{ field.name }}</span>
+                              <UIcon
+                                name="i-heroicons-user"
+                                class="w-4 h-4 text-blue-600 dark:text-blue-300"
+                              />
+                              <span class="text-sm font-medium text-gray-900 dark:text-blue-100">{{
+                                field.name
+                              }}</span>
                             </div>
                             <UButton
                               variant="ghost"
@@ -207,11 +217,16 @@
                           <div
                             v-for="field in lowerBodyFields"
                             :key="field.id"
-                            class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                            class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/40 dark:border-green-400"
                           >
                             <div class="flex items-center gap-2">
-                              <UIcon name="i-heroicons-arrow-down" class="w-4 h-4 text-green-600" />
-                              <span class="text-sm font-medium">{{ field.name }}</span>
+                              <UIcon
+                                name="i-heroicons-arrow-down"
+                                class="w-4 h-4 text-green-600 dark:text-green-300"
+                              />
+                              <span class="text-sm font-medium text-gray-900 dark:text-green-100">{{
+                                field.name
+                              }}</span>
                             </div>
                             <UButton
                               variant="ghost"
@@ -311,7 +326,6 @@ variant="outline"
 
 <script setup lang="ts">
 import TemplateCard from '~/components/measurements/TemplateCard.vue'
-import PageHeader from '~/components/common/PageHeader.vue'
 import TemplateCardSkeleton from '~/components/skeleton/TemplateCardSkeleton.vue'
 import type { MeasurementTemplate } from '~/types'
 import { ref } from 'vue'

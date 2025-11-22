@@ -60,6 +60,15 @@ height="40" />
             />
           </template>
           <template #right>
+            <ClientOnly v-if="!colorMode?.forced">
+              <UButton
+                :icon="isDark ? 'i-lucide-moon' : 'i-lucide-sun'"
+                color="neutral"
+                variant="ghost"
+                :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                @click="isDark = !isDark"
+              />
+            </ClientOnly>
             <UButton icon="i-heroicons-bell" to="/notifications" color="primary" />
             <UButton icon="i-heroicons-user" to="/settings" color="primary" />
           </template>
@@ -72,7 +81,9 @@ height="40" />
         </div>
       </div>
       <!-- MOBILE BOTTOM NAVIGATION -->
-      <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div
+        class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 dark:bg-gray-900 dark:border-gray-800"
+      >
         <div class="grid grid-cols-5 gap-1 p-2 relative">
           <UButton
             v-for="item in mobileNavItems"
@@ -83,7 +94,11 @@ height="40" />
             variant="ghost"
             size="sm"
             class="flex flex-col items-center justify-center h-16 relative mobile-more-button"
-            :class="isActiveRoute(item) ? 'text-primary-600' : 'text-gray-600'"
+            :class="[
+              isActiveRoute(item)
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-300',
+            ]"
             @click="item.isMore ? toggleMobileMore() : undefined"
           >
             <UIcon :name="item.icon" class="w-5 h-5 mb-1" />
@@ -101,12 +116,14 @@ height="40" />
           >
             <div
               v-if="isMobileMoreOpen"
-              class="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50"
+              class="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-50 dark:bg-gray-900 dark:border-gray-800"
               @click.stop
             >
               <div class="space-y-1">
                 <!-- Settings submenu -->
-                <div class="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <div
+                  class="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+                >
                   Settings
                 </div>
                 <UButton
@@ -124,7 +141,7 @@ height="40" />
                 </UButton>
 
                 <!-- Separator -->
-                <div class="border-t border-gray-100 my-2"></div>
+                <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
 
                 <!-- Help & Support -->
                 <UButton
@@ -165,6 +182,17 @@ const { user, init } = useAuth()
 // Initialize auth on mount
 onMounted(() => {
   init()
+})
+
+// Color mode
+const colorMode = useColorMode()
+const isDark = computed({
+  get() {
+    return colorMode.value === 'dark'
+  },
+  set(_isDark) {
+    colorMode.preference = _isDark ? 'dark' : 'light'
+  },
 })
 
 // Computed property to handle hydration mismatch

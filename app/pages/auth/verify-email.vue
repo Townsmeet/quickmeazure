@@ -1,21 +1,29 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6"
+  >
     <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Check your email</h2>
-      <p class="mt-2 text-gray-600">Click the verification link to continue</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Check your email</h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">Click the verification link to continue</p>
     </div>
 
-    <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
+    <div
+      class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white dark:bg-gray-800 rounded-xl shadow dark:shadow-gray-700/50"
+    >
       <div class="text-center space-y-4">
-        <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-          <UIcon name="i-heroicons-envelope" class="w-8 h-8 text-green-600" />
+        <div
+          class="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center"
+        >
+          <UIcon name="i-heroicons-envelope" class="w-8 h-8 text-green-600 dark:text-green-400" />
         </div>
 
         <div class="space-y-2">
-          <p class="text-sm text-gray-600">Verification email sent to:</p>
-          <p class="text-sm font-medium text-gray-900 bg-gray-50 px-3 py-2 rounded-md">
+          <p class="text-sm text-gray-600 dark:text-gray-400">Verification email sent to:</p>
+          <p
+            class="text-sm font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md"
+          >
             {{ email }}
           </p>
         </div>

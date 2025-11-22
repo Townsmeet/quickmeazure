@@ -1,10 +1,10 @@
 <template>
-  <UCard class="group hover:shadow-lg transition-all duration-300">
+  <UCard class="group hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-900">
     <template #header>
       <div class="flex items-start justify-between gap-2">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <h3 class="text-lg font-semibold text-gray-900 truncate">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">
               {{ template.name }}
             </h3>
             <UBadge
@@ -22,18 +22,18 @@ size="xs">
               Archived
             </UBadge>
           </div>
-          <p class="mt-1 text-sm text-gray-500 line-clamp-2">
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
             {{ template.description }}
           </p>
         </div>
-        <UBadge color="neutral" variant="subtle">
+        <UBadge color="neutral" variant="subtle" class="dark:bg-gray-800 dark:text-gray-200">
           {{ template.gender }}
         </UBadge>
       </div>
     </template>
 
     <div class="space-y-4">
-      <div class="flex items-center gap-4 text-sm text-gray-500">
+      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
         <div class="flex items-center gap-2">
           <UIcon name="i-heroicons-list-bullet" class="w-4 h-4" />
           <span>{{ template.fields.length }} measurements</span>
@@ -50,15 +50,16 @@ size="xs">
           :key="field.id"
           variant="subtle"
           color="neutral"
-          class="text-xs"
+          class="text-xs dark:bg-gray-800 dark:text-gray-200"
         >
           {{ field.name }}
         </UBadge>
         <UBadge
-v-if="template.fields.length > 4"
-variant="subtle"
-color="neutral"
-class="text-xs">
+          v-if="template.fields.length > 4"
+          variant="subtle"
+          color="neutral"
+          class="text-xs dark:bg-gray-800 dark:text-gray-200"
+        >
           +{{ template.fields.length - 4 }} more
         </UBadge>
       </div>

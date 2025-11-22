@@ -9,7 +9,7 @@
       <div class="space-y-6 min-h-0">
         <!-- Client Information -->
         <div class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Client Information</h4>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Client Information</h4>
 
           <UFormField label="Full Name" name="name" required>
             <UInput v-model="formData.name" placeholder="Enter full name" class="w-full" />
@@ -31,7 +31,7 @@
         <!-- Measurements -->
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <h4 class="text-lg font-medium text-gray-900">Measurements</h4>
+            <h4 class="text-lg font-medium text-gray-900 dark:text-white">Measurements</h4>
           </div>
 
           <!-- Template Selection -->

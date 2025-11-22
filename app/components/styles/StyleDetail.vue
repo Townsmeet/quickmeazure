@@ -9,13 +9,15 @@
       <div v-if="style" class="space-y-6">
         <!-- Style Header -->
         <div class="pb-4 border-b border-gray-200">
-          <h3 class="text-2xl font-semibold text-gray-900 truncate">{{ style.name }}</h3>
+          <h3 class="text-2xl font-semibold text-gray-900 dark:text-white truncate">
+            {{ style.name }}
+          </h3>
         </div>
 
         <!-- Image Gallery -->
         <div v-if="imageUrls.length > 0" class="space-y-3">
           <div class="flex items-center justify-between">
-            <h4 class="text-lg font-medium text-gray-900">Images</h4>
+            <h4 class="text-lg font-medium text-gray-900 dark:text-white">Images</h4>
             <span class="text-sm text-gray-500">{{ imageUrls.length }} total</span>
           </div>
 
@@ -36,59 +38,67 @@
 
         <!-- Description -->
         <div v-if="style.description" class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Description</h4>
-          <div class="p-4 bg-gray-50 rounded-lg">
-            <p class="text-sm text-gray-700">{{ style.description }}</p>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Description</h4>
+          <div class="p-4 bg-gray-50 dark:bg-gray-900/40 rounded-lg">
+            <p class="text-sm text-gray-700 dark:text-gray-200">{{ style.description }}</p>
           </div>
         </div>
 
         <!-- Style Information -->
         <div class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Style Information</h4>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Style Information</h4>
           <div class="space-y-3">
             <div v-if="style.type" class="flex items-center text-sm">
               <UIcon name="i-heroicons-tag" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-600">Type:</span>
-              <span class="text-gray-900 ml-2 capitalize">{{ style.type }}</span>
+              <span class="text-gray-600 dark:text-gray-300">Type:</span>
+              <span class="text-gray-900 dark:text-white ml-2 capitalize">{{ style.type }}</span>
             </div>
             <div v-if="style.category" class="flex items-center text-sm">
               <UIcon name="i-heroicons-folder" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-600">Category:</span>
-              <span class="text-gray-900 ml-2 capitalize">{{ style.category }}</span>
+              <span class="text-gray-600 dark:text-gray-300">Category:</span>
+              <span class="text-gray-900 dark:text-white ml-2 capitalize">{{
+                style.category
+              }}</span>
             </div>
             <div class="flex items-center text-sm">
               <UIcon name="i-heroicons-calendar" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-600">Created:</span>
-              <span class="text-gray-900 ml-2">{{ formatDate(style.createdAt) }}</span>
+              <span class="text-gray-600 dark:text-gray-300">Created:</span>
+              <span class="text-gray-900 dark:text-white ml-2">{{
+                formatDate(style.createdAt)
+              }}</span>
             </div>
             <div v-if="style.updatedAt" class="flex items-center text-sm">
               <UIcon name="i-heroicons-clock" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-600">Last Updated:</span>
-              <span class="text-gray-900 ml-2">{{ formatDate(style.updatedAt) }}</span>
+              <span class="text-gray-600 dark:text-gray-300">Last Updated:</span>
+              <span class="text-gray-900 dark:text-white ml-2">{{
+                formatDate(style.updatedAt)
+              }}</span>
             </div>
           </div>
         </div>
 
         <!-- Related Orders -->
         <div v-if="relatedOrders && relatedOrders.length > 0" class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Related Orders</h4>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Related Orders</h4>
           <div class="space-y-3">
             <div
               v-for="order in relatedOrders"
               :key="order.id"
-              class="p-3 bg-gray-50 rounded-lg flex items-center justify-between"
+              class="p-3 bg-gray-50 dark:bg-gray-900/40 rounded-lg flex items-center justify-between"
             >
               <div>
-                <div class="text-sm font-medium text-gray-900">{{ order.clientName }}</div>
-                <div class="text-xs text-gray-500">
-                  Order #{{ order.id }} • {{ formatDate(order.createdAt) }}
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ order.clientName }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  Order #{{ order.id }} — {{ formatDate(order.createdAt) }}
                 </div>
               </div>
               <div class="text-right">
                 <UBadge :color="getOrderStatusColor(order.status)" variant="soft" size="xs">
                   {{ formatStatus(order.status) }}
                 </UBadge>
-                <div class="text-sm font-medium text-gray-900 mt-1">
+                <div class="text-sm font-medium text-gray-900 dark:text-white mt-1">
                   ₦{{ (order.totalAmount || 0).toLocaleString() }}
                 </div>
               </div>
@@ -146,7 +156,7 @@ const imageUrls = computed(() => {
   return Array.from(urls)
 })
 
-const currentImageUrl = computed(() => imageUrls.value[0])
+// const currentImageUrl = computed(() => imageUrls.value[0])
 
 const formatDate = (dateString: string | Date | number) => {
   let date: Date
@@ -169,19 +179,19 @@ const formatStatus = (status: string | undefined) => {
     .join(' ')
 }
 
-const getStatusColor = (status: string | undefined) => {
-  switch (status) {
-    case 'active':
-      return 'success'
-    case 'draft':
-      return 'warning'
-    case 'archived':
-    case 'inactive':
-      return 'neutral'
-    default:
-      return 'neutral'
-  }
-}
+// const getStatusColor = (status: string | undefined) => {
+//   switch (status) {
+//     case 'active':
+//       return 'success'
+//     case 'draft':
+//       return 'warning'
+//     case 'archived':
+//     case 'inactive':
+//       return 'neutral'
+//     default:
+//       return 'neutral'
+//   }
+// }
 
 const getOrderStatusColor = (status: string) => {
   switch (status?.toLowerCase()) {

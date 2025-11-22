@@ -5,7 +5,7 @@
       <div class="mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Styles</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Styles</h1>
           </div>
           <div class="flex gap-3">
             <UButton color="primary" size="lg" @click="showAddSlideover = true">
@@ -18,11 +18,15 @@
         <div class="mt-6 flex flex-wrap items-center gap-6">
           <div class="flex items-center">
             <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700">{{ filteredStyles.length }} Total</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >{{ filteredStyles.length }} Total</span
+            >
           </div>
           <div class="flex items-center">
             <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700">{{ activeStylesCount }} Styles</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >{{ activeStylesCount }} Styles</span
+            >
           </div>
         </div>
       </div>
@@ -83,7 +87,7 @@
           <div
             v-for="style in paginatedStyles"
             :key="style.id"
-            class="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-primary-200 h-96 flex flex-col"
+            class="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-primary-200 dark:hover:border-primary-600 h-96 flex flex-col"
           >
             <!-- Image Section -->
             <div class="relative cursor-pointer" @click="openDetailSlideover(style as Style)">
@@ -95,7 +99,10 @@
                   :alt="style.name"
                   class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center">
+                <div
+                  v-else
+                  class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                >
                   <UIcon name="i-heroicons-photo" class="w-12 h-12 text-gray-400" />
                 </div>
               </div>
@@ -146,7 +153,10 @@
               </div>
 
               <!-- No Image -->
-              <div v-else class="w-full h-80 bg-gray-100 flex items-center justify-center">
+              <div
+                v-else
+                class="w-full h-80 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+              >
                 <UIcon name="i-heroicons-photo" class="w-12 h-12 text-gray-400" />
               </div>
 
@@ -157,8 +167,10 @@
             </div>
 
             <!-- Footer -->
-            <div class="flex items-center justify-between p-4 border-t border-gray-100">
-              <span class="text-sm font-medium text-gray-900 truncate flex-1 mr-3">
+            <div
+              class="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700"
+            >
+              <span class="text-sm font-medium text-gray-900 dark:text-white truncate flex-1 mr-3">
                 {{ style.name }}
               </span>
 
@@ -182,7 +194,7 @@
           v-if="filteredStyles.length > itemsPerPage"
           class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <div class="text-sm text-gray-600 text-center sm:text-left">
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
             Showing
             <span class="font-semibold text-gray-900">{{
               (currentPage - 1) * itemsPerPage + 1
@@ -312,15 +324,7 @@ definePageMeta({
 })
 
 // Use the styles composable
-const {
-  styles,
-  isLoading,
-  error,
-  getStyle,
-  updateStyle,
-  deleteStyle: _deleteStyleApi,
-  refreshStyles,
-} = useStyles()
+const { styles, isLoading, error, deleteStyle: _deleteStyleApi, refreshStyles } = useStyles()
 
 // Local state
 const search = ref('')

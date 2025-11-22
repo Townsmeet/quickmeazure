@@ -15,7 +15,7 @@ size="3xl"
 color="primary"
 class="shadow-lg" />
           <div>
-            <h3 class="text-xl font-semibold text-gray-900">{{ client.name }}</h3>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ client.name }}</h3>
             <div class="flex items-center space-x-2 mt-1">
               <UBadge v-if="(client.orderCount || 0) > 0" color="info" variant="soft">
                 {{ client.orderCount }}
@@ -27,30 +27,30 @@ class="shadow-lg" />
 
         <!-- Contact Information -->
         <div class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Contact Information</h4>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Contact Information</h4>
           <div class="space-y-3">
             <div v-if="client.email" class="flex items-center text-sm">
               <UIcon name="i-heroicons-envelope" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-900">{{ client.email }}</span>
+              <span class="text-gray-900 dark:text-white">{{ client.email }}</span>
             </div>
             <div v-if="client.phone" class="flex items-center text-sm">
               <UIcon name="i-heroicons-phone" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-900">{{ client.phone }}</span>
+              <span class="text-gray-900 dark:text-white">{{ client.phone }}</span>
             </div>
             <div v-if="client.gender" class="flex items-center text-sm">
               <UIcon name="i-heroicons-user" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-900 capitalize">{{ client.gender }}</span>
+              <span class="text-gray-900 dark:text-white capitalize">{{ client.gender }}</span>
             </div>
             <div v-if="client.address" class="flex items-start text-sm">
               <UIcon
                 name="i-heroicons-map-pin"
                 class="w-5 h-5 mr-3 text-gray-400 mt-0.5 flex-shrink-0"
               />
-              <span class="text-gray-900">{{ client.address }}</span>
+              <span class="text-gray-900 dark:text-white">{{ client.address }}</span>
             </div>
             <div class="flex items-center text-sm">
               <UIcon name="i-heroicons-calendar" class="w-5 h-5 mr-3 text-gray-400" />
-              <span class="text-gray-900"
+              <span class="text-gray-900 dark:text-white"
                 >Added {{ dayjs(client.createdAt).format('MMMM D, YYYY') }}</span
               >
             </div>
@@ -59,26 +59,26 @@ class="shadow-lg" />
 
         <!-- Notes -->
         <div v-if="client.notes" class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Notes</h4>
-          <div class="p-4 bg-blue-50 rounded-lg">
-            <p class="text-sm text-blue-900">{{ client.notes }}</p>
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Notes</h4>
+          <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p class="text-sm text-blue-900 dark:text-blue-200">{{ client.notes }}</p>
           </div>
         </div>
 
         <!-- Statistics -->
         <div class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">Statistics</h4>
-          <div class="p-4 bg-gray-50 rounded-lg">
-            <div class="text-sm text-gray-600 flex items-center gap-6">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">Statistics</h4>
+          <div class="p-4 bg-gray-50 dark:bg-gray-900/40 rounded-lg">
+            <div class="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-6">
               <span>
                 <span class="font-medium">Orders:</span>
-                <span class="font-bold text-gray-900 ml-1 text-lg">{{
+                <span class="font-bold text-gray-900 dark:text-white ml-1 text-lg">{{
                   client.orderCount || 0
                 }}</span>
               </span>
               <span>
                 <span class="font-medium">Revenue:</span>
-                <span class="font-bold text-green-600 ml-1 text-lg"
+                <span class="font-bold text-green-600 dark:text-green-400 ml-1 text-lg"
                   >₦{{ (client.totalRevenue || 0).toLocaleString() }}</span
                 >
               </span>
@@ -88,11 +88,11 @@ class="shadow-lg" />
 
         <!-- Measurements -->
         <div class="space-y-4">
-          <h4 class="text-lg font-medium text-gray-900">
+          <h4 class="text-lg font-medium text-gray-900 dark:text-white">
             Measurements
             <span
               v-if="client.measurement?.values?._template?.name"
-              class="text-sm font-normal text-gray-600"
+              class="text-sm font-normal text-gray-600 dark:text-gray-300"
             >
               ({{ client.measurement.values._template.name
               }}{{
@@ -101,7 +101,10 @@ class="shadow-lg" />
                   : ''
               }})
             </span>
-            <span v-else-if="client.measurement" class="text-sm font-normal text-gray-600">
+            <span
+              v-else-if="client.measurement"
+              class="text-sm font-normal text-gray-600 dark:text-gray-300"
+            >
               ({{ commonUnitDisplay }})
             </span>
           </h4>
@@ -112,36 +115,43 @@ class="shadow-lg" />
                   ([k]) => k !== '_template'
                 )"
                 :key="key"
-                class="p-3 bg-gray-50 rounded-lg"
+                class="p-3 bg-gray-50 dark:bg-gray-900/40 rounded-lg"
               >
-                <div class="text-sm font-medium text-gray-900 capitalize">
+                <div class="text-sm font-medium text-gray-900 dark:text-white capitalize">
                   {{
                     typeof measurement === 'object' && measurement.name
                       ? measurement.name
                       : key.replace(/_/g, ' ')
                   }}
                 </div>
-                <div class="text-lg font-semibold text-primary-600">
+                <div class="text-lg font-semibold text-primary-600 dark:text-primary-400">
                   {{ typeof measurement === 'object' ? measurement.value : measurement }}
                 </div>
                 <div
                   v-if="typeof measurement === 'object' && measurement.notes"
-                  class="text-xs text-gray-500 mt-1"
+                  class="text-xs text-gray-500 dark:text-gray-400 mt-1"
                 >
                   {{ measurement.notes }}
                 </div>
               </div>
             </div>
-            <div v-if="client.measurement.notes" class="mt-4 p-3 bg-blue-50 rounded-lg">
-              <div class="text-sm font-medium text-blue-900">Notes</div>
-              <div class="text-sm text-blue-700 mt-1">{{ client.measurement.notes }}</div>
+            <div
+              v-if="client.measurement.notes"
+              class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+            >
+              <div class="text-sm font-medium text-blue-900 dark:text-blue-200">Notes</div>
+              <div class="text-sm text-blue-700 dark:text-blue-100 mt-1">
+                {{ client.measurement.notes }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 mt-2">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
               Last updated:
               {{ dayjs(client.measurement.lastUpdated).format('MMMM D, YYYY [at] h:mm A') }}
             </div>
           </div>
-          <div v-else class="text-sm text-gray-500">No measurements recorded yet.</div>
+          <div v-else class="text-sm text-gray-500 dark:text-gray-400">
+            No measurements recorded yet.
+          </div>
         </div>
       </div>
     </template>

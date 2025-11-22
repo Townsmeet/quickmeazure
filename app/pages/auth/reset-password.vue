@@ -1,17 +1,25 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6"
+  >
     <LogoLink />
     <!-- Title and Subtitle - Outside Card -->
     <div class="text-center mb-6 w-full max-w-md">
-      <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Reset Your Password</h2>
-      <p class="mt-2 text-gray-600">Enter your new password below</p>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+        Reset Your Password
+      </h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">Enter your new password below</p>
     </div>
 
-    <div class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white rounded-xl shadow">
+    <div
+      class="w-full max-w-md space-y-6 p-4 sm:p-8 bg-white dark:bg-gray-800 rounded-xl shadow dark:shadow-gray-700/50"
+    >
       <div v-if="invalidToken" class="text-center py-4">
         <UIcon name="i-heroicons-exclamation-circle" class="text-red-500 h-12 w-12 mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-gray-900">Invalid or Expired Link</h3>
-        <p class="mt-2 text-gray-500">This password reset link is invalid or has expired.</p>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Invalid or Expired Link</h3>
+        <p class="mt-2 text-gray-500 dark:text-gray-400">
+          This password reset link is invalid or has expired.
+        </p>
         <UButton to="/auth/forgot-password" color="primary" class="mt-4">
           Request a new link
         </UButton>
@@ -38,22 +46,22 @@
               <div class="flex items-center gap-2">
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 1 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 1 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 2 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 2 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 3 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 3 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
                 <div
                   class="h-1 flex-grow rounded-full"
-                  :class="[passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200']"
+                  :class="[passwordStrength >= 4 ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700']"
                 />
               </div>
-              <p class="text-xs mt-1 text-gray-600">
+              <p class="text-xs mt-1 text-gray-600 dark:text-gray-400">
                 Password should be at least 8 characters with uppercase, lowercase, number and
                 special character
               </p>

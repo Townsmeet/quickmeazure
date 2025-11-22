@@ -10,7 +10,7 @@
         <UForm :state="localClient" class="space-y-4">
           <!-- Client Information -->
           <div class="space-y-4">
-            <h4 class="text-lg font-medium text-gray-900">Client Information</h4>
+            <h4 class="text-lg font-medium text-gray-900 dark:text-white">Client Information</h4>
 
             <UFormField label="Full Name" name="name" required>
               <UInput v-model="localClient.name" placeholder="Enter full name" class="w-full" />
@@ -50,7 +50,7 @@
           <!-- Measurements -->
           <div class="space-y-4">
             <div class="flex items-center justify-between">
-              <h4 class="text-lg font-medium text-gray-900">
+              <h4 class="text-lg font-medium text-gray-900 dark:text-white">
                 Measurements
                 <span v-if="localClient.measurement"> ({{ commonUnitDisplay }}) </span>
               </h4>

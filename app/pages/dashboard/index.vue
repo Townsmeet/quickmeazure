@@ -7,36 +7,40 @@
       </template>
     </UModal>
 
-    <!-- Page Header -->
-    <PageHeader
-      title="Dashboard"
-      :primary-action="{
-        label: 'Add Client',
-        icon: 'i-heroicons-plus',
-        onClick: () => (showAddSlideover = true),
-      }"
-    />
+    <!-- Header Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        </div>
+        <div class="flex gap-3">
+          <UButton color="primary" size="lg" @click="showAddSlideover = true"> Add Client </UButton>
+        </div>
+      </div>
+    </div>
 
     <!-- Dashboard Content -->
     <div class="space-y-6">
       <div>
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overview</h2>
         <div>
           <div v-if="_isDashboardLoading" class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <DashboardStatSkeleton v-for="i in 4" :key="i" />
           </div>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <UCard class="bg-white">
+            <UCard class="bg-white dark:bg-gray-800">
               <template #header>
                 <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Total Clients</h3>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Total Clients
+                  </h3>
                   <UIcon name="i-heroicons-users" class="text-primary-500" />
                 </div>
               </template>
               <div class="text-3xl font-bold">{{ stats?.totalClients || 0 }}</div>
               <template #footer>
-                <div class="text-sm text-gray-500">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
                   <span class="text-green-500 font-medium"
                     >+{{ stats?.newClientsThisMonth || 0 }}</span
                   >
@@ -45,16 +49,18 @@
               </template>
             </UCard>
 
-            <UCard class="bg-white">
+            <UCard class="bg-white dark:bg-gray-800">
               <template #header>
                 <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Active Orders</h3>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Active Orders
+                  </h3>
                   <UIcon name="i-heroicons-shopping-bag" class="text-primary-500" />
                 </div>
               </template>
               <div class="text-3xl font-bold">{{ stats?.activeOrders || 0 }}</div>
               <template #footer>
-                <div class="text-sm text-gray-500">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
                   <span class="font-medium">
                     {{ stats?.completedOrdersThisMonth || 0 }}
                   </span>
@@ -63,26 +69,26 @@
               </template>
             </UCard>
 
-            <UCard class="bg-white">
+            <UCard class="bg-white dark:bg-gray-800">
               <template #header>
                 <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Revenue</h3>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</h3>
                   <UIcon name="i-heroicons-banknotes" class="text-primary-500" />
                 </div>
               </template>
               <div class="text-3xl font-bold">₦{{ formatNumber(stats?.totalRevenue || 0) }}</div>
               <template #footer>
-                <div class="text-sm text-gray-500">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
                   <span class="text-green-500 font-medium">+{{ stats?.revenueGrowth || 0 }}%</span>
                   vs last month
                 </div>
               </template>
             </UCard>
 
-            <UCard class="bg-white">
+            <UCard class="bg-white dark:bg-gray-800">
               <template #header>
                 <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium text-gray-500">Subscription</h3>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Subscription</h3>
                   <UIcon name="i-heroicons-credit-card" class="text-primary-500" />
                 </div>
               </template>
@@ -90,7 +96,7 @@
                 {{ stats?.subscriptionPlan || 'Free Plan' }}
               </div>
               <template #footer>
-                <div class="text-sm text-gray-500">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
                   <span v-if="stats?.clientsRemaining === Infinity">Unlimited clients</span>
                   <span v-else>{{ stats?.clientsRemaining || 0 }} clients remaining</span>
                 </div>
@@ -102,7 +108,9 @@
 
       <div class="space-y-6">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Growth & Recent Activity</h2>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Growth & Recent Activity
+          </h2>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <template v-if="_isDashboardLoading">
               <div class="lg:col-span-2">
@@ -116,10 +124,12 @@
 
             <template v-else>
               <!-- Client Growth Chart -->
-              <UCard class="lg:col-span-2 bg-white">
+              <UCard class="lg:col-span-2 bg-white dark:bg-gray-800">
                 <template #header>
                   <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-medium text-gray-500">Client Growth</h3>
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Client Growth
+                    </h3>
                     <USelect
                       v-model="chartPeriod"
                       :items="chartPeriodOptions"
@@ -139,17 +149,22 @@
                     x-label="Period"
                     y-label="New Clients"
                   />
-                  <div v-else class="h-full flex items-center justify-center text-gray-400">
+                  <div
+                    v-else
+                    class="h-full flex items-center justify-center text-gray-400 dark:text-gray-500"
+                  >
                     No data available for the selected period
                   </div>
                 </div>
               </UCard>
 
               <!-- Recent Activity -->
-              <UCard class="bg-white">
+              <UCard class="bg-white dark:bg-gray-800">
                 <template #header>
                   <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-medium text-gray-500">Recent Activity</h3>
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Recent Activity
+                    </h3>
                     <UButton
                       to="/activity"
                       color="neutral"
@@ -162,7 +177,10 @@
                   </div>
                 </template>
                 <div class="space-y-4">
-                  <div v-if="recentActivity.length === 0" class="text-center py-8 text-gray-400">
+                  <div
+                    v-if="recentActivity.length === 0"
+                    class="text-center py-8 text-gray-400 dark:text-gray-500"
+                  >
                     No recent activity
                   </div>
                   <div
@@ -171,19 +189,21 @@
                     class="flex items-start space-x-3"
                   >
                     <div
-                      class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center"
+                      class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center"
                     >
                       <UIcon
                         :name="getActivityIcon(activity.type)"
-                        class="h-4 w-4 text-primary-600"
+                        class="h-4 w-4 text-primary-600 dark:text-primary-400"
                       />
                     </div>
                     <div class="min-w-0 flex-1">
-                      <p class="text-sm font-medium text-gray-900">
+                      <p class="text-sm font-medium text-gray-900 dark:text-white">
                         {{ activity.title }}
                       </p>
-                      <p class="text-sm text-gray-500">{{ activity.description }}</p>
-                      <p class="text-xs text-gray-400 mt-1">
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ activity.description }}
+                      </p>
+                      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         {{ formatTimeAgo(activity.timestamp) }}
                       </p>
                     </div>
@@ -197,8 +217,10 @@
 
       <div class="space-y-6">
         <div>
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Upcoming Due Orders</h2>
-          <UCard v-if="_isDashboardLoading" class="bg-white">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Upcoming Due Orders
+          </h2>
+          <UCard v-if="_isDashboardLoading" class="bg-white dark:bg-gray-800">
             <template #header>
               <USkeleton class="h-4 w-40" />
             </template>
@@ -210,10 +232,12 @@
               </div>
             </div>
           </UCard>
-          <UCard v-else class="bg-white">
+          <UCard v-else class="bg-white dark:bg-gray-800">
             <template #header>
               <div class="flex justify-between items-center">
-                <h3 class="text-sm font-medium text-gray-500">Upcoming Due Orders</h3>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Upcoming Due Orders
+                </h3>
                 <UButton
                   to="/orders"
                   color="neutral"
@@ -227,29 +251,29 @@
             </template>
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 dark:bg-gray-700">
                   <tr>
                     <th
                       scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                     >
                       Order ID
                     </th>
                     <th
                       scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                     >
                       Client
                     </th>
                     <th
                       scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                     >
                       Due Date
                     </th>
                     <th
                       scope="col"
-                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                     >
                       Status
                     </th>
@@ -258,39 +282,62 @@
                     </th>
                   </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody
+                  class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+                >
                   <tr v-if="!_isDashboardLoading && dueOrders.length === 0">
-                    <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                    <td
+                      colspan="5"
+                      class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                    >
                       No due orders
                     </td>
                   </tr>
                   <tr v-else-if="_isDashboardLoading">
                     <td colspan="5" class="px-6 py-4">
-                      <div class="space-y-2">
-                        <USkeleton class="h-4 w-1/4" />
-                        <USkeleton class="h-4 w-1/3" />
-                        <USkeleton class="h-4 w-1/6" />
+                      <div>
+                        <div
+                          v-for="i in 3"
+                          :key="i"
+                          :class="[
+                            'flex items-center',
+                            i % 2 === 0
+                              ? 'bg-gray-50 dark:bg-gray-800'
+                              : 'bg-white dark:bg-gray-900',
+                          ]"
+                        >
+                          <USkeleton class="h-4 w-1/4 m-2" />
+                          <USkeleton class="h-4 w-1/3 m-2" />
+                          <USkeleton class="h-4 w-1/6 m-2" />
+                        </div>
                       </div>
                     </td>
                   </tr>
-                  <tr v-for="order in dueOrders" :key="order.id" class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr
+                    v-for="order in dueOrders"
+                    :key="order.id"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <td
+                      class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white"
+                    >
                       #{{ order.id }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td
+                      class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                    >
                       {{ order.clientName }}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td
+                      class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+                    >
                       <UBadge :color="getDueDateColor(order.dueDate)" variant="subtle">
                         {{ formatDueDate(order.dueDate) }}
                       </UBadge>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                      <UBadge
-                        :color="getStatusColor(order.status).color"
-                        variant="subtle"
-                        :class="`bg-${getStatusColor(order.status).color}-50 text-${getStatusColor(order.status).color}-700`"
-                      >
+                      <UBadge :color="getStatusColor(order.status).color" variant="subtle">
+                        >
                         {{ order.status }}
                       </UBadge>
                     </td>

@@ -101,18 +101,22 @@
             <UButton icon="i-heroicons-plus" type="button" @click="addField" />
           </div>
           <div v-if="upperBodyFields.length > 0" class="space-y-2">
-            <h4 class="text-sm font-medium text-gray-700 border-b border-gray-200 pb-2">
+            <h4
+              class="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-2"
+            >
               Upper Body ({{ form.unit }})
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div
                 v-for="field in upperBodyFields"
                 :key="field.id"
-                class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                class="flex items-center justify-between p-3 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg"
               >
                 <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
-                  <span class="text-sm font-medium">{{ field.name }}</span>
+                  <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{
+                    field.name
+                  }}</span>
                 </div>
                 <UButton
                   variant="ghost"
@@ -125,18 +129,25 @@
             </div>
           </div>
           <div v-if="lowerBodyFields.length > 0" class="space-y-2">
-            <h4 class="text-sm font-medium text-gray-700 border-b border-gray-200 pb-2">
+            <h4
+              class="text-sm font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 pb-2"
+            >
               Lower Body ({{ form.unit }})
             </h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div
                 v-for="field in lowerBodyFields"
                 :key="field.id"
-                class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                class="flex items-center justify-between p-3 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg"
               >
                 <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-arrow-down" class="w-4 h-4 text-green-600" />
-                  <span class="text-sm font-medium">{{ field.name }}</span>
+                  <UIcon
+                    name="i-heroicons-arrow-down"
+                    class="w-4 h-4 text-green-600 dark:text-green-400"
+                  />
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{
+                    field.name
+                  }}</span>
                 </div>
                 <UButton
                   variant="ghost"
@@ -148,7 +159,10 @@
               </div>
             </div>
           </div>
-          <div v-if="form.fields.length === 0" class="text-center py-8 text-gray-500">
+          <div
+            v-if="form.fields.length === 0"
+            class="text-center py-8 text-gray-500 dark:text-gray-400"
+          >
             <UIcon name="i-heroicons-document-text" class="w-8 h-8 mx-auto mb-2 text-gray-300" />
             <p>No measurement fields added yet</p>
             <p class="text-sm">

@@ -1,23 +1,33 @@
 <template>
-  <section id="pricing" class="py-16 bg-gray-50">
+  <section id="pricing" class="py-16 bg-gray-50 dark:bg-gray-900">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
           Simple, Transparent Pricing
         </h2>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p class="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
           Choose the plan that fits your business needs.
         </p>
       </div>
 
       <!-- Billing Toggle -->
       <div class="flex justify-center items-center gap-4 mb-12">
-        <span :class="{ 'font-semibold text-gray-900': !isAnnual, 'text-gray-500': isAnnual }">
+        <span
+          :class="{
+            'font-semibold text-gray-900 dark:text-white': !isAnnual,
+            'text-gray-500 dark:text-gray-400': isAnnual,
+          }"
+        >
           Monthly
         </span>
         <USwitch v-model="isAnnual" size="lg" />
-        <span :class="{ 'font-semibold text-gray-900': isAnnual, 'text-gray-500': !isAnnual }">
+        <span
+          :class="{
+            'font-semibold text-gray-900 dark:text-white': isAnnual,
+            'text-gray-500 dark:text-gray-400': !isAnnual,
+          }"
+        >
           Annual
         </span>
         <UBadge

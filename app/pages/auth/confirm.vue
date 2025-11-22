@@ -1,10 +1,14 @@
 <template>
-  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 space-y-6 py-12">
+  <div
+    class="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 space-y-6 py-12"
+  >
     <LogoLink />
     <!-- Header -->
     <div class="text-center mb-12 w-full max-w-4xl px-4">
-      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose your plan</h1>
-      <p class="text-lg text-gray-600">
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        Choose your plan
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-300">
         Select the perfect plan to start your tailoring business journey
         {{
           billingInterval === 'annual'
@@ -20,8 +24,8 @@
       <div class="flex justify-center items-center gap-4 mb-12">
         <span
           :class="{
-            'font-semibold text-gray-900': billingInterval === 'month',
-            'text-gray-500': billingInterval === 'annual',
+            'font-semibold text-gray-900 dark:text-white': billingInterval === 'month',
+            'text-gray-500 dark:text-gray-400': billingInterval === 'annual',
           }"
         >
           Monthly
@@ -33,8 +37,8 @@
         />
         <span
           :class="{
-            'font-semibold text-gray-900': billingInterval === 'annual',
-            'text-gray-500': billingInterval === 'month',
+            'font-semibold text-gray-900 dark:text-white': billingInterval === 'annual',
+            'text-gray-500 dark:text-gray-400': billingInterval === 'month',
           }"
         >
           Annual
@@ -101,14 +105,17 @@ class="px-12 py-4 text-lg font-semibold">
           Select a Plan
         </UButton>
 
-        <p class="mt-4 text-sm text-gray-500">
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
           {{ selectedPlan === 'free' ? 'No payment required' : 'You can cancel anytime' }}
         </p>
       </div>
 
       <!-- Back Link -->
       <div class="mt-8 text-center">
-        <NuxtLink to="/auth/login" class="text-sm text-gray-600 hover:text-gray-800">
+        <NuxtLink
+          to="/auth/login"
+          class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
+        >
           ← Back to sign in
         </NuxtLink>
       </div>

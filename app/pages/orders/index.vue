@@ -5,7 +5,7 @@
       <div class="mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Orders</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
           </div>
           <div class="flex gap-3">
             <UButton color="primary" size="lg" @click="openCreateOrderSlideover">
@@ -74,9 +74,12 @@
         leave-from-class="opacity-100 transform translate-y-0"
         leave-to-class="opacity-0 transform -translate-y-2"
       >
-        <div v-if="isFilterOpen" class="bg-white rounded-lg border border-gray-200 p-4 space-y-6">
+        <div
+          v-if="isFilterOpen"
+          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-6"
+        >
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-medium text-gray-900">Filters</h3>
+            <h3 class="text-base font-medium text-gray-900 dark:text-white">Filters</h3>
             <UButton
               v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'"
               color="neutral"
@@ -91,7 +94,9 @@
 
           <!-- Status Filter -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >Status</label
+            >
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <UButton
                 v-for="status in orderStatuses"
@@ -117,7 +122,9 @@
 
           <!-- Payment Status Filter -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >Payment Status</label
+            >
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <UButton
                 v-for="paymentStatus in paymentStatuses"
@@ -161,7 +168,7 @@
           <div
             v-for="order in paginatedOrders"
             :key="order.id"
-            class="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 relative"
+            class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 dark:hover:border-primary-600 relative"
           >
             <!-- Status indicator bar -->
             <div
@@ -195,7 +202,7 @@
                     {{ formatStatus(order.status) }}
                   </UBadge>
                 </div>
-                <div class="text-xs text-gray-400">
+                <div class="text-xs text-gray-400 dark:text-gray-500">
                   {{
                     order.createdAt
                       ? dayjs.unix(Number(order.createdAt)).format('MMM D, YYYY')
@@ -206,16 +213,18 @@
 
               <!-- Client and amount -->
               <div class="mb-4">
-                <h3 class="text-base md:text-lg font-semibold text-gray-900 flex items-center">
+                <h3
+                  class="text-base md:text-lg font-semibold text-gray-900 dark:text-white flex items-center"
+                >
                   <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
                   <span class="truncate">{{ order.clientName || 'No client' }}</span>
                 </h3>
                 <div class="mt-2 flex items-center justify-between">
-                  <div class="flex items-center text-gray-500 text-sm">
+                  <div class="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                     <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
                     <span class="font-medium">Amount:</span>
                   </div>
-                  <span class="text-base md:text-lg font-bold text-gray-900">
+                  <span class="text-base md:text-lg font-bold text-gray-900 dark:text-white">
                     ₦{{ order.totalAmount?.toLocaleString() }}
                   </span>
                 </div>
@@ -224,7 +233,7 @@
               <!-- Due date and progress -->
               <div class="mt-auto">
                 <div class="flex items-center justify-between text-sm mb-1">
-                  <span class="text-gray-500 flex items-center">
+                  <span class="text-gray-500 dark:text-gray-400 flex items-center">
                     <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
                     <span class="hidden md:inline">Due Date:</span>
                     <span class="md:hidden">Due:</span>
@@ -256,7 +265,7 @@
                 </div>
 
                 <!-- Progress bar -->
-                <div class="w-full bg-gray-200 rounded-full h-1.5 md:h-2">
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 md:h-2">
                   <div
                     class="h-1.5 md:h-2 rounded-full transition-all duration-500 ease-in-out"
                     :class="{
@@ -297,7 +306,7 @@
           v-if="filteredOrders.length > itemsPerPage"
           class="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <div class="text-sm text-gray-600 text-center sm:text-left">
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
             Showing
             <span class="font-semibold text-gray-900">{{
               (currentPage - 1) * itemsPerPage + 1
@@ -400,6 +409,9 @@ import OrderCardSkeleton from '~/components/skeleton/OrderCardSkeleton.vue'
 
 // Import dayjs
 import dayjs from 'dayjs'
+
+// Unused variable warning
+//  560:11  warning  'BaseOrder' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 
 definePageMeta({
   middleware: ['auth', 'setup-required'],
