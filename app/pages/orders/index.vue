@@ -165,140 +165,15 @@
       <!-- Orders Grid -->
       <div v-else-if="!isLoading && paginatedOrders.length > 0">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
+          <OrderCard
             v-for="order in paginatedOrders"
             :key="order.id"
-            class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden hover:border-primary-300 dark:hover:border-primary-600 relative"
-          >
-            <!-- Status indicator bar -->
-            <div
-              class="h-1.5 w-full"
-              :class="{
-                'bg-green-500': order.status === 'completed',
-                'bg-blue-500': order.status === 'in_progress',
-                'bg-yellow-500': order.status === 'pending',
-                'bg-red-500': order.status === 'cancelled',
-                'bg-purple-500': !['completed', 'in_progress', 'pending', 'cancelled'].includes(
-                  order.status
-                ),
-              }"
-            ></div>
-
-            <div class="p-4 md:p-5 flex flex-col h-full">
-              <!-- Header with order number and status -->
-              <div class="flex justify-between items-start mb-3">
-                <div class="flex items-center">
-                  <span
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-50 text-primary-700 font-medium text-xs md:text-sm mr-2 md:mr-3"
-                  >
-                    #{{ order.orderNumber }}
-                  </span>
-                  <UBadge
-                    :color="getStatusColor(order.status)"
-                    variant="subtle"
-                    :size="'xs'"
-                    class="capitalize font-medium"
-                  >
-                    {{ formatStatus(order.status) }}
-                  </UBadge>
-                </div>
-                <div class="text-xs text-gray-400 dark:text-gray-500">
-                  {{
-                    order.createdAt
-                      ? dayjs.unix(Number(order.createdAt)).format('MMM D, YYYY')
-                      : 'No date'
-                  }}
-                </div>
-              </div>
-
-              <!-- Client and amount -->
-              <div class="mb-4">
-                <h3
-                  class="text-base md:text-lg font-semibold text-gray-900 dark:text-white flex items-center"
-                >
-                  <UIcon name="i-heroicons-user" class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" />
-                  <span class="truncate">{{ order.clientName || 'No client' }}</span>
-                </h3>
-                <div class="mt-2 flex items-center justify-between">
-                  <div class="flex items-center text-gray-500 dark:text-gray-400 text-sm">
-                    <UIcon name="i-heroicons-currency-dollar" class="w-4 h-4 mr-1.5" />
-                    <span class="font-medium">Amount:</span>
-                  </div>
-                  <span class="text-base md:text-lg font-bold text-gray-900 dark:text-white">
-                    ₦{{ order.totalAmount?.toLocaleString() }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Due date and progress -->
-              <div class="mt-auto">
-                <div class="flex items-center justify-between text-sm mb-1">
-                  <span class="text-gray-500 dark:text-gray-400 flex items-center">
-                    <UIcon name="i-heroicons-calendar" class="w-4 h-4 mr-1.5" />
-                    <span class="hidden md:inline">Due Date:</span>
-                    <span class="md:hidden">Due:</span>
-                  </span>
-                  <span
-                    :class="{
-                      'text-red-500 font-medium':
-                        order.dueDate &&
-                        dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
-                        order.status !== 'completed',
-                      'text-gray-700':
-                        !order.dueDate ||
-                        dayjs(order.dueDate).isSameOrAfter(dayjs()) ||
-                        order.status === 'completed',
-                    }"
-                  >
-                    {{ order.dueDate ? dayjs(order.dueDate).format('MMM D, YYYY') : 'No date' }}
-                    <span
-                      v-if="
-                        order.dueDate &&
-                        dayjs(order.dueDate).isBefore(dayjs(), 'day') &&
-                        order.status !== 'completed'
-                      "
-                      class="ml-1"
-                    >
-                      (Overdue)
-                    </span>
-                  </span>
-                </div>
-
-                <!-- Progress bar -->
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 md:h-2">
-                  <div
-                    class="h-1.5 md:h-2 rounded-full transition-all duration-500 ease-in-out"
-                    :class="{
-                      'bg-green-500': order.status === 'completed',
-                      'bg-blue-500':
-                        order.status === 'in_progress' || order.status === 'processing',
-                      'bg-yellow-500': order.status === 'pending',
-                      'bg-red-500': order.status === 'cancelled',
-                      'w-full': order.status === 'completed',
-                      'w-2/3': order.status === 'in_progress' || order.status === 'processing',
-                      'w-1/3': order.status === 'pending' || order.status === 'cancelled',
-                    }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <div
-              class="absolute top-3 right-3 opacity-0 md:group-hover:opacity-100 transition-opacity duration-200"
-            >
-              <UDropdownMenu :items="getOrderActions(order)" :popper="{ placement: 'bottom-end' }">
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-heroicons-ellipsis-horizontal"
-                  size="sm"
-                  class="text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                  @click.stop
-                />
-              </UDropdownMenu>
-            </div>
-          </div>
+            :order="order"
+            @click="openOrderDetails"
+            @view="openOrderDetails"
+            @edit="openEditOrderSlideover"
+            @delete="confirmDelete"
+          />
         </div>
 
         <!-- Pagination -->
@@ -380,11 +255,12 @@
       />
 
       <!-- Order Details Slideover -->
-      <USlideover v-model:open="showDetailsSlideover" :title="detailsTitle" side="right">
-        <template #body>
-          <OrderDetail v-if="selectedOrder" :order="selectedOrder" @close="closeDetailsSlideover" />
-        </template>
-      </USlideover>
+      <OrderDetail
+        :is-open="showDetailsSlideover"
+        :order="selectedOrder"
+        @close="closeDetailsSlideover"
+        @edit="_handleEditOrder"
+      />
 
       <!-- Delete Confirmation Modal -->
       <OrderDelete
@@ -405,6 +281,7 @@ import OrderAdd from '~/components/orders/OrderAdd.vue'
 import OrderEdit from '~/components/orders/OrderEdit.vue'
 import OrderDetail from '~/components/orders/OrderDetail.vue'
 import OrderDelete from '~/components/orders/OrderDelete.vue'
+import OrderCard from '~/components/orders/OrderCard.vue'
 import OrderCardSkeleton from '~/components/skeleton/OrderCardSkeleton.vue'
 
 // Import dayjs
@@ -454,10 +331,6 @@ const paymentStatusFilter = ref('any')
 // Computed titles
 const _slideoverTitle = computed(() => {
   return slideoverMode.value === 'create' ? 'Create Order' : 'Edit Order'
-})
-
-const detailsTitle = computed(() => {
-  return selectedOrder.value ? `Order #${selectedOrder.value.orderNumber}` : 'Order Details'
 })
 
 // Sort options
@@ -560,7 +433,7 @@ const openCreateOrderSlideover = () => {
 }
 
 // Make a more flexible order type that matches the data structure from the API
-interface BaseOrder {
+interface _BaseOrder {
   id: string | number
   clientId: string | number
   styleId?: string | number
@@ -739,51 +612,4 @@ const deleteOrder = async () => {
     isDeleting.value = false
   }
 }
-
-const formatStatus = (status: OrderStatus) => {
-  return status
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
-const getStatusColor = (status: OrderStatus) => {
-  switch (status) {
-    case 'completed':
-      return 'success'
-    case 'processing':
-      return 'info'
-    case 'pending':
-      return 'warning'
-    case 'cancelled':
-      return 'error'
-    case 'draft':
-      return 'neutral'
-    default:
-      return 'neutral'
-  }
-}
-
-const getOrderActions = (order: Order) => [
-  [
-    {
-      label: 'View Details',
-      icon: 'i-heroicons-eye',
-      onSelect: () => openOrderDetails(order),
-    },
-    {
-      label: 'Edit Order',
-      icon: 'i-heroicons-pencil',
-      onSelect: () => openEditOrderSlideover(order),
-    },
-  ],
-  [
-    {
-      label: 'Delete',
-      icon: 'i-heroicons-trash',
-      color: 'error' as const,
-      onSelect: () => confirmDelete(order),
-    },
-  ],
-]
 </script>

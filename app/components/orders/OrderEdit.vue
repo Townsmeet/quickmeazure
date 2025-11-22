@@ -12,7 +12,9 @@ side="right"
             <UFormField label="Client" name="clientId" required>
               <USelectMenu
                 v-model="form.clientId"
-                :items="clientOptions"
+                :items="clientOptions as any"
+                value-attribute="value"
+                option-attribute="label"
                 placeholder="Select a client"
                 searchable
                 :loading="clientsLoading"
@@ -23,7 +25,9 @@ side="right"
               <UFormField label="Style" name="styleId">
                 <USelectMenu
                   v-model="form.styleId"
-                  :items="styleOptions"
+                  :items="styleOptions as any"
+                  value-attribute="value"
+                  option-attribute="label"
                   placeholder="Select a style (optional)"
                   searchable
                   :loading="stylesLoading"
@@ -33,7 +37,9 @@ side="right"
               <UFormField label="Status" name="status" required>
                 <USelectMenu
                   v-model="form.status"
-                  :items="statusOptions"
+                  :items="statusOptions as any"
+                  value-attribute="value"
+                  option-attribute="label"
                   placeholder="Select status"
                   class="w-full"
                 />
@@ -91,7 +97,9 @@ side="right"
               <UFormField label="Payment Status" name="paymentStatus">
                 <USelectMenu
                   v-model="form.paymentStatus"
-                  :items="paymentStatusOptions"
+                  :items="paymentStatusOptions as any"
+                  value-attribute="value"
+                  option-attribute="label"
                   placeholder="Select payment status"
                   class="w-full"
                 />
@@ -163,6 +171,7 @@ const form = reactive<CreateOrderInput>({
   dueDate: '',
   totalAmount: 0,
   depositAmount: 0,
+  finalAmount: 0,
   notes: '',
   items: [],
   measurements: {},
@@ -177,17 +186,32 @@ watch(
   () => props.order,
   newOrder => {
     if (newOrder) {
-      // Pre-fill form with order data (deep clone to allow editing)
-      Object.assign(form, JSON.parse(JSON.stringify(newOrder)))
+      // Pre-fill form with order data - only assign CreateOrderInput fields
+      form.clientId = String(newOrder.clientId)
+      form.styleId = newOrder.styleId ? String(newOrder.styleId) : ''
+      form.status = newOrder.status
       form.dueDate = newOrder.dueDate ? new Date(newOrder.dueDate).toISOString().split('T')[0] : ''
+      form.totalAmount = newOrder.totalAmount || 0
+      form.depositAmount = newOrder.depositAmount || 0
+      form.finalAmount = newOrder.finalAmount || newOrder.totalAmount || 0
+      form.notes = newOrder.notes || ''
+      form.items = (newOrder.items ? [...newOrder.items] : []) as any
+      form.measurements = newOrder.measurements || {}
+      form.shippingAddress = newOrder.shippingAddress || {}
+      form.billingAddress = newOrder.billingAddress || {}
+      form.paymentStatus = newOrder.paymentStatus || 'pending'
+      form.paymentMethod = newOrder.paymentMethod || ''
+      form.paymentReference = newOrder.paymentReference || ''
     }
   },
   { immediate: true, deep: true }
 )
 
 const balanceAmount = computed(() => (form.totalAmount || 0) - (form.depositAmount || 0))
-const clientOptions = computed(() => clients.value.map(c => ({ label: c.name, value: c.id })))
-const styleOptions = computed(() => styles.value.map(s => ({ label: s.name, value: s.id })))
+const clientOptions = computed(() =>
+  clients.value.map(c => ({ label: c.name, value: String(c.id) }))
+)
+const styleOptions = computed(() => styles.value.map(s => ({ label: s.name, value: String(s.id) })))
 const statusOptions = [
   { label: 'Draft', value: 'draft' },
   { label: 'Pending', value: 'pending' },
@@ -204,7 +228,12 @@ const paymentStatusOptions = [
   { label: 'Partially Paid', value: 'partially_paid' },
   { label: 'Refunded', value: 'refunded' },
 ]
-watch(balanceAmount, v => (form.balanceAmount = v))
+watch(
+  () => form.totalAmount,
+  newTotal => {
+    form.finalAmount = newTotal || 0
+  }
+)
 onMounted(async () => {
   try {
     await Promise.all([fetchClients(), fetchStyles()])

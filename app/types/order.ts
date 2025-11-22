@@ -32,11 +32,12 @@ export interface Order {
   status: OrderStatus
   dueDate?: string
   totalAmount: number
+  depositAmount?: number
   taxAmount?: number
   discountAmount?: number
   finalAmount: number
   notes?: string
-  items: OrderItem[]
+  items: OrderItem[] | readonly OrderItem[] | readonly Readonly<OrderItem>[]
   measurements?: Record<string, any>
   shippingAddress?: Record<string, any>
   billingAddress?: Record<string, any>
@@ -47,18 +48,18 @@ export interface Order {
   updatedAt?: string
   deletedAt?: string
   clientName?: string
-  client?: {
+  client?: Readonly<{
     id: string
     firstName: string
     lastName: string
     email?: string
     phone?: string
-  }
-  style?: {
+  }>
+  style?: Readonly<{
     id: string
     name: string
     imageUrl?: string
-  }
+  }>
 }
 
 export interface OrderFilterOptions {
@@ -91,6 +92,7 @@ export interface CreateOrderInput {
   status: OrderStatus
   dueDate?: string
   totalAmount: number
+  depositAmount?: number
   taxAmount?: number
   discountAmount?: number
   finalAmount: number

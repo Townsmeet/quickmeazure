@@ -13,22 +13,6 @@
             </UButton>
           </div>
         </div>
-
-        <!-- Stats -->
-        <div class="mt-6 flex flex-wrap items-center gap-6">
-          <div class="flex items-center">
-            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >{{ filteredStyles.length }} Total</span
-            >
-          </div>
-          <div class="flex items-center">
-            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >{{ activeStylesCount }} Styles</span
-            >
-          </div>
-        </div>
       </div>
 
       <!-- Search and Filters -->
@@ -84,109 +68,15 @@
       <!-- Style Cards -->
       <div v-else-if="!isLoading && paginatedStyles.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <div
+          <StyleCard
             v-for="style in paginatedStyles"
             :key="style.id"
-            class="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-primary-200 dark:hover:border-primary-600 h-96 flex flex-col"
-          >
-            <!-- Image Section -->
-            <div class="relative cursor-pointer" @click="openDetailSlideover(style as Style)">
-              <!-- Single Image -->
-              <div v-if="getImageCount(style) === 1" class="relative h-80">
-                <img
-                  v-if="getFirstImageUrl(style)"
-                  :src="getFirstImageUrl(style)"
-                  :alt="style.name"
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div
-                  v-else
-                  class="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
-                >
-                  <UIcon name="i-heroicons-photo" class="w-12 h-12 text-gray-400" />
-                </div>
-              </div>
-
-              <!-- Multiple Images with Carousel -->
-              <div
-                v-else-if="getImageCount(style) > 1"
-                class="relative h-80 carousel-container overflow-hidden"
-              >
-                <div class="h-80 w-full overflow-hidden">
-                  <UCarousel
-                    v-if="getAllImageUrls(style).length > 0"
-                    v-slot="{ item }"
-                    :items="getAllImageUrls(style)"
-                    arrows
-                    dots
-                    loop
-                    auto-play
-                    class="w-full h-80"
-                    :prev="{ size: 'xs', color: 'neutral', variant: 'solid' }"
-                    :next="{ size: 'xs', color: 'neutral', variant: 'solid' }"
-                    :ui="{
-                      root: 'h-80 max-h-80',
-                      viewport: 'h-80 max-h-80 overflow-hidden',
-                      container: 'h-80 max-h-80',
-                      item: 'h-80 max-h-80',
-                      prev: 'absolute top-1/2 left-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg',
-                      next: 'absolute top-1/2 right-2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg',
-                      dots: 'absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity',
-                      dot: 'w-2 h-2 bg-white/60 hover:bg-white',
-                    }"
-                  >
-                    <img
-                      :src="item"
-                      :alt="style.name"
-                      class="w-full h-80 max-h-80 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </UCarousel>
-                </div>
-
-                <!-- Multiple images indicator -->
-                <div
-                  class="absolute top-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 backdrop-blur-sm"
-                >
-                  <UIcon name="i-heroicons-photo" class="w-3 h-3" />
-                  {{ getImageCount(style) }}
-                </div>
-              </div>
-
-              <!-- No Image -->
-              <div
-                v-else
-                class="w-full h-80 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
-              >
-                <UIcon name="i-heroicons-photo" class="w-12 h-12 text-gray-400" />
-              </div>
-
-              <!-- Hover Overlay -->
-              <div
-                class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              ></div>
-            </div>
-
-            <!-- Footer -->
-            <div
-              class="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700"
-            >
-              <span class="text-sm font-medium text-gray-900 dark:text-white truncate flex-1 mr-3">
-                {{ style.name }}
-              </span>
-
-              <!-- Actions Menu -->
-              <UDropdownMenu :items="getStyleActions(style as Style)">
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-heroicons-ellipsis-horizontal"
-                  size="xs"
-                  class="opacity-60 hover:opacity-100 transition-opacity"
-                  @click.stop
-                />
-              </UDropdownMenu>
-            </div>
-          </div>
+            :style="style"
+            @click="openDetailSlideover"
+            @view="openDetailSlideover"
+            @edit="openEditSlideover"
+            @delete="confirmDelete"
+          />
         </div>
 
         <!-- Pagination -->
@@ -315,6 +205,7 @@ import type { Style } from '~/types/style'
 import dayjs from 'dayjs'
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import StyleCardSkeleton from '~/components/skeleton/StyleCardSkeleton.vue'
+import StyleCard from '~/components/styles/StyleCard.vue'
 
 dayjs.extend(isSameOrAfter)
 
@@ -402,7 +293,7 @@ const hasActiveFilters = computed(() => {
   return search.value !== ''
 })
 
-const activeStylesCount = computed(() => {
+const _activeStylesCount = computed(() => {
   return styles.value.length
 })
 
@@ -421,29 +312,6 @@ const resetFilters = () => {
   search.value = ''
   currentPage.value = 1
 }
-
-const getStyleActions = (style: Style) => [
-  [
-    {
-      label: 'View Details',
-      icon: 'i-heroicons-eye',
-      onSelect: () => openDetailSlideover(style),
-    },
-    {
-      label: 'Edit Style',
-      icon: 'i-heroicons-pencil',
-      onSelect: () => openEditSlideover(style),
-    },
-  ],
-  [
-    {
-      label: 'Delete',
-      icon: 'i-heroicons-trash',
-      color: 'error' as const,
-      onSelect: () => confirmDelete(style),
-    },
-  ],
-]
 
 const openDetailSlideover = async (style: Style) => {
   try {
@@ -656,91 +524,4 @@ const handleStyleAdded = async (style: Style) => {
   // Open the detail slideover for the newly created style
   await openDetailSlideover(style)
 }
-
-// Helper functions for multiple images
-const getFirstImageUrl = (style: any) => {
-  if (style.imageUrls && Array.isArray(style.imageUrls) && style.imageUrls.length > 0) {
-    return style.imageUrls[0]
-  }
-  return style.imageUrl || null
-}
-
-const getAllImageUrls = (style: any): string[] => {
-  if (style.imageUrls && Array.isArray(style.imageUrls) && style.imageUrls.length > 0) {
-    return style.imageUrls.filter((url: any) => url && typeof url === 'string')
-  }
-  return style.imageUrl && typeof style.imageUrl === 'string' ? [style.imageUrl] : []
-}
-
-const getImageCount = (style: any) => {
-  if (style.imageUrls && Array.isArray(style.imageUrls)) {
-    return style.imageUrls.length
-  }
-  return style.imageUrl ? 1 : 0
-}
-
-const _formatStatus = (status: string | undefined) => {
-  if (!status) return 'Draft'
-  return status
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
-const _getStatusColor = (status: string | undefined) => {
-  switch (status) {
-    case 'active':
-      return 'success'
-    case 'draft':
-      return 'warning'
-    case 'archived':
-    case 'inactive':
-      return 'neutral'
-    default:
-      return 'neutral'
-  }
-}
-
-const _formatDate = (dateString: string | Date | number) => {
-  let date: Date
-
-  if (typeof dateString === 'number') {
-    // Handle Unix timestamp (seconds)
-    date = new Date(dateString * 1000)
-  } else {
-    date = new Date(dateString)
-  }
-
-  const now = new Date()
-  const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffInDays === 0) return 'today'
-  if (diffInDays === 1) return 'yesterday'
-  if (diffInDays < 7) return `${diffInDays} days ago`
-
-  return dayjs(date).format('MMM D, YYYY')
-}
 </script>
-
-<style scoped>
-/* Smooth image loading */
-img {
-  transition: opacity 0.3s ease;
-}
-
-img[src=''] {
-  opacity: 0;
-}
-
-/* Ensure carousel doesn't overflow */
-.carousel-container {
-  height: 320px !important;
-  max-height: 320px !important;
-  overflow: hidden !important;
-}
-
-/* Force carousel components to respect height */
-:deep(.carousel-container *) {
-  max-height: 320px !important;
-}
-</style>
