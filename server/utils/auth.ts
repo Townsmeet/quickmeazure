@@ -38,14 +38,38 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
-      const { subject, htmlContent } = createPasswordResetEmail(url, user.name ?? undefined)
-      await sendEmail({ to: user.email, subject, htmlContent })
+      try {
+        console.log('[Auth] Sending password reset email to:', user.email)
+        const { subject, htmlContent } = createPasswordResetEmail(url, user.name ?? undefined)
+        await sendEmail({ to: user.email, subject, htmlContent })
+        console.log('[Auth] Password reset email sent successfully to:', user.email)
+      } catch (error: any) {
+        console.error('[Auth] Failed to send password reset email:', {
+          email: user.email,
+          error: error.message,
+          stack: error.stack,
+        })
+        // Re-throw to let Better Auth handle the error
+        throw error
+      }
     },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      const { subject, htmlContent } = createEmailVerificationEmail(url, user.name ?? undefined)
-      await sendEmail({ to: user.email, subject, htmlContent })
+      try {
+        console.log('[Auth] Sending verification email to:', user.email)
+        const { subject, htmlContent } = createEmailVerificationEmail(url, user.name ?? undefined)
+        await sendEmail({ to: user.email, subject, htmlContent })
+        console.log('[Auth] Verification email sent successfully to:', user.email)
+      } catch (error: any) {
+        console.error('[Auth] Failed to send verification email:', {
+          email: user.email,
+          error: error.message,
+          stack: error.stack,
+        })
+        // Re-throw to let Better Auth handle the error
+        throw error
+      }
     },
   },
   socialProviders: {

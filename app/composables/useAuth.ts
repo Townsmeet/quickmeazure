@@ -131,19 +131,30 @@ export const useAuth = () => {
       return { error: new Error(error.message) }
     }
 
-    // Since we disabled automatic email sending, manually send verification email
+    // Send verification email (Better Auth may also send automatically, but we ensure it's sent)
     try {
       const { error: emailError } = await authClient.sendVerificationEmail({
         email,
         callbackURL: '/auth/verify-callback',
       })
       if (emailError) {
-        console.warn('Failed to send verification email:', emailError)
-        // Don't fail registration if email sending fails
+        console.error('[Auth] Failed to send verification email:', {
+          email,
+          error: emailError.message,
+          code: emailError.code,
+        })
+        // Log to console but don't fail registration - user can resend later
+        // In production, this should be logged to an error tracking service
+      } else {
+        console.log('[Auth] Verification email sent successfully to:', email)
       }
-    } catch (emailError) {
-      console.warn('Failed to send verification email:', emailError)
-      // Don't fail registration if email sending fails
+    } catch (emailError: any) {
+      console.error('[Auth] Exception sending verification email:', {
+        email,
+        error: emailError?.message || String(emailError),
+        stack: emailError?.stack,
+      })
+      // Log to console but don't fail registration - user can resend later
     }
 
     // With email verification enabled, user won't be automatically logged in
