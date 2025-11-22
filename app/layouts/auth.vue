@@ -14,7 +14,7 @@
       </ClientOnly>
     </div>
 
-    <main class="flex-1 pt-8 px-4 sm:pt-16 sm:px-6">
+    <main class="flex-1 pt-4 px-4 sm:pt-8 sm:px-6">
       <slot />
     </main>
   </div>

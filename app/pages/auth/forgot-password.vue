@@ -9,7 +9,7 @@
         Forgot your password?
       </h2>
       <p class="mt-2 text-gray-600 dark:text-gray-300">
-        Enter your email address and we'll send you a link to reset your password.
+        We'll send you a link to reset your password.
       </p>
     </div>
 

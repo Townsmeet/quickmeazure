@@ -21,10 +21,17 @@ height="40" />
             to="/auth/login"
             color="neutral"
             variant="outline"
+            size="lg"
           >
             Login
           </UButton>
-          <UButton v-if="route.path !== '/auth/register'" to="/auth/register" color="primary">
+          <UButton
+            v-if="route.path !== '/auth/register'"
+            to="/auth/register"
+            color="primary"
+            size="lg"
+            class="hidden sm:inline-flex"
+          >
             Register
           </UButton>
           <ClientOnly v-if="!colorMode?.forced">

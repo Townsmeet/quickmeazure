@@ -32,7 +32,7 @@ size="xl">Learn More</UButton>
         </div>
       </div>
       <!-- IMAGE RIGHT -->
-      <div class="w-full md:w-1/2 flex justify-center md:justify-end mb-8 md:mb-0">
+      <div class="w-full md:w-1/2 flex justify-center md:justify-end md:mb-0">
         <img src="/sewingmachine.png" alt="Sewing Machine" />
       </div>
     </div>
