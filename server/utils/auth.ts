@@ -80,6 +80,7 @@ export const auth = betterAuth({
   },
   baseURL: process.env.NUXT_BETTER_AUTH_URL,
   secret: process.env.NUXT_BETTER_AUTH_SECRET,
+  trustedOrigins: [process.env.NUXT_BETTER_AUTH_URL as string],
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 days
     updateAge: 60 * 60 * 24 * 7, // Update expiration every 7 days of active use
