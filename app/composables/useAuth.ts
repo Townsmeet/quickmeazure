@@ -24,7 +24,7 @@ export const useAuth = () => {
     httpOnly: false, // Accessible on client-side
     secure: true, // HTTPS only in production
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 30,
   })
 
   const isAuthenticated = computed(() => !!user.value)

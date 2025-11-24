@@ -137,7 +137,7 @@ const route = useRoute()
 const state = reactive<LoginData>({
   email: '',
   password: '',
-  remember: false,
+  remember: true, // Default to true for 30-day persistent sessions
 })
 
 const showPassword = ref(false)

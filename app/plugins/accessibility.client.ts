@@ -1,4 +1,10 @@
 // Accessibility fixes for Nuxt UI elements
+declare global {
+  interface HTMLElement {
+    _accessibilityObserverSet?: boolean
+  }
+}
+
 export default defineNuxtPlugin(() => {
   if (import.meta.client) {
     // Fix for modal dialogs that might use aria-hidden incorrectly
