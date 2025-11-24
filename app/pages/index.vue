@@ -35,12 +35,12 @@ defineOgImage({
   alt: 'Sewing Machine',
 })
 
-// Dynamic OG Image
-defineOgImageComponent('Nuxt', {
-  title: 'QuickMeazure 👋',
-  description: 'Modern Tailor Business Management',
-  theme: '#0d9488',
-})
+// // Dynamic OG Image
+// defineOgImageComponent('Nuxt', {
+//   title: 'QuickMeazure 👋',
+//   description: 'Modern Tailor Business Management',
+//   theme: '#0d9488',
+// })
 
 // Structured Data - Organization
 useSchemaOrg([
