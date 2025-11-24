@@ -128,6 +128,13 @@ definePageMeta({
   middleware: 'guest-only',
 })
 
+// SEO Meta Tags
+useSeoMeta({
+  title: 'Sign In - QuickMeazure',
+  description: 'Sign in to your QuickMeazure account to manage your tailoring business.',
+  robots: 'noindex, nofollow', // Prevent indexing of auth pages
+})
+
 const { login, isLoading } = useAuth()
 // const isGoogleLoading = ref(false)
 const toast = useToast()

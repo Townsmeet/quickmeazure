@@ -438,8 +438,8 @@ export async function getClientGrowth(
       }
   }
 
-  const startDateStr = startDate.toISOString()
-  const nowStr = now.toISOString()
+  const startDateTimestamp = Math.floor(startDate.getTime() / 1000)
+  const nowTimestamp = Math.floor(now.getTime() / 1000)
 
   // Get all clients in the date range and process in JavaScript
   const clientsInPeriod = await db
@@ -451,8 +451,8 @@ export async function getClientGrowth(
     .where(
       and(
         eq(tables.clients.userId, userId),
-        sql`${tables.clients.createdAt} >= ${startDateStr}`,
-        sql`${tables.clients.createdAt} <= ${nowStr}`
+        sql`${tables.clients.createdAt} >= ${startDateTimestamp}`,
+        sql`${tables.clients.createdAt} <= ${nowTimestamp}`
       )
     )
     .orderBy(tables.clients.createdAt)
@@ -478,7 +478,10 @@ export async function getClientGrowth(
     .select({ count: count() })
     .from(tables.clients)
     .where(
-      and(eq(tables.clients.userId, userId), sql`${tables.clients.createdAt} < ${startDateStr}`)
+      and(
+        eq(tables.clients.userId, userId),
+        sql`${tables.clients.createdAt} < ${startDateTimestamp}`
+      )
     )
 
   const totalPrevious = totalPreviousResult[0]?.count || 0
@@ -501,7 +504,11 @@ export async function getClientGrowth(
       if (!item.date) return
       try {
         const date = new Date(item.date)
-        const dayIndex = 6 - Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+        // Use date-only comparison to avoid timezone issues
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const clientDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        const dayIndex =
+          6 - Math.floor((nowDate.getTime() - clientDate.getTime()) / (1000 * 60 * 60 * 24))
         if (dayIndex >= 0 && dayIndex < 7) {
           formattedData[dayIndex] = item.count
         }
@@ -515,7 +522,12 @@ export async function getClientGrowth(
       if (!item.date) return
       try {
         const date = new Date(item.date)
-        const dayDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+        // Use date-only comparison to avoid timezone issues
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const clientDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        const dayDiff = Math.floor(
+          (nowDate.getTime() - clientDate.getTime()) / (1000 * 60 * 60 * 24)
+        )
         if (dayDiff >= 0 && dayDiff <= 30) {
           const weekIndex = Math.min(4, Math.floor(dayDiff / 7))
           formattedData[4 - weekIndex] += item.count
@@ -530,8 +542,13 @@ export async function getClientGrowth(
       if (!item.date) return
       try {
         const date = new Date(item.date)
+        // Use consistent date comparison
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        const clientDate = new Date(date.getFullYear(), date.getMonth(), 1)
         const monthsDiff =
-          now.getMonth() - date.getMonth() + 12 * (now.getFullYear() - date.getFullYear())
+          nowDate.getMonth() -
+          clientDate.getMonth() +
+          12 * (nowDate.getFullYear() - clientDate.getFullYear())
         if (monthsDiff >= 0 && monthsDiff < 3) {
           formattedData[2 - monthsDiff] += item.count
         }
@@ -545,8 +562,13 @@ export async function getClientGrowth(
       if (!item.date) return
       try {
         const date = new Date(item.date)
+        // Use consistent date comparison
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        const clientDate = new Date(date.getFullYear(), date.getMonth(), 1)
         const monthsDiff =
-          now.getMonth() - date.getMonth() + 12 * (now.getFullYear() - date.getFullYear())
+          nowDate.getMonth() -
+          clientDate.getMonth() +
+          12 * (nowDate.getFullYear() - clientDate.getFullYear())
         if (monthsDiff >= 0 && monthsDiff < 12) {
           formattedData[11 - monthsDiff] += item.count
         }

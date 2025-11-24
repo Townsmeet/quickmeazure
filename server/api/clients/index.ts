@@ -252,6 +252,7 @@ export default defineEventHandler(async event => {
           address: body.address || null,
           notes: body.notes || null,
           userId: String(auth.userId),
+          createdAt: new Date(),
         })
         .returning()
 

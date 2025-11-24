@@ -213,6 +213,14 @@ definePageMeta({
   middleware: 'guest-only',
 })
 
+// SEO Meta Tags
+useSeoMeta({
+  title: 'Create Account - QuickMeazure',
+  description:
+    'Create your QuickMeazure account and start managing your tailoring business efficiently.',
+  robots: 'noindex, nofollow', // Prevent indexing of auth pages
+})
+
 const { register, signUpWithGoogle, isLoading } = useAuth()
 const toast = useToast()
 

@@ -76,7 +76,7 @@ height="40" />
       </template>
       <!-- DEFAULT SLOT: main content -->
       <div class="flex-1 overflow-y-auto">
-        <div class="p-4 sm:p-6 pb-20 md:pb-6">
+        <div class="p-4 sm:p-6 pb-24 md:pb-6">
           <slot />
         </div>
       </div>

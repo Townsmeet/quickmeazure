@@ -24,11 +24,11 @@
       <div>
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overview</h2>
         <div>
-          <div v-if="_isDashboardLoading" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div v-if="_isDashboardLoading" class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <DashboardStatSkeleton v-for="i in 4" :key="i" />
           </div>
 
-          <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <UCard class="bg-white dark:bg-gray-800">
               <template #header>
                 <div class="flex justify-between items-center">
@@ -216,7 +216,7 @@
       </div>
 
       <div class="space-y-6">
-        <div>
+        <div class="mb-2">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Upcoming Due Orders
           </h2>

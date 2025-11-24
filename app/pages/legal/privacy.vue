@@ -134,18 +134,23 @@
 
 <script setup>
 // Set page metadata
-useHead({
-  title: 'Privacy Policy - QuickMeazure',
-  meta: [
-    {
-      name: 'description',
-      content: 'Privacy Policy for QuickMeazure, a tailor measurement management application.',
-    },
-  ],
-})
-
-// Set layout for this page
 definePageMeta({
   layout: 'default',
+})
+
+// SEO Meta Tags
+useSeoMeta({
+  title: 'Privacy Policy - QuickMeazure',
+  description:
+    'Read our privacy policy to understand how QuickMeazure collects, uses, and protects your personal information and data.',
+  ogTitle: 'Privacy Policy - QuickMeazure',
+  ogDescription: 'Learn how QuickMeazure protects your privacy and handles your data.',
+  robots: 'index, follow',
+})
+
+// Dynamic OG Image
+defineOgImageComponent('NuxtSeo', {
+  title: 'Privacy Policy',
+  description: 'QuickMeazure',
 })
 </script>

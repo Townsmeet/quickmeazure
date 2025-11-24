@@ -105,18 +105,23 @@
 
 <script setup>
 // Set page metadata
-useHead({
-  title: 'Terms of Service - QuickMeazure',
-  meta: [
-    {
-      name: 'description',
-      content: 'Terms of Service for QuickMeazure, a tailor measurement management application.',
-    },
-  ],
-})
-
-// Set layout for this page
 definePageMeta({
   layout: 'default',
+})
+
+// SEO Meta Tags
+useSeoMeta({
+  title: 'Terms of Service - QuickMeazure',
+  description:
+    'Read the terms of service for using QuickMeazure, our tailor business management software.',
+  ogTitle: 'Terms of Service - QuickMeazure',
+  ogDescription: 'Review the terms and conditions for using QuickMeazure.',
+  robots: 'index, follow',
+})
+
+// Dynamic OG Image
+defineOgImageComponent('NuxtSeo', {
+  title: 'Terms of Service',
+  description: 'QuickMeazure',
 })
 </script>
