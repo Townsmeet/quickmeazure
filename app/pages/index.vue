@@ -30,11 +30,16 @@ useSeoMeta({
     'Streamline your tailoring business with QuickMeazure. Manage clients, track measurements, process orders, and handle payments effortlessly.',
 })
 
+defineOgImage({
+  url: '/sewingmachine.png',
+  alt: 'Sewing Machine',
+})
+
 // Dynamic OG Image
-defineOgImageComponent('NuxtSeo', {
-  title: 'QuickMeazure',
+defineOgImageComponent('Nuxt', {
+  title: 'QuickMeazure 👋',
   description: 'Modern Tailor Business Management',
-  theme: '#4f46e5',
+  theme: '#0d9488',
 })
 
 // Structured Data - Organization
