@@ -21,12 +21,29 @@ height="40" />
           orientation="vertical"
         />
 
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="navigationItems[1]"
-          orientation="vertical"
-          class="mt-auto"
-        />
+        <!-- Bottom section (Color Mode + Help & Support) -->
+        <div class="mt-auto space-y-2">
+          <!-- Color Mode Switcher -->
+          <ClientOnly v-if="!colorMode?.forced">
+            <div class="px-2">
+              <UButton
+                :icon="isDark ? 'i-lucide-moon' : 'i-lucide-sun'"
+                :label="collapsed ? undefined : isDark ? 'Dark Mode' : 'Light Mode'"
+                color="neutral"
+                variant="ghost"
+                class="w-full"
+                :class="collapsed ? 'justify-center' : 'justify-start'"
+                @click="isDark = !isDark"
+              />
+            </div>
+          </ClientOnly>
+
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="navigationItems[1]"
+            orientation="vertical"
+          />
+        </div>
       </template>
 
       <template #footer="{ collapsed }">
