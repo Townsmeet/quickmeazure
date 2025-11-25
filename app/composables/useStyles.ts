@@ -235,7 +235,7 @@ export const useStyles = () => {
 
   return {
     // State
-    styles: readonly(styles),
+    styles,
     currentStyle: readonly(currentStyle),
     isLoading: readonly(isLoading),
     error: readonly(error),

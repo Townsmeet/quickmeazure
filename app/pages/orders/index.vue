@@ -4,7 +4,8 @@
       <!-- Header Section -->
       <div class="mb-8">
         <div class="flex items-center justify-between">
-          <div>
+          <div class="flex items-center gap-3">
+            <img src="/logo.png" alt="QuickMeazure Logo" class="h-8 w-auto md:hidden" />
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
           </div>
           <div class="flex gap-3">
@@ -18,21 +19,36 @@
       <!-- Search and Filters -->
       <div class="mb-8">
         <UCard class="shadow-sm border-0">
-          <div class="flex flex-col lg:flex-row gap-4">
-            <!-- Search -->
-            <div class="flex-1">
+          <div class="flex flex-col gap-4">
+            <!-- Search and Filter Toggle Button -->
+            <div class="flex gap-3">
               <UInput
                 v-model="search"
                 placeholder="Search orders..."
                 icon="i-heroicons-magnifying-glass"
                 size="lg"
-                class="w-full"
+                class="flex-1"
                 @input="handleSearch"
               />
+              <!-- Mobile Filter Toggle Button -->
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="lg"
+                icon="i-heroicons-funnel"
+                class="md:hidden"
+                @click="toggleFilter"
+              >
+                <template v-if="statusFilter !== 'all' || paymentStatusFilter !== 'any'" #trailing>
+                  <UBadge color="primary" variant="solid" class="ml-1">
+                    {{ statusFilter !== 'all' && paymentStatusFilter !== 'any' ? '2' : '1' }}
+                  </UBadge>
+                </template>
+              </UButton>
             </div>
 
-            <!-- Filters -->
-            <div class="flex flex-wrap gap-3">
+            <!-- Filters (hidden on mobile unless toggled) -->
+            <div :class="['flex flex-wrap gap-3', isFilterOpen ? 'flex' : 'hidden md:flex']">
               <USelect
                 v-model="sortBy"
                 :items="sortOptions"
@@ -46,6 +62,7 @@
                 variant="outline"
                 size="lg"
                 icon="i-heroicons-funnel"
+                class="hidden md:inline-flex"
                 @click="toggleFilter"
               >
                 Filters

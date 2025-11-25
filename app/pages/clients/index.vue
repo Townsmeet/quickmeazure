@@ -10,7 +10,8 @@
       <!-- Header Section -->
       <div class="mb-8">
         <div class="flex items-center justify-between">
-          <div>
+          <div class="flex items-center gap-3">
+            <img src="/logo.png" alt="QuickMeazure Logo" class="h-8 w-auto md:hidden" />
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Clients</h1>
           </div>
           <div class="flex gap-3">
@@ -24,21 +25,36 @@
       <!-- Search and Filters -->
       <div class="mb-8">
         <UCard class="shadow-sm border-0">
-          <div class="flex flex-col lg:flex-row gap-4">
-            <!-- Search -->
-            <div class="flex-1">
+          <div class="flex flex-col gap-4">
+            <!-- Search and Filter Toggle Button -->
+            <div class="flex gap-3">
               <UInput
                 v-model="search"
                 placeholder="Search clients by name, email, or phone..."
                 icon="i-heroicons-magnifying-glass"
                 size="lg"
-                class="w-full"
+                class="flex-1"
                 @input="handleSearch"
               />
+              <!-- Mobile Filter Toggle Button -->
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="lg"
+                icon="i-heroicons-funnel"
+                class="md:hidden"
+                @click="isFilterOpen = !isFilterOpen"
+              >
+                <template v-if="hasActiveFilters" #trailing>
+                  <UBadge color="primary" variant="solid" class="ml-1">
+                    {{ hasOrdersFilter !== 'all' ? '1' : '0' }}
+                  </UBadge>
+                </template>
+              </UButton>
             </div>
 
-            <!-- Filters -->
-            <div class="flex flex-wrap gap-3">
+            <!-- Filters (hidden on mobile unless toggled) -->
+            <div :class="['flex flex-wrap gap-3', isFilterOpen ? 'flex' : 'hidden md:flex']">
               <USelect
                 v-model="sortBy"
                 :items="sortOptions"
@@ -248,6 +264,7 @@ const showDeleteModal = ref(false)
 const clientToDelete = ref<Client | null>(null)
 const isDeleting = ref(false)
 const isSavingClient = ref(false)
+const isFilterOpen = ref(false)
 
 // Slideover state
 const showDetailSlideover = ref(false)

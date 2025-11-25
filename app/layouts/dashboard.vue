@@ -143,6 +143,23 @@ height="40" />
                 <!-- Separator -->
                 <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
 
+                <!-- Color Mode Switcher -->
+                <ClientOnly v-if="!colorMode?.forced">
+                  <UButton
+                    :icon="isDark ? 'i-lucide-moon' : 'i-lucide-sun'"
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    class="w-full justify-start"
+                    @click="toggleColorMode"
+                  >
+                    {{ isDark ? 'Dark Mode' : 'Light Mode' }}
+                  </UButton>
+                </ClientOnly>
+
+                <!-- Separator -->
+                <div class="border-t border-gray-100 dark:border-gray-800 my-2"></div>
+
                 <!-- Help & Support -->
                 <UButton
                   to="/help"
@@ -240,6 +257,12 @@ const settingsItems = [
 // Function to toggle mobile more menu
 const toggleMobileMore = () => {
   isMobileMoreOpen.value = !isMobileMoreOpen.value
+}
+
+// Function to toggle color mode from mobile menu
+const toggleColorMode = () => {
+  isDark.value = !isDark.value
+  isMobileMoreOpen.value = false
 }
 
 // Close mobile more menu when clicking outside (but not on the More button)

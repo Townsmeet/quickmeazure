@@ -1,18 +1,45 @@
 <template>
   <div class="space-y-6">
     <!-- Page Header -->
-    <div class="mb-2">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Activity Log</h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        Track all actions performed in your account.
-      </p>
+    <div class="mb-8">
+      <div class="flex items-center gap-3">
+        <img src="/logo.png" alt="QuickMeazure Logo" class="h-8 w-auto md:hidden" />
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">Activity Log</h1>
+        </div>
+      </div>
     </div>
 
     <!-- Filter Card -->
     <UCard
       class="bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-100 dark:border-gray-700 shadow-sm"
     >
-      <div class="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-end sm:gap-4">
+      <!-- Mobile Filter Toggle Button -->
+      <div class="md:hidden">
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="lg"
+          icon="i-heroicons-funnel"
+          block
+          @click="isFilterOpen = !isFilterOpen"
+        >
+          {{ isFilterOpen ? 'Hide Filters' : 'Show Filters' }}
+          <template v-if="filters.type || filters.startDate || filters.endDate" #trailing>
+            <UBadge color="primary" variant="solid" class="ml-1">
+              {{ [filters.type, filters.startDate, filters.endDate].filter(Boolean).length }}
+            </UBadge>
+          </template>
+        </UButton>
+      </div>
+
+      <!-- Filter Controls (hidden on mobile unless toggled) -->
+      <div
+        :class="[
+          'flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-end sm:gap-4',
+          isFilterOpen ? 'flex' : 'hidden md:flex',
+        ]"
+      >
         <UFormField label="Activity Type" class="w-full sm:w-1/3">
           <USelect
             v-model="filters.type"
@@ -210,6 +237,9 @@ const filters = reactive({
   startDate: null as string | null,
   endDate: null as string | null,
 })
+
+// Filter toggle state
+const isFilterOpen = ref(false)
 
 // Reset filters
 const resetFilters = () => {

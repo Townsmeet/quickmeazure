@@ -10,7 +10,8 @@
     <!-- Header Section -->
     <div class="mb-8">
       <div class="flex items-center justify-between">
-        <div>
+        <div class="flex items-center gap-3">
+          <img src="/logo.png" alt="QuickMeazure Logo" class="h-8 w-auto md:hidden" />
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         </div>
         <div class="flex gap-3">

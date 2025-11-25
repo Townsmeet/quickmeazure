@@ -25,10 +25,10 @@ export interface Style {
   name: string
   description?: string | null
   imageUrl?: string | null
-  imageUrls?: readonly string[] | null
+  imageUrls?: string[] | null
   category?: string | null
   type?: string | null
-  tags?: readonly string[]
+  tags?: string[]
   status?: 'active' | 'inactive' | 'draft' | 'archived'
   itemCount?: number
   details?: Record<string, string | number | boolean>

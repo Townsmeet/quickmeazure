@@ -24,23 +24,12 @@ useSeoMeta({
   ogType: 'website',
   ogUrl: 'https://quickmeazure.com',
   ogSiteName: 'QuickMeazure',
-  twitterCard: 'summary_large_image',
-  twitterTitle: 'QuickMeazure - Modern Tailor Business Management Software',
-  twitterDescription:
-    'Streamline your tailoring business with QuickMeazure. Manage clients, track measurements, process orders, and handle payments effortlessly.',
 })
 
 defineOgImage({
   url: '/sewingmachine.png',
   alt: 'Sewing Machine',
 })
-
-// // Dynamic OG Image
-// defineOgImageComponent('Nuxt', {
-//   title: 'QuickMeazure 👋',
-//   description: 'Modern Tailor Business Management',
-//   theme: '#0d9488',
-// })
 
 // Structured Data - Organization
 useSchemaOrg([
