@@ -135,7 +135,7 @@ useSeoMeta({
   robots: 'noindex, nofollow', // Prevent indexing of auth pages
 })
 
-const { login, isLoading } = useAuth()
+const { login, isLoading, sendVerificationEmail, requiredOnboardingPath, user } = useAuth()
 // const isGoogleLoading = ref(false)
 const toast = useToast()
 const route = useRoute()
@@ -172,13 +172,34 @@ const onSubmit = async (_event: FormSubmitEvent<LoginData>) => {
 
     // Handle redirect after successful login using onboarding system
     const redirectTo = route.query.redirect as string
+
+    // Check if user needs email verification
+    const nextPath = requiredOnboardingPath.value
+    if (nextPath === '/auth/verify-email' && user.value?.email) {
+      // Send verification email for unverified users
+      try {
+        await sendVerificationEmail(user.value.email)
+        toast.add({
+          title: 'Verification email sent',
+          description: 'Please check your inbox for the verification link.',
+          color: 'info',
+          icon: 'i-heroicons-envelope',
+        })
+      } catch (emailError) {
+        console.error('[Login] Failed to send verification email:', emailError)
+        // Continue anyway - user can resend from the verify-email page
+      }
+
+      // Redirect to verify-email with email parameter
+      await navigateTo(`/auth/verify-email?email=${encodeURIComponent(user.value.email)}`)
+      return
+    }
+
     if (redirectTo) {
       await navigateTo(decodeURIComponent(redirectTo))
     } else {
       // Use onboarding system to determine where to redirect
-      const { requiredOnboardingPath } = useAuth()
-      const nextPath = requiredOnboardingPath.value || '/dashboard'
-      await navigateTo(nextPath)
+      await navigateTo(nextPath || '/dashboard')
     }
   } catch (error: any) {
     toast.add({
